@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -17,6 +16,7 @@ import { Screen } from '@/components/Screen';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import { Card } from '@/components/Card';
+import { useToast } from '@/components/Toast';
 import { supabase } from '@/lib/supabase';
 import type { UserRole } from '@/lib/database.types';
 import { theme } from '@/theme';
@@ -33,6 +33,7 @@ type LookupResult = {
 export default function RedeemScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const toast = useToast();
   const [step, setStep] = useState<'code' | 'password'>('code');
   const [lookup, setLookup] = useState<LookupResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -90,7 +91,7 @@ export default function RedeemScreen() {
       if (error) throw error;
       const row = Array.isArray(data) ? data[0] : null;
       if (!row) {
-        Alert.alert(t('auth.redeem.notFoundTitle'), t('auth.redeem.notFoundText'));
+        toast.warning(t('auth.redeem.notFoundTitle'), t('auth.redeem.notFoundText'));
         return;
       }
       setLookup({
@@ -104,7 +105,7 @@ export default function RedeemScreen() {
       setStep('password');
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : t('errors.generic');
-      Alert.alert(t('auth.redeem.lookupErrorTitle'), msg);
+      toast.error(t('auth.redeem.lookupErrorTitle'), msg);
     } finally {
       setSubmitting(false);
     }
@@ -146,7 +147,7 @@ export default function RedeemScreen() {
       // AuthGate session'ı algılayıp /(app)'e yönlendirecek
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : t('errors.generic');
-      Alert.alert(t('auth.redeem.acceptErrorTitle'), humanize(msg, t));
+      toast.error(t('auth.redeem.acceptErrorTitle'), humanize(msg, t));
     } finally {
       setSubmitting(false);
     }

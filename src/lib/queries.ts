@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Job, JobSource, JobStatus, Profile, Vehicle } from './database.types';
+import type { Job, JobSource, JobStatus, Profile, Vehicle, VehicleStatus } from './database.types';
 
 export type HomeStats = {
   vehiclesTotal: number;
@@ -200,3 +200,144 @@ export async function fetchReportStats(rangeDays = 30): Promise<ReportStats> {
     averageDistanceKm: distanceSamples ? Math.round((totalDistance / distanceSamples) * 10) / 10 : null,
   };
 }
+
+// ============================================================
+// Fleet map snapshot — HQ + vehicles + their estimated current positions
+// ============================================================
+
+export type FleetMapVehicle = {
+  id: string;
+  plate: string;
+  brand: string;
+  model: string;
+  status: VehicleStatus;
+  /** Operator-chosen colour (hex). null → fall back to plate-derived hash. */
+  color: string | null;
+  /** Operator marked the vehicle as parked at HQ — fleet map hides it
+   * so the HQ marker stands in for it. Auto-cleared on dispatch. */
+  isAtHq: boolean;
+  /** Estimated position: midpoint of active job route, or HQ */
+  position: { lat: number; lng: number } | null;
+  /** Active assigned/in_progress job summary (if any) */
+  activeJob: {
+    id: string;
+    customerName: string;
+    status: JobStatus;
+    pickup: { lat: number; lng: number } | null;
+    dropoff: { lat: number; lng: number } | null;
+    /** Free-text labels — used on pickup/dropoff markers and as subline. */
+    pickupAddress: string | null;
+    dropoffAddress: string | null;
+    driverName: string | null;
+    /** ISO timestamp when the driver hit "İşi başlat"; null until in_progress */
+    startedAt: string | null;
+  } | null;
+};
+
+export type FleetMapSnapshot = {
+  hq: { lat: number; lng: number; address: string | null } | null;
+  vehicles: FleetMapVehicle[];
+};
+
+export async function fetchFleetMap(orgId: string): Promise<FleetMapSnapshot> {
+  const [orgRes, vehiclesRes, activeJobsRes] = await Promise.all([
+    supabase
+      .from('organizations')
+      .select('hq_lat, hq_lng, hq_address')
+      .eq('id', orgId)
+      .maybeSingle(),
+    supabase
+      .from('vehicles')
+      .select('id, plate, brand, model, status, is_at_hq, color')
+      .eq('organization_id', orgId)
+      .order('plate'),
+    supabase
+      .from('jobs')
+      .select(
+        'id, customer_name, status, vehicle_id, driver_id, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, pickup_address, dropoff_address, started_at, driver:profiles!jobs_driver_id_fkey(full_name)',
+      )
+      .eq('organization_id', orgId)
+      .in('status', ['assigned', 'in_progress'] satisfies JobStatus[]),
+  ]);
+
+  const hq =
+    orgRes.data && orgRes.data.hq_lat != null && orgRes.data.hq_lng != null
+      ? {
+          lat: orgRes.data.hq_lat,
+          lng: orgRes.data.hq_lng,
+          address: orgRes.data.hq_address,
+        }
+      : null;
+
+  const activeJobs = (activeJobsRes.data ?? []) as Array<{
+    id: string;
+    customer_name: string;
+    status: JobStatus;
+    vehicle_id: string | null;
+    driver_id: string | null;
+    pickup_lat: number | null;
+    pickup_lng: number | null;
+    dropoff_lat: number | null;
+    dropoff_lng: number | null;
+    pickup_address: string | null;
+    dropoff_address: string | null;
+    started_at: string | null;
+    driver: { full_name: string } | null;
+  }>;
+
+  const jobByVehicle = new Map<string, (typeof activeJobs)[number]>();
+  for (const j of activeJobs) {
+    if (j.vehicle_id) jobByVehicle.set(j.vehicle_id, j);
+  }
+
+  const vehicles: FleetMapVehicle[] = (vehiclesRes.data ?? []).map((v) => {
+    const job = jobByVehicle.get(v.id) ?? null;
+    let position: FleetMapVehicle['position'] = hq ? { lat: hq.lat, lng: hq.lng } : null;
+    let activeJob: FleetMapVehicle['activeJob'] = null;
+    if (job) {
+      const pickup =
+        job.pickup_lat != null && job.pickup_lng != null
+          ? { lat: job.pickup_lat, lng: job.pickup_lng }
+          : null;
+      const dropoff =
+        job.dropoff_lat != null && job.dropoff_lng != null
+          ? { lat: job.dropoff_lat, lng: job.dropoff_lng }
+          : null;
+      activeJob = {
+        id: job.id,
+        customerName: job.customer_name,
+        status: job.status,
+        pickup,
+        dropoff,
+        pickupAddress: job.pickup_address,
+        dropoffAddress: job.dropoff_address,
+        driverName: job.driver?.full_name ?? null,
+        startedAt: job.started_at,
+      };
+      if (job.status === 'in_progress' && pickup && dropoff) {
+        position = {
+          lat: (pickup.lat + dropoff.lat) / 2,
+          lng: (pickup.lng + dropoff.lng) / 2,
+        };
+      } else if (pickup) {
+        position = pickup;
+      }
+    }
+    return {
+      id: v.id,
+      plate: v.plate,
+      brand: v.brand,
+      model: v.model,
+      status: v.status as VehicleStatus,
+      color: (v as { color: string | null }).color ?? null,
+      isAtHq: !!v.is_at_hq,
+      position,
+      activeJob,
+    };
+  });
+
+  return { hq, vehicles };
+}
+
+// Silence unused-import warning for narrowing helpers
+export type { JobSource };

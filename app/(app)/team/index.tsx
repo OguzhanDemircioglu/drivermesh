@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -17,6 +16,8 @@ import { MeshBackground } from '@/components/MeshBackground';
 import { Card } from '@/components/Card';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
+import { useToast } from '@/components/Toast';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { useAuth } from '@/auth/AuthProvider';
 import { useCan } from '@/auth/useCan';
 import {
@@ -39,6 +40,8 @@ export default function TeamScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { profile } = useAuth();
+  const toast = useToast();
+  const { confirm } = useConfirm();
   const [members, setMembers] = useState<Profile[]>([]);
   const [pending, setPending] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,32 +79,27 @@ export default function TeamScreen() {
     setRefreshing(false);
   }, [load]);
 
-  const onRevoke = (inv: Invitation) => {
-    Alert.alert(
-      t('team.revokeTitle'),
-      t('team.revokeMessage', { name: inv.full_name, email: inv.email }),
-      [
-        { text: t('team.revokeCancel'), style: 'cancel' },
-        {
-          text: t('team.revokeConfirm'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await revokeInvitation(inv.id);
-              await load();
-            } catch (e) {
-              Alert.alert(t('errors.generic'), t('team.revokeError'));
-            }
-          },
-        },
-      ],
-    );
+  const onRevoke = async (inv: Invitation) => {
+    const ok = await confirm({
+      title: t('team.revokeTitle'),
+      message: t('team.revokeMessage', { name: inv.full_name, email: inv.email }),
+      confirmText: t('team.revokeConfirm'),
+      cancelText: t('team.revokeCancel'),
+      kind: 'destructive',
+    });
+    if (!ok) return;
+    try {
+      await revokeInvitation(inv.id);
+      await load();
+    } catch (e) {
+      toast.error(t('errors.generic'), t('team.revokeError'));
+    }
   };
 
   const inviteCheck = useCan('members.invite');
   const onInvite = (role: 'manager' | 'driver') => {
     if (!inviteCheck.allowed) {
-      Alert.alert(
+      toast.warning(
         t('common.permissionMissingTitle'),
         inviteCheck.reason ?? t('common.permissionMissing'),
       );

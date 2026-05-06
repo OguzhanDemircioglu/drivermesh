@@ -9,11 +9,10 @@ import { useTranslation } from 'react-i18next';
 import { Screen } from '@/components/Screen';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
-import { Picker, type PickerOption } from '@/components/Picker';
 import { MapPicker } from '@/components/MapPicker';
 import { useToast } from '@/components/Toast';
 import { useAuth } from '@/auth/AuthProvider';
-import { createJob, listOrgDrivers } from '@/lib/jobs';
+import { createJob } from '@/lib/jobs';
 import { getHq, type Hq } from '@/lib/hq';
 import { theme } from '@/theme';
 
@@ -27,23 +26,24 @@ const schema = z.object({
     .string()
     .optional()
     .refine((v) => !v || /^\d+$/.test(v), 'Tam sayı olmalı'),
-  driverId: z.string().nullable().optional(),
   notes: z.string().max(500, 'Çok uzun').optional(),
 });
 
 type FormData = z.infer<typeof schema>;
-
 type Coord = { lat: number; lng: number; address: string | null };
 
-export default function NewJobScreen() {
+/**
+ * Driver self-request flow (3rd job channel — alongside owner/manager manual
+ * creation and the drivermesh ride simulator). Field-found jobs that the
+ * driver picks up directly. The job is auto-assigned to the requesting driver
+ * (status='assigned'), source='driver_request' for reporting separation.
+ */
+export default function RequestJobScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { profile, session } = useAuth();
   const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
-  const [driverOptions, setDriverOptions] = useState<PickerOption[]>([
-    { value: null, label: 'Otomatik · ilk alan kazanır', hint: 'Açık iş, tüm şoförler görür', icon: 'inbox' },
-  ]);
   const [hq, setHq] = useState<Hq | null>(null);
   const [pickupCoord, setPickupCoord] = useState<Coord | null>(null);
   const [pickupSource, setPickupSource] = useState<'hq' | 'map' | null>(null);
@@ -51,46 +51,20 @@ export default function NewJobScreen() {
   const [pickerKind, setPickerKind] = useState<'pickup' | 'dropoff' | null>(null);
 
   useEffect(() => {
-    if (!profile?.organization_id) return;
-    listOrgDrivers(profile.organization_id)
-      .then((drivers) => {
-        setDriverOptions([
-          {
-            value: null,
-            label: 'Otomatik · ilk alan kazanır',
-            hint: 'Açık iş, tüm şoförler görür',
-            icon: 'inbox',
-          },
-          ...drivers.map((d) => ({
-            value: d.id,
-            label: d.full_name,
-            hint: d.email,
-            icon: 'user' as const,
-          })),
-        ]);
-      })
-      .catch((e) => console.warn('[jobs/new] drivers fetch failed', e));
-    getHq(profile.organization_id).then(setHq).catch(() => setHq(null));
+    if (profile?.organization_id) {
+      getHq(profile.organization_id).then(setHq).catch(() => setHq(null));
+    }
   }, [profile?.organization_id]);
 
   const {
     control,
     handleSubmit,
     formState: { errors },
-    watch,
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      customerName: '',
-      distanceKm: '',
-      etaMinutes: '',
-      driverId: null,
-      notes: '',
-    },
+    defaultValues: { customerName: '', distanceKm: '', etaMinutes: '', notes: '' },
     mode: 'onTouched',
   });
-
-  const selectedDriverId = watch('driverId');
 
   const usePickupFromHq = () => {
     if (!hq || hq.lat == null || hq.lng == null) {
@@ -114,31 +88,33 @@ export default function NewJobScreen() {
       toast.warning(t('jobs.new.dropoffMissingTitle'), t('jobs.new.dropoffMissingText'));
       return;
     }
+    setSubmitting(true);
     try {
-      setSubmitting(true);
+      // Driver request: create the job UN-assigned (status='open', driver_id=null)
+      // and tagged source='driver_request'. Owner/manager will see it in
+      // pending requests and approve → assigns it back to the requester
+      // (created_by). This is the "talep + onay" channel from the spec.
       await createJob({
         organizationId: profile.organization_id,
         createdBy: session.user.id,
         customerName: data.customerName,
-        pickupAddress: pickupCoord.address ?? `${pickupCoord.lat.toFixed(5)}, ${pickupCoord.lng.toFixed(5)}`,
-        dropoffAddress: dropoffCoord.address ?? `${dropoffCoord.lat.toFixed(5)}, ${dropoffCoord.lng.toFixed(5)}`,
+        pickupAddress:
+          pickupCoord.address ?? `${pickupCoord.lat.toFixed(5)}, ${pickupCoord.lng.toFixed(5)}`,
+        dropoffAddress:
+          dropoffCoord.address ?? `${dropoffCoord.lat.toFixed(5)}, ${dropoffCoord.lng.toFixed(5)}`,
         pickupLat: pickupCoord.lat,
         pickupLng: pickupCoord.lng,
         dropoffLat: dropoffCoord.lat,
         dropoffLng: dropoffCoord.lng,
         distanceKm: data.distanceKm ? Number(data.distanceKm.replace(',', '.')) : null,
         etaMinutes: data.etaMinutes ? Number(data.etaMinutes) : null,
-        driverId: data.driverId ?? null,
+        source: 'driver_request',
         notes: data.notes || null,
       });
-      toast.success(
-        'Tamam',
-        data.driverId ? 'İş şoföre atandı.' : 'İş açık olarak oluşturuldu, şoförler listede görür.',
-      );
+      toast.success(t('jobs.request.successTitle'), t('jobs.request.successText'));
       router.replace('/(app)/jobs');
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Kayıt başarısız';
-      toast.error('İş oluşturulamadı', humanize(msg));
+    } catch (e) {
+      toast.error(t('jobs.request.errorTitle'), (e as Error).message);
     } finally {
       setSubmitting(false);
     }
@@ -152,18 +128,16 @@ export default function NewJobScreen() {
         style={({ pressed }) => [styles.back, pressed && { opacity: 0.6 }]}
       >
         <Feather name="arrow-left" size={22} color={theme.colors.text} />
-        <Text style={styles.backText}>Geri</Text>
+        <Text style={styles.backText}>{t('common.back')}</Text>
       </Pressable>
 
       <View style={styles.header}>
         <View style={styles.eyebrow}>
-          <Feather name="package" size={11} color={theme.colors.accent} />
-          <Text style={styles.eyebrowText}>Yeni iş</Text>
+          <Feather name="send" size={11} color={theme.colors.accent} />
+          <Text style={styles.eyebrowText}>{t('jobs.request.eyebrow')}</Text>
         </View>
-        <Text style={styles.title}>İşi tanımla</Text>
-        <Text style={styles.subtitle}>
-          Şoför seçersen direkt atanır, seçmezsen tüm şoförler listede görür ve ilk alan kazanır.
-        </Text>
+        <Text style={styles.title}>{t('jobs.request.title')}</Text>
+        <Text style={styles.subtitle}>{t('jobs.request.subtitle')}</Text>
       </View>
 
       <View style={styles.form}>
@@ -247,7 +221,6 @@ export default function NewJobScreen() {
                   onChangeText={onChange}
                   onBlur={onBlur}
                   error={errors.distanceKm?.message}
-                  returnKeyType="next"
                 />
               )}
             />
@@ -266,7 +239,6 @@ export default function NewJobScreen() {
                   onChangeText={onChange}
                   onBlur={onBlur}
                   error={errors.etaMinutes?.message}
-                  returnKeyType="next"
                 />
               )}
             />
@@ -275,44 +247,23 @@ export default function NewJobScreen() {
 
         <Controller
           control={control}
-          name="driverId"
-          render={({ field: { value, onChange } }) => (
-            <Picker
-              label="Şoför"
-              icon="users"
-              value={value ?? null}
-              onChange={onChange}
-              options={driverOptions}
-              helper={
-                selectedDriverId
-                  ? 'Bildirim sadece atanan şoföre gider.'
-                  : 'Tüm şoförlere bildirim, ilk alan kazanır.'
-              }
-            />
-          )}
-        />
-
-        <Controller
-          control={control}
           name="notes"
           render={({ field: { value, onChange, onBlur } }) => (
             <TextField
-              label="Notlar (opsiyonel)"
+              label={t('jobs.new.notes')}
               icon="edit-3"
-              placeholder="Özel talimat, kapı kodu..."
+              placeholder={t('jobs.new.notesPlaceholder')}
               value={value ?? ''}
               onChangeText={onChange}
               onBlur={onBlur}
               error={errors.notes?.message}
-              returnKeyType="done"
-              onSubmitEditing={onSubmit}
               multiline
             />
           )}
         />
 
         <Button
-          title={selectedDriverId ? 'Şoföre ata ve aç' : 'İşi aç'}
+          title={t('jobs.request.submit')}
           onPress={onSubmit}
           loading={submitting}
           disabled={!pickupCoord || !dropoffCoord}
@@ -321,9 +272,7 @@ export default function NewJobScreen() {
 
       <MapPicker
         visible={pickerKind !== null}
-        title={
-          pickerKind === 'pickup' ? t('jobs.new.pickup') : t('jobs.new.dropoff')
-        }
+        title={pickerKind === 'pickup' ? t('jobs.new.pickup') : t('jobs.new.dropoff')}
         initial={
           pickerKind === 'pickup'
             ? pickupCoord
@@ -374,11 +323,7 @@ function ChoiceButton({
         pressed && !disabled && { opacity: 0.7 },
       ]}
     >
-      <Feather
-        name={icon}
-        size={16}
-        color={active ? theme.colors.accent : theme.colors.text}
-      />
+      <Feather name={icon} size={16} color={active ? theme.colors.accent : theme.colors.text} />
       <View style={{ flex: 1 }}>
         <Text style={[styles.choiceLabel, active && { color: theme.colors.accent }]}>{label}</Text>
         {hint ? (
@@ -413,17 +358,10 @@ function SelectedRow({
   );
 }
 
-function humanize(msg: string) {
-  if (/permission|policy|row.level/i.test(msg)) return 'Bu işlem için yetkin yok.';
-  if (/network/i.test(msg)) return 'İnternet bağlantını kontrol et.';
-  return msg;
-}
-
 const styles = StyleSheet.create({
   scroll: { paddingTop: theme.spacing.lg, gap: theme.spacing.lg, paddingBottom: theme.spacing['3xl'] },
   back: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   backText: { color: theme.colors.text, fontSize: theme.font.size.md, fontWeight: theme.font.weight.medium },
-
   header: { gap: theme.spacing.sm },
   eyebrow: {
     flexDirection: 'row',
@@ -448,11 +386,7 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     letterSpacing: -0.6,
   },
-  subtitle: {
-    fontSize: theme.font.size.md,
-    color: theme.colors.textMuted,
-    lineHeight: 22,
-  },
+  subtitle: { fontSize: theme.font.size.md, color: theme.colors.textMuted, lineHeight: 22 },
   form: { gap: theme.spacing.lg, marginTop: theme.spacing.md },
   row: { flexDirection: 'row', gap: 10 },
   half: { flex: 1 },
@@ -487,11 +421,7 @@ const styles = StyleSheet.create({
     fontSize: theme.font.size.sm,
     fontWeight: theme.font.weight.semibold,
   },
-  choiceHint: {
-    color: theme.colors.textMuted,
-    fontSize: 11,
-    marginTop: 1,
-  },
+  choiceHint: { color: theme.colors.textMuted, fontSize: 11, marginTop: 1 },
 
   dropoffBtn: {
     flexDirection: 'row',
@@ -526,9 +456,5 @@ const styles = StyleSheet.create({
     fontSize: theme.font.size.sm,
     fontWeight: theme.font.weight.semibold,
   },
-  selectedMeta: {
-    color: theme.colors.textDim,
-    fontSize: 11,
-    marginTop: 2,
-  },
+  selectedMeta: { color: theme.colors.textDim, fontSize: 11, marginTop: 2 },
 });

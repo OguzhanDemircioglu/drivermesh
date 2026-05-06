@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Defs, RadialGradient, Stop, Line, G } from 'react-native-svg';
@@ -34,6 +35,12 @@ const LINKS: Array<[number, number]> = [
 ];
 
 export function MeshBackground() {
+  const [showMesh, setShowMesh] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShowMesh(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       <LinearGradient
@@ -42,53 +49,55 @@ export function MeshBackground() {
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-      <Svg
-        width="100%"
-        height="100%"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="xMidYMid slice"
-      >
-        <Defs>
-          <RadialGradient id="glowOrange" cx="50%" cy="0%" r="60%">
-            <Stop offset="0%" stopColor="#FF7A1A" stopOpacity="0.18" />
-            <Stop offset="100%" stopColor="#FF7A1A" stopOpacity="0" />
-          </RadialGradient>
-          <RadialGradient id="glowMesh" cx="100%" cy="100%" r="70%">
-            <Stop offset="0%" stopColor="#5B7FFF" stopOpacity="0.18" />
-            <Stop offset="100%" stopColor="#5B7FFF" stopOpacity="0" />
-          </RadialGradient>
-        </Defs>
-        <Circle cx="50" cy="0" r="60" fill="url(#glowOrange)" />
-        <Circle cx="100" cy="100" r="70" fill="url(#glowMesh)" />
-        <G opacity={0.45}>
-          {LINKS.map(([a, b], i) => {
-            const A = NODES[a];
-            const B = NODES[b];
-            return (
-              <Line
-                key={`l-${i}`}
-                x1={A.x}
-                y1={A.y}
-                x2={B.x}
-                y2={B.y}
-                stroke={theme.colors.mesh}
-                strokeWidth={0.18}
-                strokeOpacity={0.55}
+      {showMesh ? (
+        <Svg
+          width="100%"
+          height="100%"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="xMidYMid slice"
+        >
+          <Defs>
+            <RadialGradient id="glowOrange" cx="50%" cy="0%" r="60%">
+              <Stop offset="0%" stopColor="#FF7A1A" stopOpacity="0.18" />
+              <Stop offset="100%" stopColor="#FF7A1A" stopOpacity="0" />
+            </RadialGradient>
+            <RadialGradient id="glowMesh" cx="100%" cy="100%" r="70%">
+              <Stop offset="0%" stopColor="#5B7FFF" stopOpacity="0.18" />
+              <Stop offset="100%" stopColor="#5B7FFF" stopOpacity="0" />
+            </RadialGradient>
+          </Defs>
+          <Circle cx="50" cy="0" r="60" fill="url(#glowOrange)" />
+          <Circle cx="100" cy="100" r="70" fill="url(#glowMesh)" />
+          <G opacity={0.45}>
+            {LINKS.map(([a, b], i) => {
+              const A = NODES[a];
+              const B = NODES[b];
+              return (
+                <Line
+                  key={`l-${i}`}
+                  x1={A.x}
+                  y1={A.y}
+                  x2={B.x}
+                  y2={B.y}
+                  stroke={theme.colors.mesh}
+                  strokeWidth={0.18}
+                  strokeOpacity={0.55}
+                />
+              );
+            })}
+            {NODES.map((n, i) => (
+              <Circle
+                key={`n-${i}`}
+                cx={n.x}
+                cy={n.y}
+                r={n.r * 0.18}
+                fill={theme.colors.mesh}
+                fillOpacity={0.85}
               />
-            );
-          })}
-          {NODES.map((n, i) => (
-            <Circle
-              key={`n-${i}`}
-              cx={n.x}
-              cy={n.y}
-              r={n.r * 0.18}
-              fill={theme.colors.mesh}
-              fillOpacity={0.85}
-            />
-          ))}
-        </G>
-      </Svg>
+            ))}
+          </G>
+        </Svg>
+      ) : null}
     </View>
   );
 }

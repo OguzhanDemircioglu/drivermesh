@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,12 +15,15 @@ import { StatusBar } from 'expo-status-bar';
 import { useTranslation } from 'react-i18next';
 import { MeshBackground } from '@/components/MeshBackground';
 import { Card } from '@/components/Card';
+import { useToast } from '@/components/Toast';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { useAuth } from '@/auth/AuthProvider';
 import { useCan } from '@/auth/useCan';
 import {
   deleteVehicle,
   getVehicle,
   listVehicleJobs,
+  setVehicleAtHq,
   updateVehicle,
   type VehicleJobLite,
   type VehicleWithAdder,
@@ -58,12 +60,15 @@ export default function VehicleDetailScreen() {
   const { t, i18n } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { profile } = useAuth();
+  const toast = useToast();
+  const { confirm } = useConfirm();
   const canUpdate = useCan('vehicles.update');
   const canDelete = useCan('vehicles.delete');
   const [vehicle, setVehicle] = useState<VehicleWithAdder | null>(null);
   const [jobs, setJobs] = useState<VehicleJobLite[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingStatus, setSavingStatus] = useState<VehicleStatus | null>(null);
+  const [savingAtHq, setSavingAtHq] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
@@ -93,7 +98,7 @@ export default function VehicleDetailScreen() {
     async (next: VehicleStatus) => {
       if (!vehicle || vehicle.status === next || savingStatus) return;
       if (!canUpdate.allowed) {
-        Alert.alert(t('common.permissionMissingTitle'), canUpdate.reason ?? t('common.permissionMissing'));
+        toast.warning(t('common.permissionMissingTitle'), canUpdate.reason ?? t('common.permissionMissing'));
         return;
       }
       setSavingStatus(next);
@@ -101,57 +106,102 @@ export default function VehicleDetailScreen() {
       setVehicle({ ...vehicle, status: next });
       try {
         await updateVehicle(vehicle.id, { status: next });
-        Alert.alert(t('vehicles.detail.statusSavedTitle'), t('vehicles.detail.statusSavedText'));
+        toast.success(t('vehicles.detail.statusSavedTitle'), t('vehicles.detail.statusSavedText'));
       } catch (e) {
         setVehicle({ ...vehicle, status: prev });
-        Alert.alert(t('vehicles.detail.statusError'), (e as Error).message);
+        toast.error(t('vehicles.detail.statusError'), (e as Error).message);
       } finally {
         setSavingStatus(null);
       }
     },
-    [vehicle, savingStatus, canUpdate, t],
+    [vehicle, savingStatus, canUpdate, t, toast],
   );
 
-  const onDelete = useCallback(() => {
+  const onMarkAtHq = useCallback(async () => {
+    if (!vehicle || savingAtHq) return;
+    if (!canUpdate.allowed) {
+      toast.warning(
+        t('common.permissionMissingTitle'),
+        canUpdate.reason ?? t('common.permissionMissing'),
+      );
+      return;
+    }
+    setSavingAtHq(true);
+    const prev = vehicle.is_at_hq;
+    // Optimistic flip — the button transitions from active CTA to the
+    // disabled "Araç Lojistik üssünde" pill in place. No popup.
+    setVehicle({ ...vehicle, is_at_hq: true });
+    try {
+      await setVehicleAtHq(vehicle.id, true);
+    } catch (e) {
+      setVehicle({ ...vehicle, is_at_hq: prev });
+      toast.error(t('vehicles.detail.statusError'), (e as Error).message);
+    } finally {
+      setSavingAtHq(false);
+    }
+  }, [vehicle, savingAtHq, canUpdate, t, toast]);
+
+  const onDelete = useCallback(async () => {
     if (!vehicle) return;
     if (!canDelete.allowed) {
-      Alert.alert(
+      toast.warning(
         t('common.permissionMissingTitle'),
         canDelete.reason ?? t('common.permissionMissing'),
       );
       return;
     }
-    Alert.alert(
-      t('vehicles.detail.deleteConfirmTitle'),
-      t('vehicles.detail.deleteConfirmText', { plate: vehicle.plate }),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('vehicles.detail.deleteConfirmBtn'),
-          style: 'destructive',
-          onPress: async () => {
-            setDeleting(true);
-            try {
-              await deleteVehicle(vehicle.id);
-              Alert.alert(
-                t('vehicles.detail.deleteSuccessTitle'),
-                t('vehicles.detail.deleteSuccessText'),
-                [{ text: t('common.done'), onPress: () => router.back() }],
-              );
-            } catch (e) {
-              setDeleting(false);
-              Alert.alert(t('vehicles.detail.deleteError'), (e as Error).message);
-            }
-          },
-        },
-      ],
-    );
-  }, [vehicle, canDelete, t, router]);
+    const ok = await confirm({
+      title: t('vehicles.detail.deleteConfirmTitle'),
+      message: t('vehicles.detail.deleteConfirmText', { plate: vehicle.plate }),
+      confirmText: t('vehicles.detail.deleteConfirmBtn'),
+      cancelText: t('common.cancel'),
+      kind: 'destructive',
+    });
+    if (!ok) return;
+    setDeleting(true);
+    try {
+      await deleteVehicle(vehicle.id);
+      toast.success(
+        t('vehicles.detail.deleteSuccessTitle'),
+        t('vehicles.detail.deleteSuccessText'),
+      );
+      router.back();
+    } catch (e) {
+      setDeleting(false);
+      toast.error(t('vehicles.detail.deleteError'), (e as Error).message);
+    }
+  }, [vehicle, canDelete, t, router, toast, confirm]);
 
   const gradient = useMemo<readonly [string, string]>(() => {
     if (!vehicle) return PLATE_GRADIENTS[0];
-    return PLATE_GRADIENTS[vehicle.plate.charCodeAt(0) % PLATE_GRADIENTS.length];
+    // Operator-chosen colour wins. Compute a darker shade for the second
+    // gradient stop so the hero still has depth.
+    if (vehicle.color) {
+      const m = /^#([\da-f]{6})$/i.exec(vehicle.color);
+      if (m) {
+        const n = parseInt(m[1], 16);
+        const r = Math.max(0, Math.round(((n >> 16) & 0xff) * 0.82));
+        const g = Math.max(0, Math.round(((n >> 8) & 0xff) * 0.82));
+        const b = Math.max(0, Math.round((n & 0xff) * 0.82));
+        const dark = `#${[r, g, b]
+          .map((c) => c.toString(16).padStart(2, '0'))
+          .join('')}`;
+        return [vehicle.color, dark] as const;
+      }
+    }
+    // Full-string hash fallback so different "34..." plates land on
+    // different gradients (matches MiniLocationPin.vehicleColorFromPlate).
+    let hash = 5381;
+    for (let i = 0; i < vehicle.plate.length; i++) {
+      hash = ((hash << 5) + hash + vehicle.plate.charCodeAt(i)) | 0;
+    }
+    return PLATE_GRADIENTS[Math.abs(hash) % PLATE_GRADIENTS.length];
   }, [vehicle]);
+
+  const hasActiveJob = useMemo(
+    () => jobs.some((j) => j.status === 'assigned' || j.status === 'in_progress'),
+    [jobs],
+  );
 
   const dateFormatter = useCallback(
     (iso: string) =>
@@ -257,6 +307,43 @@ export default function VehicleDetailScreen() {
                 </Text>
               ) : null}
             </Card>
+
+            {/* "At logistics HQ" pill. Only the operator (owner/manager with
+                vehicles.update) sees it, and only when the vehicle is NOT
+                currently out on a job (active jobs hide it entirely).
+                - Not marked yet → enabled CTA "...ise Tıklayınız"
+                - Marked → disabled label "Araç Lojistik üssünde"
+                The DB trigger auto-clears the flag on dispatch, returning
+                the button to its active CTA state without user intervention. */}
+            {canUpdate.allowed && !hasActiveJob ? (
+              vehicle.is_at_hq ? (
+                <View style={styles.atHqBtnDisabled}>
+                  <Feather name="home" size={16} color={theme.colors.success} />
+                  <Text style={styles.atHqBtnDisabledText}>
+                    {t('vehicles.detail.atHqMarked')}
+                  </Text>
+                </View>
+              ) : (
+                <Pressable
+                  onPress={onMarkAtHq}
+                  disabled={savingAtHq}
+                  style={({ pressed }) => [
+                    styles.atHqBtn,
+                    savingAtHq && { opacity: 0.55 },
+                    pressed && { opacity: 0.85 },
+                  ]}
+                >
+                  {savingAtHq ? (
+                    <ActivityIndicator color={theme.colors.accent} size="small" />
+                  ) : (
+                    <Feather name="home" size={16} color={theme.colors.accent} />
+                  )}
+                  <Text style={styles.atHqBtnText}>
+                    {t('vehicles.detail.atHqCta')}
+                  </Text>
+                </Pressable>
+              )
+            ) : null}
 
             {/* Info */}
             <Card>
@@ -475,6 +562,38 @@ const styles = StyleSheet.create({
   jobName: { color: theme.colors.text, fontSize: theme.font.size.sm, fontWeight: '600' },
   jobMeta: { color: theme.colors.textMuted, fontSize: theme.font.size.xs, marginTop: 2 },
 
+  atHqBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.accent,
+    backgroundColor: theme.colors.accentMuted,
+  },
+  atHqBtnText: {
+    color: theme.colors.accent,
+    fontSize: theme.font.size.sm,
+    fontWeight: theme.font.weight.semibold,
+  },
+  atHqBtnDisabled: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(34,197,94,0.4)',
+    backgroundColor: 'rgba(34,197,94,0.10)',
+  },
+  atHqBtnDisabledText: {
+    color: theme.colors.success,
+    fontSize: theme.font.size.sm,
+    fontWeight: theme.font.weight.semibold,
+  },
   deleteBtn: {
     flexDirection: 'row',
     alignItems: 'center',

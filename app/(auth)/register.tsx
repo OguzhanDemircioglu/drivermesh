@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,6 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
+import { useToast } from '@/components/Toast';
 import { useAuth } from '@/auth/AuthProvider';
 import { theme } from '@/theme';
 
@@ -16,6 +17,7 @@ export default function RegisterScreen() {
   const router = useRouter();
   const { signUpFleet } = useAuth();
   const { t } = useTranslation();
+  const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
 
   const schema = useMemo(
@@ -70,15 +72,15 @@ export default function RegisterScreen() {
         companyName: data.companyName.trim(),
       });
       if (result.requiresConfirmation) {
-        Alert.alert(
+        toast.info(
           t('auth.register.verifyTitle'),
           t('auth.register.verifyMessage', { email: data.email.trim() }),
-          [{ text: t('common.done'), onPress: () => router.replace('/(auth)/login') }],
         );
+        router.replace('/(auth)/login');
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : t('auth.register.errors.signupFailed');
-      Alert.alert(t('auth.register.errors.signupFailed'), humanize(msg, t));
+      toast.error(t('auth.register.errors.signupFailed'), humanize(msg, t));
     } finally {
       setSubmitting(false);
     }

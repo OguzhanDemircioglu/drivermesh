@@ -33,6 +33,10 @@ type AuthState = {
 
 const AuthContext = createContext<AuthState | null>(null);
 
+// Eager kick-off: AsyncStorage'tan token okumayı module load anında başlat,
+// AuthProvider mount edildiğinde Promise muhtemelen hazır olur.
+const initialSessionPromise = supabase.auth.getSession();
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -61,11 +65,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    supabase.auth.getSession().then(async ({ data }) => {
+    initialSessionPromise.then(({ data }) => {
       if (!mounted) return;
       setSession(data.session);
-      await fetchProfile(data.session?.user.id);
       setLoading(false);
+      fetchProfile(data.session?.user.id);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {

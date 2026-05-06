@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -20,6 +19,7 @@ import { KpiCard } from '@/components/KpiCard';
 import { JobCard } from '@/components/JobCard';
 import { BottomNav } from '@/components/BottomNav';
 import { Card } from '@/components/Card';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { useAuth } from '@/auth/AuthProvider';
 import { fetchHomeStats, type HomeStats } from '@/lib/queries';
 import { theme } from '@/theme';
@@ -41,6 +41,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { session, profile, signOut } = useAuth();
+  const { confirm } = useConfirm();
   const [tab, setTab] = useState<'home' | 'jobs' | 'fleet' | 'account'>('home');
   const [stats, setStats] = useState<HomeStats>(EMPTY_STATS);
   const [refreshing, setRefreshing] = useState(false);
@@ -146,12 +147,16 @@ export default function HomeScreen() {
               </Pressable>
               <Pressable
                 hitSlop={10}
-                onPress={() =>
-                  Alert.alert(t('home.logoutTitle'), t('home.logoutMessage'), [
-                    { text: t('home.logoutCancel'), style: 'cancel' },
-                    { text: t('home.logoutConfirm'), style: 'destructive', onPress: () => signOut() },
-                  ])
-                }
+                onPress={async () => {
+                  const ok = await confirm({
+                    title: t('home.logoutTitle'),
+                    message: t('home.logoutMessage'),
+                    confirmText: t('home.logoutConfirm'),
+                    cancelText: t('home.logoutCancel'),
+                    kind: 'warning',
+                  });
+                  if (ok) signOut();
+                }}
                 style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.7 }]}
               >
                 <Feather name="log-out" size={20} color={theme.colors.text} />
@@ -225,6 +230,11 @@ export default function HomeScreen() {
                 onPress={() =>
                   router.push(canAdd ? '/(app)/vehicles/new' : '/(app)/vehicles')
                 }
+              />
+              <QuickAction
+                label={t('fleetMap.openShort')}
+                icon="map"
+                onPress={() => router.push('/(app)/fleet-map')}
               />
               <QuickAction
                 label={t('home.quickReports')}
@@ -669,7 +679,7 @@ const styles = StyleSheet.create({
 
   quickRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
   },
   quickItem: {
     flex: 1,
@@ -678,9 +688,9 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
     borderRadius: theme.radius.lg,
     paddingVertical: 14,
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   quickIconWrap: {
     width: 36,

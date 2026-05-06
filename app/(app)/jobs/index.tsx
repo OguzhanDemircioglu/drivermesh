@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -18,6 +17,7 @@ import { MeshBackground } from '@/components/MeshBackground';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { JobCard } from '@/components/JobCard';
+import { useToast } from '@/components/Toast';
 import { useAuth } from '@/auth/AuthProvider';
 import { listJobs, simulateRideJob, type JobWithRefs } from '@/lib/jobs';
 import { theme } from '@/theme';
@@ -35,6 +35,7 @@ export default function JobsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { profile, session } = useAuth();
+  const toast = useToast();
   const [jobs, setJobs] = useState<JobWithRefs[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -78,12 +79,32 @@ export default function JobsScreen() {
   const isDriver = role === 'driver';
 
   // Driver-specific: show open jobs (assignable) + own jobs
+  // driver_request pending approvals are NOT accept-able by other drivers, so
+  // they stay out of the open list. The requester sees their own pending
+  // request inside "my jobs" so it's not lost in limbo.
   const driverOpenJobs = useMemo(
-    () => (isDriver ? jobs.filter((j) => j.status === 'open' && !j.driver_id) : []),
+    () =>
+      isDriver
+        ? jobs.filter(
+            (j) =>
+              j.status === 'open' &&
+              !j.driver_id &&
+              j.source !== 'driver_request',
+          )
+        : [],
     [jobs, isDriver],
   );
   const driverMyJobs = useMemo(
-    () => (isDriver ? jobs.filter((j) => j.driver_id === session?.user.id) : []),
+    () =>
+      isDriver
+        ? jobs.filter(
+            (j) =>
+              j.driver_id === session?.user.id ||
+              (j.created_by === session?.user.id &&
+                j.source === 'driver_request' &&
+                j.status === 'open'),
+          )
+        : [],
     [jobs, isDriver, session?.user.id],
   );
 
@@ -128,9 +149,9 @@ export default function JobsScreen() {
                   try {
                     await simulateRideJob();
                     await load();
-                    Alert.alert(t('jobs.simSuccessTitle'), t('jobs.simSuccessText'));
+                    toast.success(t('jobs.simSuccessTitle'), t('jobs.simSuccessText'));
                   } catch (e: unknown) {
-                    Alert.alert(
+                    toast.error(
                       t('errors.generic'),
                       e instanceof Error ? e.message : t('errors.generic'),
                     );
@@ -142,6 +163,12 @@ export default function JobsScreen() {
                 <Text style={styles.simText}>{t('jobs.simulateRide')}</Text>
               </Pressable>
             </View>
+          ) : isDriver ? (
+            <Button
+              title={t('jobs.requestCta')}
+              leftIcon={<Feather name="send" size={18} color="#0A0E1F" />}
+              onPress={() => router.push('/(app)/jobs/request')}
+            />
           ) : null}
 
           {loading ? (

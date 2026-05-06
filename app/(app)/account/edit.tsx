@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,6 +12,7 @@ import { MeshBackground } from '@/components/MeshBackground';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
+import { useToast } from '@/components/Toast';
 import { useAuth } from '@/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { theme } from '@/theme';
@@ -36,6 +37,7 @@ export default function AccountEditScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { profile, refreshProfile, session } = useAuth();
+  const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
 
   const {
@@ -68,7 +70,7 @@ export default function AccountEditScreen() {
       router.back();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : t('errors.generic');
-      Alert.alert(t('errors.generic'), msg);
+      toast.error(t('errors.generic'), msg);
     } finally {
       setSubmitting(false);
     }

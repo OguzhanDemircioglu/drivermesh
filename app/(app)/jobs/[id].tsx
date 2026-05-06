@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -18,16 +17,21 @@ import { MeshBackground } from '@/components/MeshBackground';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Avatar } from '@/components/Avatar';
+import { JobMiniMap } from '@/components/JobMiniMap';
+import { useToast } from '@/components/Toast';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { useAuth } from '@/auth/AuthProvider';
 import { useCan } from '@/auth/useCan';
 import {
   acceptOpenJob,
+  approveDriverRequest,
   cancelJob,
   completeJob,
   failJob,
   getJob,
   listOrgDrivers,
   reassignJob,
+  rejectDriverRequest,
   startJob,
   type JobWithRefs,
 } from '@/lib/jobs';
@@ -50,6 +54,8 @@ export default function JobDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { profile, session } = useAuth();
+  const toast = useToast();
+  const { confirm } = useConfirm();
   const canCancel = useCan('jobs.cancel');
   const canReassign = useCan('jobs.update_any');
   const [job, setJob] = useState<JobWithRefs | null>(null);
@@ -95,40 +101,40 @@ export default function JobDetailScreen() {
       await load();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Bir hata oldu';
-      Alert.alert(`${label} hatası`, msg);
+      toast.error(`${label} hatası`, msg);
     } finally {
       setBusy(false);
     }
   };
 
-  const onAccept = () => {
+  const onAccept = async () => {
     if (!job || !userId) return;
-    Alert.alert('Bu işi al', `${job.customer_name} işini üstüne alıyorsun.`, [
-      { text: 'Vazgeç', style: 'cancel' },
-      {
-        text: 'Al',
-        onPress: () => guarded(() => acceptOpenJob(job.id, userId), 'İş alma'),
-      },
-    ]);
+    const ok = await confirm({
+      title: 'Bu işi al',
+      message: `${job.customer_name} işini üstüne alıyorsun.`,
+      confirmText: 'Al',
+    });
+    if (ok) guarded(() => acceptOpenJob(job.id, userId), 'İş alma');
   };
 
-  const onStart = () => {
+  const onStart = async () => {
     if (!job) return;
-    Alert.alert('Yola çık', 'İşi başlatıyorsun.', [
-      { text: 'Vazgeç', style: 'cancel' },
-      { text: 'Başlat', onPress: () => guarded(() => startJob(job.id), 'Başlatma') },
-    ]);
+    const ok = await confirm({
+      title: 'İşi başlat',
+      message: 'Müşterinin yanına vardın mı? Süre saymaya başlayacak.',
+      confirmText: 'Başlat',
+    });
+    if (ok) guarded(() => startJob(job.id), 'Başlatma');
   };
 
-  const onComplete = () => {
+  const onComplete = async () => {
     if (!job) return;
-    Alert.alert('Tamamla', 'İşi başarıyla tamamladın mı?', [
-      { text: 'Vazgeç', style: 'cancel' },
-      {
-        text: 'Tamamla',
-        onPress: () => guarded(() => completeJob(job.id), 'Tamamlama'),
-      },
-    ]);
+    const ok = await confirm({
+      title: 'İşi bitir',
+      message: 'Teslimat tamamlandı mı? Süre kaydedilecek.',
+      confirmText: 'Bitir',
+    });
+    if (ok) guarded(() => completeJob(job.id), 'Tamamlama');
   };
 
   const onFail = () => {
@@ -138,32 +144,31 @@ export default function JobDetailScreen() {
     }
     if (!job) return;
     if (failReason.trim().length < 3) {
-      Alert.alert('Sebep gerekli', 'Kısa bir başarısızlık nedeni yaz.');
+      toast.warning('Sebep gerekli', 'Kısa bir başarısızlık nedeni yaz.');
       return;
     }
     guarded(() => failJob(job.id, failReason), 'Başarısız');
   };
 
-  const onCancel = () => {
+  const onCancel = async () => {
     if (!job) return;
     if (!canCancel.allowed) {
-      Alert.alert('Yetki gerekli', canCancel.reason ?? 'Bu yetki sende yok.');
+      toast.warning('Yetki gerekli', canCancel.reason ?? 'Bu yetki sende yok.');
       return;
     }
-    Alert.alert('İşi iptal et', 'Bu işi iptal etmek istiyor musun?', [
-      { text: 'Vazgeç', style: 'cancel' },
-      {
-        text: 'İptal et',
-        style: 'destructive',
-        onPress: () => guarded(() => cancelJob(job.id), 'İptal'),
-      },
-    ]);
+    const ok = await confirm({
+      title: 'İşi iptal et',
+      message: 'Bu işi iptal etmek istiyor musun?',
+      confirmText: 'İptal et',
+      kind: 'destructive',
+    });
+    if (ok) guarded(() => cancelJob(job.id), 'İptal');
   };
 
   const openReassign = useCallback(async () => {
     if (!profile?.organization_id) return;
     if (!canReassign.allowed) {
-      Alert.alert('Yetki gerekli', canReassign.reason ?? 'Bu yetki sende yok.');
+      toast.warning('Yetki gerekli', canReassign.reason ?? 'Bu yetki sende yok.');
       return;
     }
     setReassignOpen(true);
@@ -176,12 +181,34 @@ export default function JobDetailScreen() {
     } finally {
       setDriversLoading(false);
     }
-  }, [profile?.organization_id, canReassign]);
+  }, [profile?.organization_id, canReassign, toast]);
 
   const onPickDriver = (driverId: string | null) => {
     if (!job) return;
     setReassignOpen(false);
     guarded(() => reassignJob(job.id, driverId), 'Atama');
+  };
+
+  const onApproveRequest = async () => {
+    if (!job || !job.created_by) return;
+    const createdBy = job.created_by;
+    const ok = await confirm({
+      title: 'Talebi onayla',
+      message: `${job.creator?.full_name ?? 'Şoför'} bu işi kendisi yapmak istiyor. Onaylıyor musun?`,
+      confirmText: 'Onayla',
+    });
+    if (ok) guarded(() => approveDriverRequest(job.id, createdBy), 'Onaylama');
+  };
+
+  const onRejectRequest = async () => {
+    if (!job) return;
+    const ok = await confirm({
+      title: 'Talebi reddet',
+      message: `${job.creator?.full_name ?? 'Şoför'} talebini reddetmek istiyor musun?`,
+      confirmText: 'Reddet',
+      kind: 'destructive',
+    });
+    if (ok) guarded(() => rejectDriverRequest(job.id), 'Reddetme');
   };
 
   if (loading) {
@@ -288,6 +315,15 @@ export default function JobDetailScreen() {
             </View>
           </Card>
 
+          {job.pickup_lat != null && job.pickup_lng != null && job.dropoff_lat != null && job.dropoff_lng != null ? (
+            <JobMiniMap
+              pickup={{ lat: job.pickup_lat, lng: job.pickup_lng }}
+              dropoff={{ lat: job.dropoff_lat, lng: job.dropoff_lng }}
+              inProgressStartedAt={job.status === 'in_progress' ? job.started_at : null}
+              vehiclePlate={job.vehicle?.plate ?? null}
+            />
+          ) : null}
+
           {job.driver ? (
             <Card style={styles.subCard}>
               <View style={styles.subRow}>
@@ -316,6 +352,20 @@ export default function JobDetailScreen() {
             </Card>
           ) : null}
 
+          {job.started_at && job.completed_at ? (
+            <Card style={styles.subCard}>
+              <View style={styles.subRow}>
+                <Feather name="clock" size={20} color={theme.colors.accent} />
+                <View style={styles.subBody}>
+                  <Text style={styles.subLabel}>Yolculuk süresi</Text>
+                  <Text style={styles.subValue}>
+                    {formatJobDuration(job.started_at, job.completed_at)}
+                  </Text>
+                </View>
+              </View>
+            </Card>
+          ) : null}
+
           <Card style={styles.subCard}>
             <Text style={styles.subLabel}>Zaman çizelgesi</Text>
             <Timeline label="Açıldı" date={job.created_at} icon="plus" />
@@ -335,8 +385,51 @@ export default function JobDetailScreen() {
             ) : null}
           </Card>
 
+          {/* Driver request awaiting staff approval */}
+          {isStaff &&
+          job.status === 'open' &&
+          job.source === 'driver_request' ? (
+            <Card style={styles.approvalCard}>
+              <View style={styles.approvalHead}>
+                <View style={styles.approvalBadge}>
+                  <Feather name="user-check" size={12} color={theme.colors.lavender} />
+                  <Text style={styles.approvalBadgeText}>Şoför talebi</Text>
+                </View>
+              </View>
+              <Text style={styles.approvalTitle}>
+                {job.creator?.full_name ?? 'Bir şoför'} bu işi kendisi yapmak istiyor
+              </Text>
+              <Text style={styles.approvalHint}>
+                Onaylarsan iş ona atanır. Reddedersen iş iptal edilir.
+              </Text>
+              <View style={styles.approvalActions}>
+                <Button
+                  title="Reddet"
+                  variant="ghost"
+                  fullWidth={false}
+                  onPress={onRejectRequest}
+                  leftIcon={
+                    <Feather name="x" size={16} color={theme.colors.danger} />
+                  }
+                />
+                <Button
+                  title="Onayla"
+                  fullWidth={false}
+                  style={{ flex: 1 }}
+                  onPress={onApproveRequest}
+                  loading={busy}
+                  leftIcon={
+                    <Feather name="check" size={16} color="#0A0E1F" />
+                  }
+                />
+              </View>
+            </Card>
+          ) : null}
+
           {/* Action area */}
-          {job.status === 'open' && role === 'driver' ? (
+          {job.status === 'open' &&
+          role === 'driver' &&
+          job.source !== 'driver_request' ? (
             <View style={styles.actions}>
               <Button title="Bu işi al" onPress={onAccept} loading={busy} />
             </View>
@@ -344,13 +437,17 @@ export default function JobDetailScreen() {
 
           {job.status === 'assigned' && isMyJob ? (
             <View style={styles.actions}>
-              <Button title="Yola çıktım" onPress={onStart} loading={busy} />
+              <Button title="İşi başlat" onPress={onStart} loading={busy} />
             </View>
+          ) : null}
+
+          {job.status === 'in_progress' && isMyJob && job.started_at ? (
+            <LiveTimerCard startedAt={job.started_at} />
           ) : null}
 
           {job.status === 'in_progress' && isMyJob ? (
             <View style={styles.actions}>
-              <Button title="Tamamlandı" onPress={onComplete} loading={busy} />
+              <Button title="İşi bitir" onPress={onComplete} loading={busy} />
               {showFailInput ? (
                 <View style={styles.failBox}>
                   <Text style={styles.failLabel}>Başarısızlık nedeni</Text>
@@ -542,6 +639,32 @@ export default function JobDetailScreen() {
   );
 }
 
+function LiveTimerCard({ startedAt }: { startedAt: string }) {
+  const startMs = new Date(startedAt).getTime();
+  const [seconds, setSeconds] = useState(() =>
+    Math.max(0, Math.floor((Date.now() - startMs) / 1000)),
+  );
+  useEffect(() => {
+    const id = setInterval(() => {
+      setSeconds(Math.max(0, Math.floor((Date.now() - startMs) / 1000)));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [startMs]);
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return (
+    <View style={styles.timerCard}>
+      <Text style={styles.timerLabel}>Yolculuk süresi</Text>
+      <Text style={styles.timerValue}>
+        {pad(h)}:{pad(m)}:{pad(s)}
+      </Text>
+      <Text style={styles.timerHint}>Müşteriyi teslim edince işi bitir.</Text>
+    </View>
+  );
+}
+
 function Meta({ icon, label, value }: { icon: keyof typeof Feather.glyphMap; label: string; value: string }) {
   return (
     <View style={styles.metaItem}>
@@ -596,6 +719,19 @@ function formatDateTime(iso: string) {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function formatJobDuration(startedAt: string, completedAt: string): string {
+  const ms = new Date(completedAt).getTime() - new Date(startedAt).getTime();
+  if (ms < 60_000) {
+    const sec = Math.max(0, Math.round(ms / 1000));
+    return `${sec} sn`;
+  }
+  const totalMin = Math.floor(ms / 60_000);
+  if (totalMin < 60) return `${totalMin} dk`;
+  const hr = Math.floor(totalMin / 60);
+  const min = totalMin % 60;
+  return min ? `${hr} sa ${min} dk` : `${hr} sa`;
 }
 
 const styles = StyleSheet.create({
@@ -704,6 +840,41 @@ const styles = StyleSheet.create({
   timelineDate: { color: theme.colors.textDim, fontSize: theme.font.size.xs },
 
   actions: { gap: 10, marginTop: theme.spacing.sm },
+
+  approvalCard: {
+    gap: theme.spacing.sm,
+    borderColor: theme.colors.lavender,
+    backgroundColor: 'rgba(184,154,240,0.08)',
+  },
+  approvalHead: { flexDirection: 'row', alignItems: 'center' },
+  approvalBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: theme.radius.full,
+    backgroundColor: 'rgba(184,154,240,0.16)',
+  },
+  approvalBadgeText: {
+    fontSize: 11,
+    color: theme.colors.lavender,
+    fontWeight: theme.font.weight.semibold,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  approvalTitle: {
+    color: theme.colors.text,
+    fontSize: theme.font.size.md,
+    fontWeight: theme.font.weight.semibold,
+  },
+  approvalHint: {
+    color: theme.colors.textMuted,
+    fontSize: theme.font.size.sm,
+    lineHeight: 20,
+  },
+  approvalActions: { flexDirection: 'row', gap: 8, marginTop: 4 },
+
   failBox: {
     gap: 10,
     padding: theme.spacing.md,
@@ -729,6 +900,36 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   failRow: { flexDirection: 'row', gap: 8 },
+
+  timerCard: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.radius.xl,
+    backgroundColor: theme.colors.accentMuted,
+    borderWidth: 1,
+    borderColor: 'rgba(255,122,26,0.3)',
+    gap: 6,
+  },
+  timerLabel: {
+    color: theme.colors.accent,
+    fontSize: theme.font.size.xs,
+    fontWeight: theme.font.weight.semibold,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  timerValue: {
+    color: theme.colors.text,
+    fontSize: 56,
+    fontWeight: theme.font.weight.bold,
+    letterSpacing: 1,
+    fontVariant: ['tabular-nums'],
+  },
+  timerHint: {
+    color: theme.colors.textMuted,
+    fontSize: theme.font.size.xs,
+    marginTop: 2,
+  },
 
   modalBackdrop: {
     flex: 1,

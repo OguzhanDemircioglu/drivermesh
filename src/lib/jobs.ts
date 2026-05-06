@@ -64,11 +64,17 @@ type CreateJobInput = {
   customerName: string;
   pickupAddress: string;
   dropoffAddress: string;
+  pickupLat?: number | null;
+  pickupLng?: number | null;
+  dropoffLat?: number | null;
+  dropoffLng?: number | null;
   distanceKm?: number | null;
   etaMinutes?: number | null;
   vehicleId?: string | null;
   driverId?: string | null;
   notes?: string | null;
+  /** Channel of origin: internal (manual), ride (drivermesh ride), driver_request (driver self-logged) */
+  source?: 'internal' | 'driver_request' | 'ride';
 };
 
 export async function createJob(input: CreateJobInput): Promise<Job> {
@@ -81,12 +87,17 @@ export async function createJob(input: CreateJobInput): Promise<Job> {
       customer_name: input.customerName.trim(),
       pickup_address: input.pickupAddress.trim(),
       dropoff_address: input.dropoffAddress.trim(),
+      pickup_lat: input.pickupLat ?? null,
+      pickup_lng: input.pickupLng ?? null,
+      dropoff_lat: input.dropoffLat ?? null,
+      dropoff_lng: input.dropoffLng ?? null,
       distance_km: input.distanceKm ?? null,
       eta_minutes: input.etaMinutes ?? null,
       vehicle_id: input.vehicleId ?? null,
       driver_id: input.driverId ?? null,
       notes: input.notes?.trim() || null,
       status,
+      source: input.source ?? 'internal',
       assigned_at: input.driverId ? new Date().toISOString() : null,
     })
     .select('*')
@@ -155,7 +166,16 @@ export async function cancelJob(jobId: string): Promise<void> {
 type JobEditPatch = Partial<
   Pick<
     Job,
-    'customer_name' | 'pickup_address' | 'dropoff_address' | 'distance_km' | 'eta_minutes' | 'notes'
+    | 'customer_name'
+    | 'pickup_address'
+    | 'pickup_lat'
+    | 'pickup_lng'
+    | 'dropoff_address'
+    | 'dropoff_lat'
+    | 'dropoff_lng'
+    | 'distance_km'
+    | 'eta_minutes'
+    | 'notes'
   >
 >;
 
@@ -166,6 +186,54 @@ export async function updateJob(jobId: string, patch: JobEditPatch): Promise<voi
   if (typeof patch.dropoff_address === 'string') next.dropoff_address = patch.dropoff_address.trim();
   if (typeof patch.notes === 'string') next.notes = patch.notes.trim() || null;
   const { error } = await supabase.from('jobs').update(next).eq('id', jobId);
+  if (error) throw error;
+}
+
+/**
+ * Approve a driver-self-request job: assign it back to the driver who
+ * requested it (job.created_by). Called by owner/manager from the job
+ * detail screen when the job is open + source='driver_request'.
+ */
+export async function approveDriverRequest(
+  jobId: string,
+  requesterId: string,
+): Promise<void> {
+  const { data, error } = await supabase
+    .from('jobs')
+    .update({
+      driver_id: requesterId,
+      status: 'assigned',
+      assigned_at: new Date().toISOString(),
+    })
+    .eq('id', jobId)
+    .eq('status', 'open')
+    .eq('source', 'driver_request')
+    .select('id');
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error('Bu talep zaten işleme alınmış olabilir.');
+  }
+}
+
+/**
+ * Reject a driver-self-request job: mark it cancelled. The driver sees the
+ * status change in their list. Reason is optional but recorded in fail_reason
+ * so the requester gets context.
+ */
+export async function rejectDriverRequest(
+  jobId: string,
+  reason?: string,
+): Promise<void> {
+  const trimmed = reason?.trim();
+  const { error } = await supabase
+    .from('jobs')
+    .update({
+      status: 'cancelled',
+      fail_reason: trimmed || null,
+    })
+    .eq('id', jobId)
+    .eq('status', 'open')
+    .eq('source', 'driver_request');
   if (error) throw error;
 }
 

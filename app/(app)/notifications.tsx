@@ -98,8 +98,17 @@ export default function NotificationsScreen() {
         );
       }
 
-      // Deep-link based on payload key prefix
-      const payload = n.payload as { key?: string };
+      // Deep-link by event type / payload
+      const payload = n.payload as { key?: string; job_id?: string };
+      if (
+        (n.type === 'driver_request' ||
+          n.type === 'request_approved' ||
+          n.type === 'request_rejected') &&
+        payload.job_id
+      ) {
+        router.push(`/(app)/jobs/${payload.job_id}`);
+        return;
+      }
       const key = payload.key;
       if (!key) return;
       if (key.startsWith('vehicles.')) {
@@ -237,6 +246,10 @@ function NotificationItem({
     label_tr?: string;
     label_en?: string;
     is_critical?: boolean;
+    // driver_request / request_approved / request_rejected payload
+    job_id?: string;
+    requester_name?: string;
+    customer_name?: string;
   };
   const memberName =
     payload.member_id && members[payload.member_id]
@@ -262,6 +275,24 @@ function NotificationItem({
             member: memberName,
             key: friendlyKey,
           });
+  } else if (item.type === 'driver_request') {
+    title = t('notifications.driverRequestTitle');
+    body = t('notifications.driverRequestBody', {
+      requester: payload.requester_name ?? actorName,
+      customer: payload.customer_name ?? '—',
+    });
+  } else if (item.type === 'request_approved') {
+    title = t('notifications.requestApprovedTitle');
+    body = t('notifications.requestApprovedBody', {
+      actor: actorName,
+      customer: payload.customer_name ?? '—',
+    });
+  } else if (item.type === 'request_rejected') {
+    title = t('notifications.requestRejectedTitle');
+    body = t('notifications.requestRejectedBody', {
+      actor: actorName,
+      customer: payload.customer_name ?? '—',
+    });
   }
 
   return (

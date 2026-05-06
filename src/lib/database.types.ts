@@ -89,12 +89,16 @@ export type Database = {
           distance_km: number | null;
           driver_id: string | null;
           dropoff_address: string;
+          dropoff_lat: number | null;
+          dropoff_lng: number | null;
           eta_minutes: number | null;
           fail_reason: string | null;
           id: string;
           notes: string | null;
           organization_id: string;
           pickup_address: string;
+          pickup_lat: number | null;
+          pickup_lng: number | null;
           source: Database['public']['Enums']['job_source'];
           started_at: string | null;
           status: Database['public']['Enums']['job_status'];
@@ -109,12 +113,16 @@ export type Database = {
           distance_km?: number | null;
           driver_id?: string | null;
           dropoff_address: string;
+          dropoff_lat?: number | null;
+          dropoff_lng?: number | null;
           eta_minutes?: number | null;
           fail_reason?: string | null;
           id?: string;
           notes?: string | null;
           organization_id: string;
           pickup_address: string;
+          pickup_lat?: number | null;
+          pickup_lng?: number | null;
           source?: Database['public']['Enums']['job_source'];
           started_at?: string | null;
           status?: Database['public']['Enums']['job_status'];
@@ -129,12 +137,16 @@ export type Database = {
           distance_km?: number | null;
           driver_id?: string | null;
           dropoff_address?: string;
+          dropoff_lat?: number | null;
+          dropoff_lng?: number | null;
           eta_minutes?: number | null;
           fail_reason?: string | null;
           id?: string;
           notes?: string | null;
           organization_id?: string;
           pickup_address?: string;
+          pickup_lat?: number | null;
+          pickup_lng?: number | null;
           source?: Database['public']['Enums']['job_source'];
           started_at?: string | null;
           status?: Database['public']['Enums']['job_status'];
@@ -229,18 +241,27 @@ export type Database = {
       organizations: {
         Row: {
           created_at: string;
+          hq_address: string | null;
+          hq_lat: number | null;
+          hq_lng: number | null;
           id: string;
           name: string;
           owner_id: string;
         };
         Insert: {
           created_at?: string;
+          hq_address?: string | null;
+          hq_lat?: number | null;
+          hq_lng?: number | null;
           id?: string;
           name: string;
           owner_id: string;
         };
         Update: {
           created_at?: string;
+          hq_address?: string | null;
+          hq_lat?: number | null;
+          hq_lng?: number | null;
           id?: string;
           name?: string;
           owner_id?: string;
@@ -404,8 +425,10 @@ export type Database = {
         Row: {
           added_by: string;
           brand: string;
+          color: string | null;
           created_at: string;
           id: string;
+          is_at_hq: boolean;
           model: string;
           organization_id: string;
           photo_url: string | null;
@@ -416,8 +439,10 @@ export type Database = {
         Insert: {
           added_by: string;
           brand: string;
+          color?: string | null;
           created_at?: string;
           id?: string;
+          is_at_hq?: boolean;
           model: string;
           organization_id: string;
           photo_url?: string | null;
@@ -428,8 +453,10 @@ export type Database = {
         Update: {
           added_by?: string;
           brand?: string;
+          color?: string | null;
           created_at?: string;
           id?: string;
+          is_at_hq?: boolean;
           model?: string;
           organization_id?: string;
           photo_url?: string | null;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { Feather } from '@expo/vector-icons';
@@ -10,6 +10,8 @@ import { MeshBackground } from '@/components/MeshBackground';
 import { Avatar } from '@/components/Avatar';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
+import { useToast } from '@/components/Toast';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { useAuth } from '@/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { setAppLocale, type AppLocale } from '@/i18n';
@@ -26,6 +28,8 @@ export default function AccountScreen() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { profile, session, signOut, refreshProfile } = useAuth();
+  const toast = useToast();
+  const { confirm } = useConfirm();
   const [orgName, setOrgName] = useState<string | null>(null);
 
   useEffect(() => {
@@ -58,11 +62,15 @@ export default function AccountScreen() {
   const isOwner = role === 'owner';
   const isManager = role === 'manager';
 
-  const onSignOut = () => {
-    Alert.alert(t('home.logoutTitle'), t('home.logoutMessage'), [
-      { text: t('home.logoutCancel'), style: 'cancel' },
-      { text: t('home.logoutConfirm'), style: 'destructive', onPress: () => signOut() },
-    ]);
+  const onSignOut = async () => {
+    const ok = await confirm({
+      title: t('home.logoutTitle'),
+      message: t('home.logoutMessage'),
+      confirmText: t('home.logoutConfirm'),
+      cancelText: t('home.logoutCancel'),
+      kind: 'warning',
+    });
+    if (ok) signOut();
   };
 
   return (
@@ -182,6 +190,12 @@ export default function AccountScreen() {
             <Card>
               <Text style={styles.sectionTitle}>{t('account.ownerPanel')}</Text>
               <Action
+                icon="map-pin"
+                label={t('hq.accountLink')}
+                hint={t('hq.accountLinkHint')}
+                onPress={() => router.push('/(app)/account/hq')}
+              />
+              <Action
                 icon="shield"
                 label={t('account.ownerActionPermissions')}
                 hint={t('account.ownerActionPermissionsHint')}
@@ -191,7 +205,7 @@ export default function AccountScreen() {
                 icon="trash-2"
                 label={t('account.ownerActionDelete')}
                 hint={t('account.ownerActionDeleteHint')}
-                onPress={() => Alert.alert(t('common.soon'), t('common.notImplemented'))}
+                onPress={() => toast.info(t('common.soon'), t('common.notImplemented'))}
               />
               <Action
                 icon="bell"
@@ -228,13 +242,13 @@ export default function AccountScreen() {
             <Action
               icon="help-circle"
               label={t('account.actionSupport')}
-              onPress={() => Alert.alert(t('account.actionSupport'), t('common.notImplemented'))}
+              onPress={() => toast.info(t('account.actionSupport'), t('common.notImplemented'))}
             />
             <Action
               icon="info"
               label={t('account.actionAbout')}
               hint={t('account.aboutHint')}
-              onPress={() => Alert.alert(t('common.appName'), t('account.aboutText'))}
+              onPress={() => toast.info(t('common.appName'), t('account.aboutText'))}
             />
           </Card>
 

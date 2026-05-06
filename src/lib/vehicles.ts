@@ -24,6 +24,9 @@ type CreateVehicleInput = {
   year: number;
   status?: VehicleStatus;
   photoUrl?: string | null;
+  /** Hex colour (e.g. "#FF7A1A"). When null the UI falls back to the
+   * plate-derived gradient. */
+  color?: string | null;
 };
 
 export async function createVehicle(input: CreateVehicleInput): Promise<Vehicle> {
@@ -38,6 +41,11 @@ export async function createVehicle(input: CreateVehicleInput): Promise<Vehicle>
       year: input.year,
       status: input.status ?? 'idle',
       photo_url: input.photoUrl ?? null,
+      color: input.color ?? null,
+      // New vehicles start parked at the logistics HQ — the fleet map hides
+      // them until the operator hits "leaves HQ" (button on detail) OR a
+      // job gets assigned (auto-clear via clear_at_hq_on_dispatch trigger).
+      is_at_hq: true,
     })
     .select('*')
     .single();
@@ -47,6 +55,20 @@ export async function createVehicle(input: CreateVehicleInput): Promise<Vehicle>
 
 export async function updateVehicleStatus(id: string, status: VehicleStatus) {
   const { error } = await supabase.from('vehicles').update({ status }).eq('id', id);
+  if (error) throw error;
+}
+
+/**
+ * Mark a vehicle as parked at the logistics HQ. The fleet map hides it
+ * while this flag is true (the HQ marker stands in for it). The DB trigger
+ * `clear_at_hq_on_dispatch` auto-clears the flag the moment a job is
+ * assigned to the vehicle so the operator doesn't have to remember.
+ */
+export async function setVehicleAtHq(id: string, isAtHq: boolean) {
+  const { error } = await supabase
+    .from('vehicles')
+    .update({ is_at_hq: isAtHq })
+    .eq('id', id);
   if (error) throw error;
 }
 
@@ -89,7 +111,7 @@ export async function listVehicleJobs(
   return (data ?? []) as VehicleJobLite[];
 }
 
-type VehiclePatch = Partial<Pick<Vehicle, 'plate' | 'brand' | 'model' | 'year' | 'status'>>;
+type VehiclePatch = Partial<Pick<Vehicle, 'plate' | 'brand' | 'model' | 'year' | 'status' | 'color'>>;
 
 export async function updateVehicle(id: string, patch: VehiclePatch) {
   const next: VehiclePatch = { ...patch };

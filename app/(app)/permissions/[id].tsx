@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,6 +16,8 @@ import { useTranslation } from 'react-i18next';
 import { MeshBackground } from '@/components/MeshBackground';
 import { Card } from '@/components/Card';
 import { Avatar } from '@/components/Avatar';
+import { useToast } from '@/components/Toast';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { useAuth } from '@/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import {
@@ -57,6 +58,8 @@ export default function MemberPermissionsScreen() {
   const { t, i18n } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { profile } = useAuth();
+  const toast = useToast();
+  const { confirm } = useConfirm();
   const [member, setMember] = useState<Member | null>(null);
   const [permissions, setPermissions] = useState<MemberPermission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,12 +128,12 @@ export default function MemberPermissionsScreen() {
         setPermissions(prev);
         const code = e instanceof PermissionError ? e.code : 'unknown';
         const msg = t(`permissions.errors.${code}`, t('permissions.errors.unknown'));
-        Alert.alert(t('permissions.saveError'), msg);
+        toast.error(t('permissions.saveError'), msg);
       } finally {
         setSavingKey(null);
       }
     },
-    [id, isOwner, permissions, savingKey, t],
+    [id, isOwner, permissions, savingKey, t, toast],
   );
 
   const handleRevert = useCallback(
@@ -151,84 +154,71 @@ export default function MemberPermissionsScreen() {
         setPermissions(prev);
         const code = e instanceof PermissionError ? e.code : 'unknown';
         const msg = t(`permissions.errors.${code}`, t('permissions.errors.unknown'));
-        Alert.alert(t('permissions.saveError'), msg);
+        toast.error(t('permissions.saveError'), msg);
       } finally {
         setSavingKey(null);
       }
     },
-    [id, isOwner, permissions, savingKey, t],
+    [id, isOwner, permissions, savingKey, t, toast],
   );
 
-  const handleChangeRole = useCallback(() => {
+  const handleChangeRole = useCallback(async () => {
     if (!member || mgmtBusy || !id) return;
     if (member.role === 'owner') return;
     const next: UserRole = member.role === 'manager' ? 'driver' : 'manager';
-    Alert.alert(
-      t('permissions.changeRoleConfirmTitle'),
-      t('permissions.changeRoleConfirmText', {
+    const ok = await confirm({
+      title: t('permissions.changeRoleConfirmTitle'),
+      message: t('permissions.changeRoleConfirmText', {
         name: member.full_name,
         role: t(`roles.${next}`),
       }),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.confirm'),
-          onPress: async () => {
-            setMgmtBusy('role');
-            try {
-              await changeMemberRole(id, next);
-              setMember({ ...member, role: next });
-              Alert.alert(t('common.done'), t('permissions.changeRoleSuccess'));
-            } catch (e) {
-              const code = e instanceof PermissionError ? e.code : 'unknown';
-              const msg = t(
-                `permissions.errors.${code}`,
-                t('permissions.errors.unknown'),
-              );
-              Alert.alert(t('permissions.changeRoleError'), msg);
-            } finally {
-              setMgmtBusy(null);
-            }
-          },
-        },
-      ],
-    );
-  }, [member, mgmtBusy, id, t]);
+      confirmText: t('common.confirm'),
+      cancelText: t('common.cancel'),
+    });
+    if (!ok) return;
+    setMgmtBusy('role');
+    try {
+      await changeMemberRole(id, next);
+      setMember({ ...member, role: next });
+      toast.success(t('common.done'), t('permissions.changeRoleSuccess'));
+    } catch (e) {
+      const code = e instanceof PermissionError ? e.code : 'unknown';
+      const msg = t(
+        `permissions.errors.${code}`,
+        t('permissions.errors.unknown'),
+      );
+      toast.error(t('permissions.changeRoleError'), msg);
+    } finally {
+      setMgmtBusy(null);
+    }
+  }, [member, mgmtBusy, id, t, toast, confirm]);
 
-  const handleRemoveMember = useCallback(() => {
+  const handleRemoveMember = useCallback(async () => {
     if (!member || mgmtBusy || !id) return;
     if (member.role === 'owner') return;
-    Alert.alert(
-      t('permissions.removeMemberConfirmTitle'),
-      t('permissions.removeMemberConfirmText', { name: member.full_name }),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('permissions.removeMemberConfirmBtn'),
-          style: 'destructive',
-          onPress: async () => {
-            setMgmtBusy('remove');
-            try {
-              await removeOrgMember(id);
-              Alert.alert(
-                t('common.done'),
-                t('permissions.removeMemberSuccess'),
-                [{ text: t('common.done'), onPress: () => router.back() }],
-              );
-            } catch (e) {
-              setMgmtBusy(null);
-              const code = e instanceof PermissionError ? e.code : 'unknown';
-              const msg = t(
-                `permissions.errors.${code}`,
-                t('permissions.errors.unknown'),
-              );
-              Alert.alert(t('permissions.removeMemberError'), msg);
-            }
-          },
-        },
-      ],
-    );
-  }, [member, mgmtBusy, id, t, router]);
+    const ok = await confirm({
+      title: t('permissions.removeMemberConfirmTitle'),
+      message: t('permissions.removeMemberConfirmText', { name: member.full_name }),
+      confirmText: t('permissions.removeMemberConfirmBtn'),
+      cancelText: t('common.cancel'),
+      kind: 'destructive',
+    });
+    if (!ok) return;
+    setMgmtBusy('remove');
+    try {
+      await removeOrgMember(id);
+      toast.success(t('common.done'), t('permissions.removeMemberSuccess'));
+      router.back();
+    } catch (e) {
+      setMgmtBusy(null);
+      const code = e instanceof PermissionError ? e.code : 'unknown';
+      const msg = t(
+        `permissions.errors.${code}`,
+        t('permissions.errors.unknown'),
+      );
+      toast.error(t('permissions.removeMemberError'), msg);
+    }
+  }, [member, mgmtBusy, id, t, router, toast, confirm]);
 
   if (!isOwner) {
     return <NotOwner />;

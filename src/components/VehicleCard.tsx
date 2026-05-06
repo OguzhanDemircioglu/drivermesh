@@ -20,6 +20,17 @@ const GRADIENTS: Array<readonly [string, string]> = [
   ['#22C55E', '#15803D'],
 ];
 
+function gradientIndexFromPlate(plate: string): number {
+  // Full-string hash so every Istanbul "34 ..." plate doesn't collapse to
+  // the same gradient. Matches MiniLocationPin.vehicleColorFromPlate.
+  if (!plate) return 0;
+  let hash = 5381;
+  for (let i = 0; i < plate.length; i++) {
+    hash = ((hash << 5) + hash + plate.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash) % GRADIENTS.length;
+}
+
 type Props = {
   plate: string;
   brand: string;
@@ -28,8 +39,26 @@ type Props = {
   status: VehicleStatus;
   addedBy?: string | null;
   photoUrl?: string | null;
+  /** Operator-chosen colour (hex). When set, overrides the plate-derived
+   * gradient with a solid colour matching the real vehicle. */
+  color?: string | null;
   onPress?: () => void;
 };
+
+function darken(hex: string, amount = 0.15): string {
+  // Quick brightness reduction so the operator's flat colour still reads
+  // as a gradient on the card thumb without a second palette pick.
+  const m = /^#([\da-f]{6})$/i.exec(hex);
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  let r = (n >> 16) & 0xff;
+  let g = (n >> 8) & 0xff;
+  let b = n & 0xff;
+  r = Math.max(0, Math.round(r * (1 - amount)));
+  g = Math.max(0, Math.round(g * (1 - amount)));
+  b = Math.max(0, Math.round(b * (1 - amount)));
+  return `#${[r, g, b].map((c) => c.toString(16).padStart(2, '0')).join('')}`;
+}
 
 function VehicleCardImpl({
   plate,
@@ -39,11 +68,14 @@ function VehicleCardImpl({
   status,
   addedBy,
   photoUrl: _photoUrl,
+  color,
   onPress,
 }: Props) {
   const { t } = useTranslation();
   const s = statusTone[status];
-  const colors = GRADIENTS[plate.charCodeAt(0) % GRADIENTS.length];
+  const colors: readonly [string, string] = color
+    ? [color, darken(color, 0.18)]
+    : GRADIENTS[gradientIndexFromPlate(plate)];
 
   return (
     <Pressable

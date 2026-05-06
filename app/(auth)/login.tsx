@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,6 +9,7 @@ import { Screen } from '@/components/Screen';
 import { Logo } from '@/components/Logo';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
+import { useToast } from '@/components/Toast';
 import { useAuth } from '@/auth/AuthProvider';
 import { theme } from '@/theme';
 
@@ -16,6 +17,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const { signIn } = useAuth();
   const { t } = useTranslation();
+  const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
 
   const schema = useMemo(
@@ -48,7 +50,7 @@ export default function LoginScreen() {
       await signIn(data.email.trim().toLowerCase(), data.password);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : t('auth.login.errors.loginFailed');
-      Alert.alert(t('auth.login.errors.loginFailed'), humanize(msg, t));
+      toast.error(t('auth.login.errors.loginFailed'), humanize(msg, t));
     } finally {
       setSubmitting(false);
     }
@@ -111,7 +113,7 @@ export default function LoginScreen() {
 
         <Pressable
           hitSlop={8}
-          onPress={() => Alert.alert(t('auth.login.forgotTitle'), t('auth.login.forgotSoon'))}
+          onPress={() => toast.info(t('auth.login.forgotTitle'), t('auth.login.forgotSoon'))}
           style={({ pressed }) => [styles.forgot, pressed && { opacity: 0.6 }]}
         >
           <Text style={styles.forgotText}>{t('auth.login.forgot')}</Text>

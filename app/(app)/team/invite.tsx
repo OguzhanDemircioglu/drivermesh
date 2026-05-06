@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import {
-  Alert,
   Pressable,
   Share,
   StyleSheet,
@@ -16,6 +15,7 @@ import { Screen } from '@/components/Screen';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import { Card } from '@/components/Card';
+import { useToast } from '@/components/Toast';
 import { useAuth } from '@/auth/AuthProvider';
 import { createInvitation, shortCode } from '@/lib/invitations';
 import type { UserRole } from '@/lib/database.types';
@@ -38,6 +38,7 @@ type InviteResult = {
 export default function InviteScreen() {
   const router = useRouter();
   const { profile, session } = useAuth();
+  const toast = useToast();
   const params = useLocalSearchParams<{ role?: string }>();
   const role: Extract<UserRole, 'manager' | 'driver'> = useMemo(() => {
     return params.role === 'driver' ? 'driver' : 'manager';
@@ -58,7 +59,7 @@ export default function InviteScreen() {
 
   const onSubmit = handleSubmit(async (data) => {
     if (!profile?.organization_id || !session?.user.id) {
-      Alert.alert('Hata', 'Oturum bilgisi eksik. Tekrar giriş yap.');
+      toast.error('Hata', 'Oturum bilgisi eksik. Tekrar giriş yap.');
       return;
     }
     try {
@@ -79,7 +80,7 @@ export default function InviteScreen() {
       reset();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Davet oluşturulamadı';
-      Alert.alert('Davet hatası', msg);
+      toast.error('Davet hatası', msg);
     } finally {
       setSubmitting(false);
     }

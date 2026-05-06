@@ -111,13 +111,23 @@ export default function VehiclesScreen() {
             </View>
           </Card>
 
-          {canAdd ? (
+          <View style={styles.ctaRow}>
+            {canAdd ? (
+              <Button
+                title={t('vehicles.addCta')}
+                leftIcon={<Feather name="plus" size={18} color="#0A0E1F" />}
+                onPress={() => router.push('/(app)/vehicles/new')}
+                style={{ flex: 1 }}
+              />
+            ) : null}
             <Button
-              title={t('vehicles.addCta')}
-              leftIcon={<Feather name="plus" size={18} color="#0A0E1F" />}
-              onPress={() => router.push('/(app)/vehicles/new')}
+              title={t('fleetMap.openCta')}
+              variant="secondary"
+              leftIcon={<Feather name="map" size={16} color={theme.colors.text} />}
+              onPress={() => router.push('/(app)/fleet-map')}
+              style={canAdd ? { flex: 1 } : undefined}
             />
-          ) : null}
+          </View>
 
           {loading ? (
             <ActivityIndicator color={theme.colors.accent} style={{ marginVertical: 24 }} />
@@ -143,6 +153,7 @@ export default function VehiclesScreen() {
                   status={v.status}
                   addedBy={v.added_by_profile?.full_name ?? null}
                   photoUrl={v.photo_url}
+                  color={v.color}
                   onPress={() => router.push(`/(app)/vehicles/${v.id}`)}
                 />
               ))}
@@ -191,6 +202,7 @@ const styles = StyleSheet.create({
   },
   summaryLabel: { color: theme.colors.textMuted, fontSize: theme.font.size.xs },
 
+  ctaRow: { flexDirection: 'row', gap: 10 },
   list: { gap: 10 },
   emptyCard: { alignItems: 'center', gap: 10, paddingVertical: theme.spacing.xl },
   emptyIcon: {

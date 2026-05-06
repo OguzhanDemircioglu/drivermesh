@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,11 +8,26 @@ import { Feather } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
+import { useToast } from '@/components/Toast';
 import { useAuth } from '@/auth/AuthProvider';
 import { createVehicle } from '@/lib/vehicles';
 import { theme } from '@/theme';
 
 const currentYear = new Date().getFullYear();
+
+// Common car colours. Stored as hex on the vehicle row so the operator's
+// pick drives the marker / card / hero gradient. Kept short on purpose —
+// 8 swatches is enough to cover real-world fleets without scroll fatigue.
+const COLOR_PALETTE: Array<{ key: string; hex: string; label: string }> = [
+  { key: 'white', hex: '#F8FAFC', label: 'Beyaz' },
+  { key: 'black', hex: '#1F2937', label: 'Siyah' },
+  { key: 'silver', hex: '#94A3B8', label: 'Gri' },
+  { key: 'red', hex: '#EF4444', label: 'Kırmızı' },
+  { key: 'orange', hex: '#FF7A1A', label: 'Turuncu' },
+  { key: 'yellow', hex: '#F59E0B', label: 'Sarı' },
+  { key: 'green', hex: '#22C55E', label: 'Yeşil' },
+  { key: 'blue', hex: '#3D5DDB', label: 'Mavi' },
+];
 
 const schema = z.object({
   plate: z
@@ -36,7 +51,9 @@ type FormData = z.infer<typeof schema>;
 export default function NewVehicleScreen() {
   const router = useRouter();
   const { profile, session } = useAuth();
+  const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
+  const [color, setColor] = useState<string | null>(null);
 
   const {
     control,
@@ -50,7 +67,7 @@ export default function NewVehicleScreen() {
 
   const onSubmit = handleSubmit(async (data) => {
     if (!profile?.organization_id || !session?.user.id) {
-      Alert.alert('Hata', 'Oturum bilgisi eksik. Tekrar giriş yap.');
+      toast.error('Oturum bilgisi eksik', 'Tekrar giriş yap.');
       return;
     }
     try {
@@ -62,13 +79,13 @@ export default function NewVehicleScreen() {
         brand: data.brand,
         model: data.model,
         year: Number(data.year),
+        color,
       });
-      Alert.alert('Tamam', 'Araç filoya eklendi.', [
-        { text: 'Tamam', onPress: () => router.replace('/(app)/vehicles') },
-      ]);
+      toast.success('Araç filoya eklendi');
+      router.replace('/(app)/vehicles');
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Kayıt başarısız';
-      Alert.alert('Araç eklenemedi', humanize(msg));
+      toast.error('Araç eklenemedi', humanize(msg));
     } finally {
       setSubmitting(false);
     }
@@ -172,6 +189,50 @@ export default function NewVehicleScreen() {
           )}
         />
 
+        {/* Colour swatches — stored on the vehicle row so the marker on the
+            fleet map matches the real vehicle. Optional: leaving it blank
+            falls back to the plate-derived gradient. */}
+        <View style={styles.colorWrap}>
+          <Text style={styles.colorLabel}>Renk</Text>
+          <View style={styles.colorRow}>
+            {COLOR_PALETTE.map((c) => {
+              const active = color === c.hex;
+              return (
+                <Pressable
+                  key={c.key}
+                  onPress={() => setColor(active ? null : c.hex)}
+                  hitSlop={6}
+                  style={({ pressed }) => [
+                    styles.colorSwatch,
+                    {
+                      backgroundColor: c.hex,
+                      borderColor: active
+                        ? theme.colors.text
+                        : 'rgba(255,255,255,0.18)',
+                      borderWidth: active ? 3 : 1.5,
+                    },
+                    pressed && { opacity: 0.7 },
+                  ]}
+                  accessibilityLabel={c.label}
+                >
+                  {active ? (
+                    <Feather
+                      name="check"
+                      size={14}
+                      color={c.key === 'white' || c.key === 'yellow' ? '#0A0E1F' : '#FFFFFF'}
+                    />
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text style={styles.colorHint}>
+            {color
+              ? `Seçili: ${COLOR_PALETTE.find((c) => c.hex === color)?.label}`
+              : 'Seçim opsiyonel — boş bırakırsan plakadan otomatik atanır.'}
+          </Text>
+        </View>
+
         <Button title="Aracı ekle" onPress={onSubmit} loading={submitting} />
       </View>
     </Screen>
@@ -221,4 +282,31 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   form: { gap: theme.spacing.lg, marginTop: theme.spacing.md },
+
+  colorWrap: { gap: 8 },
+  colorLabel: {
+    color: theme.colors.text,
+    fontSize: theme.font.size.xs,
+    fontWeight: theme.font.weight.semibold,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  colorRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    paddingVertical: 4,
+  },
+  colorSwatch: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  colorHint: {
+    color: theme.colors.textMuted,
+    fontSize: theme.font.size.xs,
+    lineHeight: 18,
+  },
 });
