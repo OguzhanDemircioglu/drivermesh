@@ -1,7 +1,10 @@
 import { supabase } from './supabase';
 import type { Invitation, UserRole } from './database.types';
+import { DEMO_ORG_ID, demo, isDemoActive } from '@/demo/store';
 
 export async function listTeamMembers(orgId: string) {
+  if (isDemoActive()) return demo.profiles();
+
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
@@ -12,6 +15,9 @@ export async function listTeamMembers(orgId: string) {
 }
 
 export async function listPendingInvitations(orgId: string) {
+  if (isDemoActive()) {
+    return demo.invitations().filter((i) => i.status === 'pending');
+  }
   const { data, error } = await supabase
     .from('invitations')
     .select('*')
@@ -31,6 +37,29 @@ type CreateInvitationInput = {
 };
 
 export async function createInvitation(input: CreateInvitationInput): Promise<Invitation> {
+  if (isDemoActive()) {
+    const token = (Math.random().toString(36) + Math.random().toString(36))
+      .replace(/[^a-z0-9]/g, '')
+      .padEnd(32, 'x')
+      .slice(0, 32)
+      .toUpperCase();
+    const inv: Invitation = {
+      id: `demo-inv-${Date.now()}`,
+      organization_id: DEMO_ORG_ID,
+      email: input.email.trim().toLowerCase(),
+      full_name: input.fullName.trim(),
+      role: input.role,
+      status: 'pending',
+      invited_by: input.invitedBy,
+      created_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60_000).toISOString(),
+      token,
+      accepted_at: null,
+      accepted_by: null,
+    };
+    demo.addInvitation(inv);
+    return inv;
+  }
   const { data, error } = await supabase
     .from('invitations')
     .insert({
@@ -47,6 +76,10 @@ export async function createInvitation(input: CreateInvitationInput): Promise<In
 }
 
 export async function revokeInvitation(invitationId: string) {
+  if (isDemoActive()) {
+    demo.updateInvitation(invitationId, { status: 'revoked' });
+    return;
+  }
   const { error } = await supabase
     .from('invitations')
     .update({ status: 'revoked' })

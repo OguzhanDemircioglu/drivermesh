@@ -13,6 +13,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { useTranslation } from 'react-i18next';
 import { MeshBackground } from '@/components/MeshBackground';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -22,6 +23,7 @@ import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { useAuth } from '@/auth/AuthProvider';
 import { useCan } from '@/auth/useCan';
+import { isDemoActive } from '@/demo/store';
 import {
   acceptOpenJob,
   approveDriverRequest,
@@ -38,20 +40,18 @@ import {
 import type { JobStatus, Profile } from '@/lib/database.types';
 import { theme } from '@/theme';
 
-const STATUS_INFO: Record<
-  JobStatus,
-  { label: string; fg: string; bg: string }
-> = {
-  open: { label: 'Açık', fg: theme.colors.mesh, bg: theme.colors.meshMuted },
-  assigned: { label: 'Atandı', fg: theme.colors.lavender, bg: 'rgba(184,154,240,0.16)' },
-  in_progress: { label: 'Sürüyor', fg: theme.colors.accent, bg: theme.colors.accentMuted },
-  completed: { label: 'Tamamlandı', fg: theme.colors.success, bg: 'rgba(34,197,94,0.14)' },
-  failed: { label: 'Başarısız', fg: theme.colors.danger, bg: theme.colors.dangerMuted },
-  cancelled: { label: 'İptal', fg: theme.colors.textMuted, bg: 'rgba(138,147,166,0.14)' },
+const STATUS_TONE: Record<JobStatus, { fg: string; bg: string }> = {
+  open: { fg: theme.colors.mesh, bg: theme.colors.meshMuted },
+  assigned: { fg: theme.colors.lavender, bg: 'rgba(184,154,240,0.16)' },
+  in_progress: { fg: theme.colors.accent, bg: theme.colors.accentMuted },
+  completed: { fg: theme.colors.success, bg: 'rgba(34,197,94,0.14)' },
+  failed: { fg: theme.colors.danger, bg: theme.colors.dangerMuted },
+  cancelled: { fg: theme.colors.textMuted, bg: 'rgba(138,147,166,0.14)' },
 };
 
 export default function JobDetailScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { profile, session } = useAuth();
   const toast = useToast();
@@ -94,14 +94,14 @@ export default function JobDetailScreen() {
   const isMyJob = !!job && job.driver_id === userId;
   const isStaff = role === 'owner' || role === 'manager';
 
-  const guarded = async (fn: () => Promise<void>, label: string) => {
+  const guarded = async (fn: () => Promise<void>, errorTitle: string) => {
     try {
       setBusy(true);
       await fn();
       await load();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Bir hata oldu';
-      toast.error(`${label} hatası`, msg);
+      const msg = e instanceof Error ? e.message : t('jobs.detail.genericError');
+      toast.error(errorTitle, msg);
     } finally {
       setBusy(false);
     }
@@ -110,31 +110,31 @@ export default function JobDetailScreen() {
   const onAccept = async () => {
     if (!job || !userId) return;
     const ok = await confirm({
-      title: 'Bu işi al',
-      message: `${job.customer_name} işini üstüne alıyorsun.`,
-      confirmText: 'Al',
+      title: t('jobs.detail.acceptTitle'),
+      message: t('jobs.detail.acceptMessage', { customer: job.customer_name }),
+      confirmText: t('jobs.detail.acceptConfirm'),
     });
-    if (ok) guarded(() => acceptOpenJob(job.id, userId), 'İş alma');
+    if (ok) guarded(() => acceptOpenJob(job.id, userId), t('jobs.detail.acceptError'));
   };
 
   const onStart = async () => {
     if (!job) return;
     const ok = await confirm({
-      title: 'İşi başlat',
-      message: 'Müşterinin yanına vardın mı? Süre saymaya başlayacak.',
-      confirmText: 'Başlat',
+      title: t('jobs.detail.startTitle'),
+      message: t('jobs.detail.startMessage'),
+      confirmText: t('jobs.detail.startConfirm'),
     });
-    if (ok) guarded(() => startJob(job.id), 'Başlatma');
+    if (ok) guarded(() => startJob(job.id), t('jobs.detail.startError'));
   };
 
   const onComplete = async () => {
     if (!job) return;
     const ok = await confirm({
-      title: 'İşi bitir',
-      message: 'Teslimat tamamlandı mı? Süre kaydedilecek.',
-      confirmText: 'Bitir',
+      title: t('jobs.detail.completeTitle'),
+      message: t('jobs.detail.completeMessage'),
+      confirmText: t('jobs.detail.completeConfirm'),
     });
-    if (ok) guarded(() => completeJob(job.id), 'Tamamlama');
+    if (ok) guarded(() => completeJob(job.id), t('jobs.detail.completeError'));
   };
 
   const onFail = () => {
@@ -144,31 +144,40 @@ export default function JobDetailScreen() {
     }
     if (!job) return;
     if (failReason.trim().length < 3) {
-      toast.warning('Sebep gerekli', 'Kısa bir başarısızlık nedeni yaz.');
+      toast.warning(
+        t('jobs.detail.failReasonRequiredTitle'),
+        t('jobs.detail.failReasonRequiredText'),
+      );
       return;
     }
-    guarded(() => failJob(job.id, failReason), 'Başarısız');
+    guarded(() => failJob(job.id, failReason), t('jobs.detail.failError'));
   };
 
   const onCancel = async () => {
     if (!job) return;
     if (!canCancel.allowed) {
-      toast.warning('Yetki gerekli', canCancel.reason ?? 'Bu yetki sende yok.');
+      toast.warning(
+        t('common.permissionMissingTitle'),
+        canCancel.reason ?? t('common.permissionMissing'),
+      );
       return;
     }
     const ok = await confirm({
-      title: 'İşi iptal et',
-      message: 'Bu işi iptal etmek istiyor musun?',
-      confirmText: 'İptal et',
+      title: t('jobs.detail.cancelTitle'),
+      message: t('jobs.detail.cancelMessage'),
+      confirmText: t('jobs.detail.cancelConfirm'),
       kind: 'destructive',
     });
-    if (ok) guarded(() => cancelJob(job.id), 'İptal');
+    if (ok) guarded(() => cancelJob(job.id), t('jobs.detail.cancelError'));
   };
 
   const openReassign = useCallback(async () => {
     if (!profile?.organization_id) return;
     if (!canReassign.allowed) {
-      toast.warning('Yetki gerekli', canReassign.reason ?? 'Bu yetki sende yok.');
+      toast.warning(
+        t('common.permissionMissingTitle'),
+        canReassign.reason ?? t('common.permissionMissing'),
+      );
       return;
     }
     setReassignOpen(true);
@@ -181,34 +190,44 @@ export default function JobDetailScreen() {
     } finally {
       setDriversLoading(false);
     }
-  }, [profile?.organization_id, canReassign, toast]);
+  }, [profile?.organization_id, canReassign, toast, t]);
 
   const onPickDriver = (driverId: string | null) => {
     if (!job) return;
     setReassignOpen(false);
-    guarded(() => reassignJob(job.id, driverId), 'Atama');
+    guarded(() => reassignJob(job.id, driverId), t('jobs.detail.reassignError'));
   };
 
   const onApproveRequest = async () => {
     if (!job || !job.created_by) return;
     const createdBy = job.created_by;
+    const name = job.creator?.full_name ?? t('jobs.detail.fallbackDriver');
     const ok = await confirm({
-      title: 'Talebi onayla',
-      message: `${job.creator?.full_name ?? 'Şoför'} bu işi kendisi yapmak istiyor. Onaylıyor musun?`,
-      confirmText: 'Onayla',
+      title: t('jobs.detail.driverRequestApproveTitle'),
+      message: t('jobs.detail.driverRequestApproveMessage', { name }),
+      confirmText: t('jobs.detail.driverRequestApproveCta'),
     });
-    if (ok) guarded(() => approveDriverRequest(job.id, createdBy), 'Onaylama');
+    if (ok)
+      guarded(
+        () => approveDriverRequest(job.id, createdBy),
+        t('jobs.detail.driverRequestApproveError'),
+      );
   };
 
   const onRejectRequest = async () => {
     if (!job) return;
+    const name = job.creator?.full_name ?? t('jobs.detail.fallbackDriver');
     const ok = await confirm({
-      title: 'Talebi reddet',
-      message: `${job.creator?.full_name ?? 'Şoför'} talebini reddetmek istiyor musun?`,
-      confirmText: 'Reddet',
+      title: t('jobs.detail.driverRequestRejectTitle'),
+      message: t('jobs.detail.driverRequestRejectMessage', { name }),
+      confirmText: t('jobs.detail.driverRequestRejectCta'),
       kind: 'destructive',
     });
-    if (ok) guarded(() => rejectDriverRequest(job.id), 'Reddetme');
+    if (ok)
+      guarded(
+        () => rejectDriverRequest(job.id),
+        t('jobs.detail.driverRequestRejectError'),
+      );
   };
 
   if (loading) {
@@ -224,13 +243,19 @@ export default function JobDetailScreen() {
     return (
       <View style={[styles.root, styles.center]}>
         <MeshBackground />
-        <Text style={styles.notFound}>İş bulunamadı.</Text>
-        <Button title="Geri dön" variant="secondary" fullWidth={false} onPress={() => router.back()} />
+        <Text style={styles.notFound}>{t('jobs.detail.notFound')}</Text>
+        <Button
+          title={t('common.back')}
+          variant="secondary"
+          fullWidth={false}
+          onPress={() => router.back()}
+        />
       </View>
     );
   }
 
-  const status = STATUS_INFO[job.status];
+  const tone = STATUS_TONE[job.status];
+  const statusLabel = t(`jobs.status.${job.status}`);
 
   return (
     <View style={styles.root}>
@@ -245,7 +270,7 @@ export default function JobDetailScreen() {
           >
             <Feather name="arrow-left" size={22} color={theme.colors.text} />
           </Pressable>
-          <Text style={styles.title}>İş detayı</Text>
+          <Text style={styles.title}>{t('jobs.detail.title')}</Text>
           {isStaff &&
           job.status !== 'completed' &&
           job.status !== 'failed' &&
@@ -270,8 +295,8 @@ export default function JobDetailScreen() {
           <Card style={styles.summary}>
             <View style={styles.summaryHead}>
               <Text style={styles.customer}>{job.customer_name}</Text>
-              <View style={[styles.badge, { backgroundColor: status.bg }]}>
-                <Text style={[styles.badgeText, { color: status.fg }]}>{status.label}</Text>
+              <View style={[styles.badge, { backgroundColor: tone.bg }]}>
+                <Text style={[styles.badgeText, { color: tone.fg }]}>{statusLabel}</Text>
               </View>
             </View>
 
@@ -281,7 +306,7 @@ export default function JobDetailScreen() {
                   <View style={[styles.markerInner, { backgroundColor: theme.colors.mesh }]} />
                 </View>
                 <View style={styles.routeCol}>
-                  <Text style={styles.routeLabel}>ALIŞ</Text>
+                  <Text style={styles.routeLabel}>{t('jobs.detail.pickup')}</Text>
                   <Text style={styles.routeText}>{job.pickup_address}</Text>
                 </View>
               </View>
@@ -291,7 +316,7 @@ export default function JobDetailScreen() {
                   <View style={[styles.markerInner, { backgroundColor: theme.colors.accent }]} />
                 </View>
                 <View style={styles.routeCol}>
-                  <Text style={styles.routeLabel}>TESLİM</Text>
+                  <Text style={styles.routeLabel}>{t('jobs.detail.dropoff')}</Text>
                   <Text style={styles.routeText}>{job.dropoff_address}</Text>
                 </View>
               </View>
@@ -300,7 +325,7 @@ export default function JobDetailScreen() {
             <View style={styles.metaGrid}>
               <Meta
                 icon="navigation"
-                label="Mesafe"
+                label={t('jobs.detail.distance')}
                 value={
                   job.distance_km != null
                     ? `${Number(job.distance_km).toFixed(1)} km`
@@ -309,8 +334,12 @@ export default function JobDetailScreen() {
               />
               <Meta
                 icon="clock"
-                label="Süre"
-                value={job.eta_minutes != null ? `${job.eta_minutes} dk` : '—'}
+                label={t('jobs.detail.eta')}
+                value={
+                  job.eta_minutes != null
+                    ? t('common.minutes', { count: job.eta_minutes })
+                    : '—'
+                }
               />
             </View>
           </Card>
@@ -329,7 +358,7 @@ export default function JobDetailScreen() {
               <View style={styles.subRow}>
                 <Avatar name={job.driver.full_name} size={40} />
                 <View style={styles.subBody}>
-                  <Text style={styles.subLabel}>Atanmış şoför</Text>
+                  <Text style={styles.subLabel}>{t('jobs.detail.assignedDriver')}</Text>
                   <Text style={styles.subValue}>{job.driver.full_name}</Text>
                 </View>
               </View>
@@ -338,7 +367,7 @@ export default function JobDetailScreen() {
 
           {job.notes ? (
             <Card style={styles.subCard}>
-              <Text style={styles.subLabel}>Not</Text>
+              <Text style={styles.subLabel}>{t('jobs.detail.note')}</Text>
               <Text style={styles.subValue}>{job.notes}</Text>
             </Card>
           ) : null}
@@ -346,7 +375,7 @@ export default function JobDetailScreen() {
           {job.fail_reason ? (
             <Card style={[styles.subCard, { borderColor: theme.colors.danger }]}>
               <Text style={[styles.subLabel, { color: theme.colors.danger }]}>
-                Başarısızlık nedeni
+                {t('jobs.detail.failReason')}
               </Text>
               <Text style={styles.subValue}>{job.fail_reason}</Text>
             </Card>
@@ -357,7 +386,7 @@ export default function JobDetailScreen() {
               <View style={styles.subRow}>
                 <Feather name="clock" size={20} color={theme.colors.accent} />
                 <View style={styles.subBody}>
-                  <Text style={styles.subLabel}>Yolculuk süresi</Text>
+                  <Text style={styles.subLabel}>{t('jobs.detail.tripDuration')}</Text>
                   <Text style={styles.subValue}>
                     {formatJobDuration(job.started_at, job.completed_at)}
                   </Text>
@@ -367,17 +396,33 @@ export default function JobDetailScreen() {
           ) : null}
 
           <Card style={styles.subCard}>
-            <Text style={styles.subLabel}>Zaman çizelgesi</Text>
-            <Timeline label="Açıldı" date={job.created_at} icon="plus" />
+            <Text style={styles.subLabel}>{t('jobs.detail.timeline')}</Text>
+            <Timeline
+              label={t('jobs.detail.timelineCreated')}
+              date={job.created_at}
+              icon="plus"
+            />
             {job.assigned_at ? (
-              <Timeline label="Şoföre atandı" date={job.assigned_at} icon="user-check" />
+              <Timeline
+                label={t('jobs.detail.timelineAssigned')}
+                date={job.assigned_at}
+                icon="user-check"
+              />
             ) : null}
             {job.started_at ? (
-              <Timeline label="Yola çıkıldı" date={job.started_at} icon="navigation" />
+              <Timeline
+                label={t('jobs.detail.timelineStarted')}
+                date={job.started_at}
+                icon="navigation"
+              />
             ) : null}
             {job.completed_at ? (
               <Timeline
-                label={job.status === 'failed' ? 'Başarısız bitti' : 'Tamamlandı'}
+                label={
+                  job.status === 'failed'
+                    ? t('jobs.detail.timelineFailed')
+                    : t('jobs.detail.timelineCompleted')
+                }
                 date={job.completed_at}
                 icon={job.status === 'failed' ? 'x-circle' : 'check-circle'}
                 tone={job.status === 'failed' ? 'danger' : 'success'}
@@ -393,18 +438,22 @@ export default function JobDetailScreen() {
               <View style={styles.approvalHead}>
                 <View style={styles.approvalBadge}>
                   <Feather name="user-check" size={12} color={theme.colors.lavender} />
-                  <Text style={styles.approvalBadgeText}>Şoför talebi</Text>
+                  <Text style={styles.approvalBadgeText}>
+                    {t('jobs.detail.driverRequestBadge')}
+                  </Text>
                 </View>
               </View>
               <Text style={styles.approvalTitle}>
-                {job.creator?.full_name ?? 'Bir şoför'} bu işi kendisi yapmak istiyor
+                {t('jobs.detail.driverRequestTitle', {
+                  name: job.creator?.full_name ?? t('jobs.detail.fallbackDriver'),
+                })}
               </Text>
               <Text style={styles.approvalHint}>
-                Onaylarsan iş ona atanır. Reddedersen iş iptal edilir.
+                {t('jobs.detail.driverRequestHint')}
               </Text>
               <View style={styles.approvalActions}>
                 <Button
-                  title="Reddet"
+                  title={t('jobs.detail.driverRequestRejectCta')}
                   variant="ghost"
                   fullWidth={false}
                   onPress={onRejectRequest}
@@ -413,7 +462,7 @@ export default function JobDetailScreen() {
                   }
                 />
                 <Button
-                  title="Onayla"
+                  title={t('jobs.detail.driverRequestApproveCta')}
                   fullWidth={false}
                   style={{ flex: 1 }}
                   onPress={onApproveRequest}
@@ -431,13 +480,21 @@ export default function JobDetailScreen() {
           role === 'driver' &&
           job.source !== 'driver_request' ? (
             <View style={styles.actions}>
-              <Button title="Bu işi al" onPress={onAccept} loading={busy} />
+              <Button
+                title={t('jobs.detail.acceptCta')}
+                onPress={onAccept}
+                loading={busy}
+              />
             </View>
           ) : null}
 
           {job.status === 'assigned' && isMyJob ? (
             <View style={styles.actions}>
-              <Button title="İşi başlat" onPress={onStart} loading={busy} />
+              <Button
+                title={t('jobs.detail.startCta')}
+                onPress={onStart}
+                loading={busy}
+              />
             </View>
           ) : null}
 
@@ -447,21 +504,27 @@ export default function JobDetailScreen() {
 
           {job.status === 'in_progress' && isMyJob ? (
             <View style={styles.actions}>
-              <Button title="İşi bitir" onPress={onComplete} loading={busy} />
+              <Button
+                title={t('jobs.detail.completeCta')}
+                onPress={onComplete}
+                loading={busy}
+              />
               {showFailInput ? (
                 <View style={styles.failBox}>
-                  <Text style={styles.failLabel}>Başarısızlık nedeni</Text>
+                  <Text style={styles.failLabel}>
+                    {t('jobs.detail.failBoxLabel')}
+                  </Text>
                   <TextInput
                     value={failReason}
                     onChangeText={setFailReason}
-                    placeholder="Trafik kazası, müşteri reddetti, ulaşılamadı..."
+                    placeholder={t('jobs.detail.failBoxPlaceholder')}
                     placeholderTextColor={theme.colors.textDim}
                     multiline
                     style={styles.failInput}
                   />
                   <View style={styles.failRow}>
                     <Button
-                      title="Vazgeç"
+                      title={t('jobs.detail.failCancel')}
                       variant="ghost"
                       fullWidth={false}
                       onPress={() => {
@@ -470,7 +533,7 @@ export default function JobDetailScreen() {
                       }}
                     />
                     <Button
-                      title="Başarısız olarak kapat"
+                      title={t('jobs.detail.failConfirm')}
                       variant="secondary"
                       fullWidth={false}
                       style={{ flex: 1 }}
@@ -481,11 +544,41 @@ export default function JobDetailScreen() {
                 </View>
               ) : (
                 <Button
-                  title="Başarısız bittiğini bildir"
+                  title={t('jobs.detail.failReportCta')}
                   variant="secondary"
                   onPress={onFail}
                 />
               )}
+            </View>
+          ) : null}
+
+          {/* Demo simulation — owner/manager can advance the job through
+              states without being the assigned driver. Demo-only. */}
+          {isDemoActive() &&
+          isStaff &&
+          (job.status === 'assigned' || job.status === 'in_progress') ? (
+            <View style={styles.actions}>
+              <View style={styles.simBadge}>
+                <Feather name="zap" size={11} color={theme.colors.lavender} />
+                <Text style={styles.simBadgeText}>
+                  {t('jobs.detail.simulateBadge')}
+                </Text>
+              </View>
+              <Button
+                title={
+                  job.status === 'assigned'
+                    ? t('jobs.detail.simulateStartCta')
+                    : t('jobs.detail.simulateCompleteCta')
+                }
+                variant="secondary"
+                leftIcon={
+                  <Feather name="play-circle" size={16} color={theme.colors.text} />
+                }
+                onPress={() =>
+                  job.status === 'assigned' ? onStart() : onComplete()
+                }
+                loading={busy}
+              />
             </View>
           ) : null}
 
@@ -495,7 +588,11 @@ export default function JobDetailScreen() {
             job.status === 'in_progress') ? (
             <View style={styles.actions}>
               <Button
-                title={job.driver ? 'Şoförü değiştir' : 'Şoför ata'}
+                title={
+                  job.driver
+                    ? t('jobs.detail.reassignCtaChange')
+                    : t('jobs.detail.reassignCtaAssign')
+                }
                 variant="secondary"
                 leftIcon={
                   <Feather
@@ -516,7 +613,7 @@ export default function JobDetailScreen() {
           {isStaff && (job.status === 'open' || job.status === 'assigned') ? (
             <View style={styles.actions}>
               <Button
-                title="İşi iptal et"
+                title={t('jobs.detail.cancelCta')}
                 variant="ghost"
                 leftIcon={
                   !canCancel.allowed ? (
@@ -545,10 +642,9 @@ export default function JobDetailScreen() {
               style={styles.modalSheet}
             >
               <View style={styles.modalHandle} />
-              <Text style={styles.modalTitle}>Şoför seç</Text>
+              <Text style={styles.modalTitle}>{t('jobs.detail.reassignModalTitle')}</Text>
               <Text style={styles.modalHint}>
-                Yeni şoför seçince iş ona atanır. "Atamayı kaldır" işi tekrar
-                açık listeye düşürür.
+                {t('jobs.detail.reassignModalHint')}
               </Text>
 
               {driversLoading ? (
@@ -597,7 +693,7 @@ export default function JobDetailScreen() {
                   })}
                   {drivers.length === 0 ? (
                     <Text style={styles.modalEmpty}>
-                      Şoför yok — önce bir şoför davet et.
+                      {t('jobs.detail.reassignNoDrivers')}
                     </Text>
                   ) : null}
                 </ScrollView>
@@ -617,7 +713,7 @@ export default function JobDetailScreen() {
                     color={theme.colors.danger}
                   />
                   <Text style={styles.modalDangerText}>
-                    Atamayı kaldır (tekrar açık listeye düşür)
+                    {t('jobs.detail.reassignUnassign')}
                   </Text>
                 </Pressable>
               ) : null}
@@ -629,7 +725,7 @@ export default function JobDetailScreen() {
                   pressed && { opacity: 0.7 },
                 ]}
               >
-                <Text style={styles.modalCloseText}>Kapat</Text>
+                <Text style={styles.modalCloseText}>{t('common.close')}</Text>
               </Pressable>
             </Pressable>
           </Pressable>
@@ -640,6 +736,7 @@ export default function JobDetailScreen() {
 }
 
 function LiveTimerCard({ startedAt }: { startedAt: string }) {
+  const { t } = useTranslation();
   const startMs = new Date(startedAt).getTime();
   const [seconds, setSeconds] = useState(() =>
     Math.max(0, Math.floor((Date.now() - startMs) / 1000)),
@@ -656,11 +753,11 @@ function LiveTimerCard({ startedAt }: { startedAt: string }) {
   const pad = (n: number) => String(n).padStart(2, '0');
   return (
     <View style={styles.timerCard}>
-      <Text style={styles.timerLabel}>Yolculuk süresi</Text>
+      <Text style={styles.timerLabel}>{t('jobs.detail.tripDuration')}</Text>
       <Text style={styles.timerValue}>
         {pad(h)}:{pad(m)}:{pad(s)}
       </Text>
-      <Text style={styles.timerHint}>Müşteriyi teslim edince işi bitir.</Text>
+      <Text style={styles.timerHint}>{t('jobs.detail.timerHint')}</Text>
     </View>
   );
 }
@@ -840,6 +937,24 @@ const styles = StyleSheet.create({
   timelineDate: { color: theme.colors.textDim, fontSize: theme.font.size.xs },
 
   actions: { gap: 10, marginTop: theme.spacing.sm },
+
+  simBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: theme.radius.full,
+    backgroundColor: 'rgba(184,154,240,0.16)',
+    alignSelf: 'flex-start',
+  },
+  simBadgeText: {
+    color: theme.colors.lavender,
+    fontSize: 11,
+    fontWeight: theme.font.weight.semibold,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
 
   approvalCard: {
     gap: theme.spacing.sm,

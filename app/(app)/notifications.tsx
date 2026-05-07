@@ -24,6 +24,7 @@ import {
   type NotificationWithActor,
 } from '@/lib/permissions';
 import type { Profile } from '@/lib/database.types';
+import { demo, isDemoActive } from '@/demo/store';
 import { theme } from '@/theme';
 
 type MemberLookup = Record<string, Pick<Profile, 'full_name'>>;
@@ -50,15 +51,24 @@ export default function NotificationsScreen() {
         ),
       );
       if (memberIds.length > 0) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('id, full_name')
-          .in('id', memberIds);
-        const map: MemberLookup = {};
-        (data ?? []).forEach((p) => {
-          map[p.id] = { full_name: p.full_name };
-        });
-        setMembers(map);
+        if (isDemoActive()) {
+          const map: MemberLookup = {};
+          memberIds.forEach((id) => {
+            const p = demo.profileById(id);
+            if (p) map[p.id] = { full_name: p.full_name };
+          });
+          setMembers(map);
+        } else {
+          const { data } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .in('id', memberIds);
+          const map: MemberLookup = {};
+          (data ?? []).forEach((p) => {
+            map[p.id] = { full_name: p.full_name };
+          });
+          setMembers(map);
+        }
       } else {
         setMembers({});
       }

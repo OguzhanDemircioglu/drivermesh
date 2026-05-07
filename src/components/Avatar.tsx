@@ -1,24 +1,47 @@
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Image, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { theme } from '@/theme';
+import { CachedImage } from '@/components/CachedImage';
 
 type Props = {
   name: string;
   size?: number;
+  /** Profil resmi URL'i. http(s)://, file://, ya da data: URI. Boş/null ise
+   * gradient + harf rozeti gösterilir. http(s) URL'ler `CachedImage` üzerinden
+   * offline cache'li, lokal/file/data URI'ler ise direkt `<Image>` ile çizilir
+   * (bunları cache'lemenin anlamı yok — cache key'i içeriği kadar büyür). */
+  uri?: string | null;
   style?: StyleProp<ViewStyle>;
 };
 
-export function Avatar({ name, size = 44, style }: Props) {
+export function Avatar({ name, size = 44, uri, style }: Props) {
   const initials = getInitials(name);
+  const radius = size / 2;
+  const isRemote = !!uri && /^https?:\/\//i.test(uri);
   return (
-    <View style={[{ width: size, height: size, borderRadius: size / 2 }, styles.wrap, style]}>
+    <View style={[{ width: size, height: size, borderRadius: radius }, styles.wrap, style]}>
       <LinearGradient
         colors={['#5B7FFF', '#B89AF0']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[StyleSheet.absoluteFill, { borderRadius: size / 2 }]}
+        style={[StyleSheet.absoluteFill, { borderRadius: radius }]}
       />
-      <Text style={[styles.text, { fontSize: size * 0.38 }]}>{initials}</Text>
+      {uri ? (
+        isRemote ? (
+          <CachedImage
+            uri={uri}
+            style={[StyleSheet.absoluteFill, { borderRadius: radius }]}
+            resizeMode="cover"
+          />
+        ) : (
+          <Image
+            source={{ uri }}
+            style={[StyleSheet.absoluteFill, { borderRadius: radius }]}
+            resizeMode="cover"
+          />
+        )
+      ) : (
+        <Text style={[styles.text, { fontSize: size * 0.38 }]}>{initials}</Text>
+      )}
     </View>
   );
 }

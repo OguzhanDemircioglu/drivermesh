@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { theme } from '@/theme';
 
 export type PickerOption = {
@@ -33,12 +34,14 @@ export function Picker({
   value,
   onChange,
   options,
-  placeholder = 'Seç',
+  placeholder,
   icon,
   helper,
 }: Props) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.value === value);
+  const placeholderText = placeholder ?? t('common.search');
 
   return (
     <View style={styles.wrapper}>
@@ -56,7 +59,7 @@ export function Picker({
           />
         ) : null}
         <Text style={[styles.value, !selected && styles.placeholder]} numberOfLines={1}>
-          {selected ? selected.label : placeholder}
+          {selected ? selected.label : placeholderText}
         </Text>
         <Feather name="chevron-down" size={18} color={theme.colors.textMuted} />
       </Pressable>

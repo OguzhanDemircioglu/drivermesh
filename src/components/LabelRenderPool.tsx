@@ -106,7 +106,20 @@ function PoolRow({
     // Two RAFs gives Android measurement enough time to settle.
     const id = setTimeout(capture, 120);
     return () => clearTimeout(id);
-  }, [capture, spec.label, spec.hint, spec.variant, s]);
+    // Every visible attribute is a dep — without bgOverride/timer/subline/
+    // opacity the pool reused stale PNGs when a vehicle's colour or live
+    // counter changed.
+  }, [
+    capture,
+    spec.label,
+    spec.hint,
+    spec.variant,
+    spec.bgOverride,
+    spec.timer,
+    spec.subline,
+    spec.opacity,
+    s,
+  ]);
 
   // Vehicle variants: plate on top, timer below. Destination (subline) is
   // intentionally NOT rendered inside the pill — it lives in the job detail

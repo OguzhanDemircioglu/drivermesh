@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -17,20 +17,12 @@ import { getJob, updateJob } from '@/lib/jobs';
 import { getHq, type Hq } from '@/lib/hq';
 import { theme } from '@/theme';
 
-const schema = z.object({
-  customerName: z.string().min(2, 'Müşteri adı gerekli').max(80, 'Çok uzun'),
-  distanceKm: z
-    .string()
-    .optional()
-    .refine((v) => !v || /^\d+([.,]\d+)?$/.test(v), 'Sayı olmalı'),
-  etaMinutes: z
-    .string()
-    .optional()
-    .refine((v) => !v || /^\d+$/.test(v), 'Tam sayı olmalı'),
-  notes: z.string().max(500, 'Çok uzun').optional(),
-});
-
-type FormData = z.infer<typeof schema>;
+type FormData = {
+  customerName: string;
+  distanceKm?: string;
+  etaMinutes?: string;
+  notes?: string;
+};
 type Coord = { lat: number; lng: number; address: string | null };
 
 export default function EditJobScreen() {
@@ -48,6 +40,26 @@ export default function EditJobScreen() {
   const [pickupSource, setPickupSource] = useState<'hq' | 'map' | null>(null);
   const [dropoffCoord, setDropoffCoord] = useState<Coord | null>(null);
   const [pickerKind, setPickerKind] = useState<'pickup' | 'dropoff' | null>(null);
+
+  const schema = useMemo(
+    () =>
+      z.object({
+        customerName: z
+          .string()
+          .min(2, t('jobs.new.errors.customerRequired'))
+          .max(80, t('common.tooLong')),
+        distanceKm: z
+          .string()
+          .optional()
+          .refine((v) => !v || /^\d+([.,]\d+)?$/.test(v), t('jobs.new.errors.numeric')),
+        etaMinutes: z
+          .string()
+          .optional()
+          .refine((v) => !v || /^\d+$/.test(v), t('jobs.new.errors.integer')),
+        notes: z.string().max(500, t('common.tooLong')).optional(),
+      }),
+    [t],
+  );
 
   const {
     control,

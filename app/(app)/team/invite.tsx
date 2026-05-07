@@ -11,6 +11,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Screen } from '@/components/Screen';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
@@ -21,12 +22,10 @@ import { createInvitation, shortCode } from '@/lib/invitations';
 import type { UserRole } from '@/lib/database.types';
 import { theme } from '@/theme';
 
-const schema = z.object({
-  fullName: z.string().min(2, 'Ad soyad en az 2 karakter olmalı').max(60, 'Çok uzun'),
-  email: z.string().min(1, 'E-posta gerekli').email('Geçerli bir e-posta gir'),
-});
-
-type FormData = z.infer<typeof schema>;
+type FormData = {
+  fullName: string;
+  email: string;
+};
 
 type InviteResult = {
   code: string;
@@ -37,6 +36,7 @@ type InviteResult = {
 
 export default function InviteScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { profile, session } = useAuth();
   const toast = useToast();
   const params = useLocalSearchParams<{ role?: string }>();
@@ -45,6 +45,21 @@ export default function InviteScreen() {
   }, [params.role]);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<InviteResult | null>(null);
+
+  const schema = useMemo(
+    () =>
+      z.object({
+        fullName: z
+          .string()
+          .min(2, t('team.invite.errors.nameMin'))
+          .max(60, t('common.tooLong')),
+        email: z
+          .string()
+          .min(1, t('team.invite.errors.emailRequired'))
+          .email(t('team.invite.errors.emailInvalid')),
+      }),
+    [t],
+  );
 
   const {
     control,
@@ -59,7 +74,7 @@ export default function InviteScreen() {
 
   const onSubmit = handleSubmit(async (data) => {
     if (!profile?.organization_id || !session?.user.id) {
-      toast.error('Hata', 'Oturum bilgisi eksik. Tekrar giriş yap.');
+      toast.error(t('common.sessionMissingTitle'), t('common.sessionMissingText'));
       return;
     }
     try {
@@ -79,8 +94,8 @@ export default function InviteScreen() {
       });
       reset();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Davet oluşturulamadı';
-      toast.error('Davet hatası', msg);
+      const msg = e instanceof Error ? e.message : t('team.invite.errorTitle');
+      toast.error(t('team.invite.errorTitle'), msg);
     } finally {
       setSubmitting(false);
     }
@@ -89,7 +104,7 @@ export default function InviteScreen() {
   const onShare = async (r: InviteResult) => {
     try {
       await Share.share({
-        message: `DriverMesh davet kodun: ${r.code}\n\nUygulamayı indir → "Davet kodum var" ile giriş yap.`,
+        message: t('team.invite.shareMessage', { code: r.code }),
       });
     } catch {}
   };
@@ -103,43 +118,48 @@ export default function InviteScreen() {
           style={({ pressed }) => [styles.back, pressed && { opacity: 0.6 }]}
         >
           <Feather name="arrow-left" size={22} color={theme.colors.text} />
-          <Text style={styles.backText}>Ekibim</Text>
+          <Text style={styles.backText}>{t('team.invite.backToTeam')}</Text>
         </Pressable>
 
         <View style={styles.successHeader}>
           <View style={styles.checkCircle}>
             <Feather name="check" size={28} color="#0A0E1F" />
           </View>
-          <Text style={styles.title}>Davet hazır</Text>
+          <Text style={styles.title}>{t('team.invite.successTitle')}</Text>
           <Text style={styles.subtitle}>
-            {result.fullName} adına {result.role === 'manager' ? 'yönetici' : 'şoför'}{' '}
-            daveti oluşturdun.
+            {t('team.invite.successText', {
+              name: result.fullName,
+              role: t(`roles.${result.role}`),
+            })}
           </Text>
         </View>
 
         <Card style={styles.codeCard}>
-          <Text style={styles.codeLabel}>Davet kodu</Text>
+          <Text style={styles.codeLabel}>{t('team.invite.codeLabel')}</Text>
           <Text selectable style={styles.codeValue}>
             {result.code}
           </Text>
           <Text style={styles.codeHint}>
-            Bu kodu {result.email} adresine sahip kişiye ilet. 7 gün içinde kullanmazsa
-            süresi dolar.
+            {t('team.invite.codeHint', { email: result.email })}
           </Text>
         </Card>
 
         <View style={styles.actions}>
           <Button
-            title="Paylaş"
+            title={t('team.invite.share')}
             leftIcon={<Feather name="share-2" size={18} color="#0A0E1F" />}
             onPress={() => onShare(result)}
           />
           <Button
-            title="Yeni davet"
+            title={t('team.invite.newInvite')}
             variant="secondary"
             onPress={() => setResult(null)}
           />
-          <Button title="Ekibe dön" variant="ghost" onPress={() => router.replace('/(app)/team')} />
+          <Button
+            title={t('team.invite.backToTeam')}
+            variant="ghost"
+            onPress={() => router.replace('/(app)/team')}
+          />
         </View>
       </Screen>
     );
@@ -153,7 +173,7 @@ export default function InviteScreen() {
         style={({ pressed }) => [styles.back, pressed && { opacity: 0.6 }]}
       >
         <Feather name="arrow-left" size={22} color={theme.colors.text} />
-        <Text style={styles.backText}>Geri</Text>
+        <Text style={styles.backText}>{t('common.back')}</Text>
       </Pressable>
 
       <View style={styles.header}>
@@ -177,16 +197,17 @@ export default function InviteScreen() {
               { color: role === 'manager' ? theme.colors.lavender : theme.colors.mesh },
             ]}
           >
-            {role === 'manager' ? 'Yönetici daveti' : 'Şoför daveti'}
+            {role === 'manager'
+              ? t('team.invite.eyebrowManager')
+              : t('team.invite.eyebrowDriver')}
           </Text>
         </View>
         <Text style={styles.title}>
-          {role === 'manager' ? 'Yönetici ekle' : 'Şoför ekle'}
+          {role === 'manager'
+            ? t('team.invite.titleManager')
+            : t('team.invite.titleDriver')}
         </Text>
-        <Text style={styles.subtitle}>
-          Davet ettiğin kişiye 6 haneli bir kod oluşturulur. Bu kodla{'\n'}
-          uygulamada hesabını kurar.
-        </Text>
+        <Text style={styles.subtitle}>{t('team.invite.subtitle')}</Text>
       </View>
 
       <View style={styles.form}>
@@ -195,9 +216,13 @@ export default function InviteScreen() {
           name="fullName"
           render={({ field: { value, onChange, onBlur } }) => (
             <TextField
-              label="Ad Soyad"
+              label={t('team.invite.fullName')}
               icon="user"
-              placeholder={role === 'manager' ? 'Selim Karakaya' : 'Mehmet Yılmaz'}
+              placeholder={
+                role === 'manager'
+                  ? t('team.invite.fullNamePlaceholderManager')
+                  : t('team.invite.fullNamePlaceholderDriver')
+              }
               autoCapitalize="words"
               value={value}
               onChangeText={onChange}
@@ -213,9 +238,9 @@ export default function InviteScreen() {
           name="email"
           render={({ field: { value, onChange, onBlur } }) => (
             <TextField
-              label="E-posta"
+              label={t('team.invite.email')}
               icon="mail"
-              placeholder="kisi@firma.com"
+              placeholder={t('team.invite.emailPlaceholder')}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -229,7 +254,11 @@ export default function InviteScreen() {
           )}
         />
 
-        <Button title="Davet oluştur" onPress={onSubmit} loading={submitting} />
+        <Button
+          title={t('team.invite.submit')}
+          onPress={onSubmit}
+          loading={submitting}
+        />
       </View>
     </Screen>
   );

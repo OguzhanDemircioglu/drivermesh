@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { theme } from '@/theme';
 
 type ConfirmKind = 'default' | 'destructive' | 'warning';
@@ -88,6 +89,7 @@ const KIND_CFG: Record<
 };
 
 export function ConfirmProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const [pending, setPending] = useState<PendingPromise | null>(null);
   const fade = useRef(new Animated.Value(0)).current;
   const lift = useRef(new Animated.Value(20)).current;
@@ -192,7 +194,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                   ]}
                 >
                   <Text style={styles.btnGhostText}>
-                    {pending.request.cancelText ?? 'Vazgeç'}
+                    {pending.request.cancelText ?? t('common.cancel')}
                   </Text>
                 </Pressable>
                 <Pressable
@@ -205,7 +207,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                   ]}
                 >
                   <Text style={styles.btnSolidText}>
-                    {pending.request.confirmText ?? 'Onayla'}
+                    {pending.request.confirmText ?? t('common.confirm')}
                   </Text>
                 </Pressable>
               </View>

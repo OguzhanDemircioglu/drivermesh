@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { Job, JobSource, JobStatus, Profile, Vehicle, VehicleStatus } from './database.types';
+import { demo, isDemoActive } from '@/demo/store';
 
 export type HomeStats = {
   vehiclesTotal: number;
@@ -14,6 +15,8 @@ export type HomeStats = {
 };
 
 export async function fetchHomeStats(): Promise<HomeStats> {
+  if (isDemoActive()) return fetchDemoHomeStats();
+
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
   const isoStartOfDay = startOfDay.toISOString();
@@ -92,6 +95,43 @@ export async function fetchHomeStats(): Promise<HomeStats> {
   };
 }
 
+function fetchDemoHomeStats(): HomeStats {
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+  const startMs = startOfDay.getTime();
+  const vehicles = demo.vehicles();
+  const jobs = demo.jobs();
+  const profiles = demo.profiles();
+  const invitations = demo.invitations();
+
+  const todaysJobs = jobs
+    .filter((j) => new Date(j.created_at).getTime() >= startMs)
+    .slice(0, 5)
+    .map((j) => ({
+      ...j,
+      driver: j.driver_id
+        ? { full_name: demo.profileById(j.driver_id)?.full_name ?? '—' }
+        : null,
+    }));
+
+  return {
+    vehiclesTotal: vehicles.length,
+    vehiclesActive: vehicles.filter((v) => v.status === 'active').length,
+    teamCount: profiles.length,
+    pendingInvitations: invitations.filter((i) => i.status === 'pending').length,
+    jobsToday: jobs.filter((j) => new Date(j.created_at).getTime() >= startMs).length,
+    jobsOpen: jobs.filter((j) => j.status === 'open').length,
+    jobsInProgress: jobs.filter((j) => j.status === 'in_progress').length,
+    jobsCompletedToday: jobs.filter(
+      (j) =>
+        j.status === 'completed' &&
+        j.completed_at != null &&
+        new Date(j.completed_at).getTime() >= startMs,
+    ).length,
+    todaysJobs,
+  };
+}
+
 // ============================================================
 // Reports (last 30 days)
 // ============================================================
@@ -108,6 +148,8 @@ export type ReportStats = {
 };
 
 export async function fetchReportStats(rangeDays = 30): Promise<ReportStats> {
+  if (isDemoActive()) return fetchDemoReportStats(rangeDays);
+
   const since = new Date();
   since.setDate(since.getDate() - rangeDays);
   const isoSince = since.toISOString();
@@ -201,6 +243,66 @@ export async function fetchReportStats(rangeDays = 30): Promise<ReportStats> {
   };
 }
 
+function fetchDemoReportStats(rangeDays: number): ReportStats {
+  const since = new Date();
+  since.setDate(since.getDate() - rangeDays);
+  const sinceMs = since.getTime();
+  const list = demo.jobs().filter((j) => new Date(j.created_at).getTime() >= sinceMs);
+
+  const byStatus: Record<JobStatus, number> = {
+    open: 0, assigned: 0, in_progress: 0, completed: 0, failed: 0, cancelled: 0,
+  };
+  const bySource: Record<JobSource, number> = { internal: 0, driver_request: 0, ride: 0 };
+  const driverAgg = new Map<string, { completed: number; failed: number }>();
+  const vehicleAgg = new Map<string, number>();
+  let totalDistance = 0;
+  let distanceSamples = 0;
+
+  for (const j of list) {
+    byStatus[j.status]++;
+    bySource[j.source]++;
+    if (j.driver_id) {
+      const cur = driverAgg.get(j.driver_id) ?? { completed: 0, failed: 0 };
+      if (j.status === 'completed') cur.completed++;
+      if (j.status === 'failed') cur.failed++;
+      driverAgg.set(j.driver_id, cur);
+    }
+    if (j.vehicle_id) {
+      vehicleAgg.set(j.vehicle_id, (vehicleAgg.get(j.vehicle_id) ?? 0) + 1);
+    }
+    if (typeof j.distance_km === 'number') {
+      totalDistance += j.distance_km;
+      distanceSamples++;
+    }
+  }
+
+  const topDrivers = [...driverAgg.entries()]
+    .map(([id, agg]) => ({ id, name: demo.profileById(id)?.full_name ?? '—', ...agg }))
+    .sort((a, b) => b.completed + b.failed - (a.completed + a.failed))
+    .slice(0, 5);
+
+  const topVehicles = [...vehicleAgg.entries()]
+    .map(([id, jobs]) => {
+      const v = demo.vehicleById(id);
+      return { id, plate: v?.plate ?? '—', brand: v?.brand ?? '', model: v?.model ?? '', jobs };
+    })
+    .sort((a, b) => b.jobs - a.jobs)
+    .slice(0, 5);
+
+  return {
+    rangeDays,
+    totalJobs: list.length,
+    byStatus,
+    bySource,
+    topDrivers,
+    topVehicles,
+    totalDistanceKm: Math.round(totalDistance * 10) / 10,
+    averageDistanceKm: distanceSamples
+      ? Math.round((totalDistance / distanceSamples) * 10) / 10
+      : null,
+  };
+}
+
 // ============================================================
 // Fleet map snapshot — HQ + vehicles + their estimated current positions
 // ============================================================
@@ -240,6 +342,8 @@ export type FleetMapSnapshot = {
 };
 
 export async function fetchFleetMap(orgId: string): Promise<FleetMapSnapshot> {
+  if (isDemoActive()) return fetchDemoFleetMap();
+
   const [orgRes, vehiclesRes, activeJobsRes] = await Promise.all([
     supabase
       .from('organizations')
@@ -337,6 +441,67 @@ export async function fetchFleetMap(orgId: string): Promise<FleetMapSnapshot> {
   });
 
   return { hq, vehicles };
+}
+
+function fetchDemoFleetMap(): FleetMapSnapshot {
+  const hq = demo.hq();
+  const vehicles = demo.vehicles();
+  const activeJobs = demo
+    .jobs()
+    .filter((j) => j.status === 'assigned' || j.status === 'in_progress');
+  const jobByVehicle = new Map<string, (typeof activeJobs)[number]>();
+  for (const j of activeJobs) if (j.vehicle_id) jobByVehicle.set(j.vehicle_id, j);
+
+  const list: FleetMapVehicle[] = vehicles.map((v) => {
+    const job = jobByVehicle.get(v.id) ?? null;
+    let position: FleetMapVehicle['position'] = hq ? { lat: hq.lat, lng: hq.lng } : null;
+    let activeJob: FleetMapVehicle['activeJob'] = null;
+    if (job) {
+      const pickup =
+        job.pickup_lat != null && job.pickup_lng != null
+          ? { lat: job.pickup_lat, lng: job.pickup_lng }
+          : null;
+      const dropoff =
+        job.dropoff_lat != null && job.dropoff_lng != null
+          ? { lat: job.dropoff_lat, lng: job.dropoff_lng }
+          : null;
+      activeJob = {
+        id: job.id,
+        customerName: job.customer_name,
+        status: job.status,
+        pickup,
+        dropoff,
+        pickupAddress: job.pickup_address,
+        dropoffAddress: job.dropoff_address,
+        driverName: job.driver_id ? demo.profileById(job.driver_id)?.full_name ?? null : null,
+        startedAt: job.started_at,
+      };
+      if (job.status === 'in_progress' && pickup && dropoff) {
+        position = {
+          lat: (pickup.lat + dropoff.lat) / 2,
+          lng: (pickup.lng + dropoff.lng) / 2,
+        };
+      } else if (pickup) {
+        position = pickup;
+      }
+    }
+    return {
+      id: v.id,
+      plate: v.plate,
+      brand: v.brand,
+      model: v.model,
+      status: v.status,
+      color: v.color,
+      isAtHq: v.is_at_hq,
+      position,
+      activeJob,
+    };
+  });
+
+  return {
+    hq: hq ? { lat: hq.lat, lng: hq.lng, address: hq.address } : null,
+    vehicles: list,
+  };
 }
 
 // Silence unused-import warning for narrowing helpers

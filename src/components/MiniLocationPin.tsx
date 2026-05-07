@@ -95,24 +95,28 @@ export function MiniLocationPin({
     );
   }
 
-  // pickup/dropoff: classic location-pin shape — solid colour teardrop with
-  // a white "hole" cutout in the middle. Compact: the colour + tip carry
-  // the meaning, no border or shadow noise.
+  // pickup/dropoff: classic location-pin shape — solid colour teardrop
+  // with a semantic icon inside (package = pickup, flag = dropoff). The
+  // icon makes the marker readable on top of map tiles where dots get
+  // lost.
   void addressLabel;
-  // tracksViewChanges initial-true window: Android needs the marker bitmap
-  // to rasterize at least once with live updates, then we switch to false
-  // for a stable image — that kills the constant re-render flicker that
-  // otherwise plagues custom-child markers.
+  // tracksViewChanges initial-true window: Android needs the marker
+  // bitmap to rasterize at least once with live updates, then we switch
+  // to false for a stable image — kills the constant re-render flicker
+  // that otherwise plagues custom-child markers. Window stays open longer
+  // (3s) because the icon font sometimes resolves a couple frames late on
+  // first paint.
   const [tracking, setTracking] = useState(true);
   useEffect(() => {
-    const id = setTimeout(() => setTracking(false), 1500);
+    const id = setTimeout(() => setTracking(false), 3000);
     return () => clearTimeout(id);
   }, []);
+  const innerIcon = variant === 'pickup' ? 'package-variant-closed' : 'flag-checkered';
   return (
     <Marker {...rest} anchor={ANCHOR[variant]} tracksViewChanges={tracking}>
       <View collapsable={false} style={styles.pinFrame}>
         <View style={[styles.pinBubble, { backgroundColor: fill }]}>
-          <View style={styles.pinDot} />
+          <MaterialCommunityIcons name={innerIcon} size={14} color="#FFFFFF" />
         </View>
         <View style={[styles.pinTail, { borderTopColor: fill }]} />
       </View>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { Feather } from '@expo/vector-icons';
@@ -15,6 +15,12 @@ import { useConfirm } from '@/components/ConfirmDialog';
 import { useAuth } from '@/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { setAppLocale, type AppLocale } from '@/i18n';
+import {
+  getFeedbackChannels,
+  type FeedbackChannels,
+} from '@/lib/feedback';
+import { deleteFleet } from '@/lib/fleet';
+import { demo, isDemoActive } from '@/demo/store';
 import { theme } from '@/theme';
 import type { UserRole } from '@/lib/database.types';
 
@@ -31,19 +37,33 @@ export default function AccountScreen() {
   const toast = useToast();
   const { confirm } = useConfirm();
   const [orgName, setOrgName] = useState<string | null>(null);
+  const [channels, setChannels] = useState<FeedbackChannels | null>(null);
 
   useEffect(() => {
     if (!profile?.organization_id) {
       setOrgName(null);
       return;
     }
-    supabase
-      .from('organizations')
-      .select('name')
-      .eq('id', profile.organization_id)
-      .maybeSingle()
-      .then(({ data }) => setOrgName(data?.name ?? null));
+    if (isDemoActive()) {
+      setOrgName('Demo Lojistik AŞ');
+    } else {
+      supabase
+        .from('organizations')
+        .select('name')
+        .eq('id', profile.organization_id)
+        .maybeSingle()
+        .then(({ data }) => setOrgName(data?.name ?? null));
+    }
   }, [profile?.organization_id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!profile?.organization_id) return;
+      getFeedbackChannels(profile.organization_id)
+        .then(setChannels)
+        .catch(() => setChannels(null));
+    }, [profile?.organization_id]),
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -73,6 +93,41 @@ export default function AccountScreen() {
     if (ok) signOut();
   };
 
+  const onDeleteFleet = async () => {
+    if (!profile?.organization_id) return;
+    const ok = await confirm({
+      title: t('account.deleteFleetConfirmTitle'),
+      message: t('account.deleteFleetConfirmText'),
+      confirmText: t('account.deleteFleetConfirmBtn'),
+      cancelText: t('common.cancel'),
+      kind: 'destructive',
+    });
+    if (!ok) return;
+    // Second-stage confirm — irreversible op, owner account also goes,
+    // user will be signed out. Two-step gate is on purpose, not a typo.
+    const finalOk = await confirm({
+      title: t('account.deleteFleetFinalConfirmTitle'),
+      message: t('account.deleteFleetFinalConfirmText'),
+      confirmText: t('account.deleteFleetFinalConfirmBtn'),
+      cancelText: t('common.cancel'),
+      kind: 'destructive',
+    });
+    if (!finalOk) return;
+    try {
+      await deleteFleet(profile.organization_id);
+      toast.success(
+        t('account.deleteFleetSuccessTitle'),
+        t('account.deleteFleetSuccessText'),
+      );
+      // signOut clears React auth state in both demo (deactivates demo +
+      // resets session/profile/isDemo) and real (Supabase auth) paths;
+      // AuthGate then bounces to welcome.
+      await signOut();
+    } catch (e) {
+      toast.error(t('account.deleteFleetError'), (e as Error).message);
+    }
+  };
+
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
@@ -97,7 +152,7 @@ export default function AccountScreen() {
         >
           {/* Profile card */}
           <Card style={styles.profile}>
-            <Avatar name={fullName} size={72} />
+            <Avatar name={fullName} size={72} uri={profile?.avatar_url} />
             <Text style={styles.name}>{fullName}</Text>
             <View style={[styles.rolePill, { backgroundColor: 'rgba(255,255,255,0.06)' }]}>
               <View style={[styles.roleDot, { backgroundColor: ROLE_COLOR[role] }]} />
@@ -196,6 +251,12 @@ export default function AccountScreen() {
                 onPress={() => router.push('/(app)/account/hq')}
               />
               <Action
+                icon="message-circle"
+                label={t('feedback.accountLink')}
+                hint={t('feedback.accountLinkHint')}
+                onPress={() => router.push('/(app)/account/feedback')}
+              />
+              <Action
                 icon="shield"
                 label={t('account.ownerActionPermissions')}
                 hint={t('account.ownerActionPermissionsHint')}
@@ -205,7 +266,8 @@ export default function AccountScreen() {
                 icon="trash-2"
                 label={t('account.ownerActionDelete')}
                 hint={t('account.ownerActionDeleteHint')}
-                onPress={() => toast.info(t('common.soon'), t('common.notImplemented'))}
+                onPress={onDeleteFleet}
+                danger
               />
               <Action
                 icon="bell"
@@ -234,6 +296,47 @@ export default function AccountScreen() {
                 label={t('account.actionJobs')}
                 onPress={() => router.push('/(app)/jobs')}
               />
+            </Card>
+          ) : null}
+
+          {/* Telegram bot link — visible to non-owners once the owner has set
+              up a public bot username. Tapping deep-links to t.me/<handle>. */}
+          {!isOwner &&
+          channels?.telegram.enabled &&
+          channels.telegram.botUsername ? (
+            <Card>
+              <View style={styles.tgCard}>
+                <View style={styles.tgIconBox}>
+                  <Feather name="send" size={18} color={theme.colors.accent} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.tgTitle}>{t('feedback.teamBotTitle')}</Text>
+                  <Text style={styles.tgDesc}>{t('feedback.teamBotDesc')}</Text>
+                  <Text style={styles.tgHandle}>
+                    @{channels.telegram.botUsername}
+                  </Text>
+                  <Pressable
+                    onPress={() =>
+                      Linking.openURL(
+                        `https://t.me/${channels.telegram.botUsername}`,
+                      ).catch(() => {})
+                    }
+                    style={({ pressed }) => [
+                      styles.tgOpenBtn,
+                      pressed && { opacity: 0.85 },
+                    ]}
+                  >
+                    <Feather
+                      name="external-link"
+                      size={14}
+                      color={theme.colors.bg}
+                    />
+                    <Text style={styles.tgOpenBtnText}>
+                      {t('feedback.teamBotOpen')}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
             </Card>
           ) : null}
 
@@ -293,22 +396,30 @@ function Action({
   label,
   hint,
   onPress,
+  danger,
 }: {
   icon: keyof typeof Feather.glyphMap;
   label: string;
   hint?: string;
   onPress: () => void;
+  danger?: boolean;
 }) {
+  const accent = danger ? theme.colors.danger : theme.colors.accent;
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [styles.action, pressed && { opacity: 0.7 }]}
     >
-      <View style={styles.actionIcon}>
-        <Feather name={icon} size={16} color={theme.colors.accent} />
+      <View
+        style={[
+          styles.actionIcon,
+          danger && { backgroundColor: 'rgba(239,68,68,0.12)' },
+        ]}
+      >
+        <Feather name={icon} size={16} color={accent} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={styles.actionLabel}>{label}</Text>
+        <Text style={[styles.actionLabel, danger && { color: accent }]}>{label}</Text>
         {hint ? <Text style={styles.actionHint}>{hint}</Text> : null}
       </View>
       <Feather name="chevron-right" size={18} color={theme.colors.textDim} />
@@ -449,5 +560,55 @@ const styles = StyleSheet.create({
   langBtnTextActive: {
     color: theme.colors.text,
     fontWeight: theme.font.weight.semibold,
+  },
+
+  tgCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: theme.spacing.md,
+  },
+  tgIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.accentMuted,
+    borderWidth: 1,
+    borderColor: 'rgba(255,122,26,0.32)',
+  },
+  tgTitle: {
+    color: theme.colors.text,
+    fontSize: theme.font.size.md,
+    fontWeight: theme.font.weight.semibold,
+  },
+  tgDesc: {
+    color: theme.colors.textMuted,
+    fontSize: theme.font.size.xs,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  tgHandle: {
+    color: theme.colors.lavender,
+    fontSize: theme.font.size.sm,
+    fontWeight: theme.font.weight.semibold,
+    marginTop: theme.spacing.sm,
+  },
+  tgOpenBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.accent,
+    marginTop: theme.spacing.sm,
+  },
+  tgOpenBtnText: {
+    color: theme.colors.bg,
+    fontSize: theme.font.size.sm,
+    fontWeight: theme.font.weight.bold,
   },
 });

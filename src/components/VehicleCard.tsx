@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { Card } from './Card';
+import { CachedImage } from './CachedImage';
 import { theme } from '@/theme';
 import type { VehicleStatus } from '@/lib/database.types';
 
@@ -67,7 +68,7 @@ function VehicleCardImpl({
   year,
   status,
   addedBy,
-  photoUrl: _photoUrl,
+  photoUrl,
   color,
   onPress,
 }: Props) {
@@ -85,13 +86,25 @@ function VehicleCardImpl({
       <Card style={styles.card}>
         <View style={styles.row}>
           <View style={styles.thumb}>
+            {/* The colour gradient sits behind everything as a fallback —
+                the photo (if present) layers on top via cover. The gradient
+                still leaks at the edges of letterboxed photos so the card
+                keeps the per-vehicle identity colour even with portraits. */}
             <LinearGradient
               colors={[colors[0], colors[1]]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
-            <Feather name="truck" size={26} color="rgba(255,255,255,0.9)" />
+            {photoUrl ? (
+              <CachedImage
+                uri={photoUrl}
+                style={StyleSheet.absoluteFill}
+                resizeMode="cover"
+              />
+            ) : (
+              <Feather name="truck" size={26} color="rgba(255,255,255,0.9)" />
+            )}
           </View>
           <View style={styles.body}>
             <Text style={styles.plate}>{plate}</Text>

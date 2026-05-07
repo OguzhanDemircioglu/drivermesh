@@ -1,11 +1,19 @@
 import { supabase } from './supabase';
 import type { Vehicle, VehicleStatus } from './database.types';
+import { DEMO_ORG_ID, demo, isDemoActive } from '@/demo/store';
 
 export type VehicleWithAdder = Vehicle & {
   added_by_profile: { full_name: string } | null;
 };
 
+function inflate(v: Vehicle): VehicleWithAdder {
+  const adder = demo.profileById(v.added_by);
+  return { ...v, added_by_profile: adder ? { full_name: adder.full_name } : null };
+}
+
 export async function listVehicles(orgId: string): Promise<VehicleWithAdder[]> {
+  if (isDemoActive()) return demo.vehicles().map(inflate);
+
   const { data, error } = await supabase
     .from('vehicles')
     .select('*, added_by_profile:profiles!vehicles_added_by_fkey(full_name)')
@@ -30,12 +38,33 @@ type CreateVehicleInput = {
 };
 
 export async function createVehicle(input: CreateVehicleInput): Promise<Vehicle> {
+  const cleanedPlate = input.plate.toUpperCase().replace(/\s+/g, ' ').trim();
+
+  if (isDemoActive()) {
+    const v: Vehicle = {
+      id: `demo-v-${Date.now()}`,
+      organization_id: DEMO_ORG_ID,
+      added_by: input.addedBy,
+      plate: cleanedPlate,
+      brand: input.brand.trim(),
+      model: input.model.trim(),
+      year: input.year,
+      status: input.status ?? 'idle',
+      photo_url: input.photoUrl ?? null,
+      color: input.color ?? null,
+      is_at_hq: true,
+      created_at: new Date().toISOString(),
+    };
+    demo.addVehicle(v);
+    return v;
+  }
+
   const { data, error } = await supabase
     .from('vehicles')
     .insert({
       organization_id: input.organizationId,
       added_by: input.addedBy,
-      plate: input.plate.toUpperCase().replace(/\s+/g, ' ').trim(),
+      plate: cleanedPlate,
       brand: input.brand.trim(),
       model: input.model.trim(),
       year: input.year,
@@ -54,6 +83,10 @@ export async function createVehicle(input: CreateVehicleInput): Promise<Vehicle>
 }
 
 export async function updateVehicleStatus(id: string, status: VehicleStatus) {
+  if (isDemoActive()) {
+    demo.updateVehicle(id, { status });
+    return;
+  }
   const { error } = await supabase.from('vehicles').update({ status }).eq('id', id);
   if (error) throw error;
 }
@@ -65,6 +98,10 @@ export async function updateVehicleStatus(id: string, status: VehicleStatus) {
  * assigned to the vehicle so the operator doesn't have to remember.
  */
 export async function setVehicleAtHq(id: string, isAtHq: boolean) {
+  if (isDemoActive()) {
+    demo.updateVehicle(id, { is_at_hq: isAtHq });
+    return;
+  }
   const { error } = await supabase
     .from('vehicles')
     .update({ is_at_hq: isAtHq })
@@ -73,11 +110,19 @@ export async function setVehicleAtHq(id: string, isAtHq: boolean) {
 }
 
 export async function deleteVehicle(id: string) {
+  if (isDemoActive()) {
+    demo.deleteVehicle(id);
+    return;
+  }
   const { error } = await supabase.from('vehicles').delete().eq('id', id);
   if (error) throw error;
 }
 
 export async function getVehicle(id: string): Promise<VehicleWithAdder | null> {
+  if (isDemoActive()) {
+    const v = demo.vehicleById(id);
+    return v ? inflate(v) : null;
+  }
   const { data, error } = await supabase
     .from('vehicles')
     .select('*, added_by_profile:profiles!vehicles_added_by_fkey(full_name)')
@@ -99,6 +144,22 @@ export async function listVehicleJobs(
   vehicleId: string,
   limit = 5,
 ): Promise<VehicleJobLite[]> {
+  if (isDemoActive()) {
+    return demo
+      .jobs()
+      .filter((j) => j.vehicle_id === vehicleId)
+      .slice(0, limit)
+      .map((j) => ({
+        id: j.id,
+        customer_name: j.customer_name,
+        status: j.status,
+        created_at: j.created_at,
+        driver: j.driver_id
+          ? { full_name: demo.profileById(j.driver_id)?.full_name ?? '—' }
+          : null,
+      }));
+  }
+
   const { data, error } = await supabase
     .from('jobs')
     .select(
@@ -117,6 +178,10 @@ export async function updateVehicle(id: string, patch: VehiclePatch) {
   const next: VehiclePatch = { ...patch };
   if (typeof patch.plate === 'string') {
     next.plate = patch.plate.toUpperCase().replace(/\s+/g, ' ').trim();
+  }
+  if (isDemoActive()) {
+    demo.updateVehicle(id, next as Partial<Vehicle>);
+    return;
   }
   const { error } = await supabase.from('vehicles').update(next).eq('id', id);
   if (error) throw error;

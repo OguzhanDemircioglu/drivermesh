@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -17,21 +17,13 @@ import { createJob, listOrgDrivers } from '@/lib/jobs';
 import { getHq, type Hq } from '@/lib/hq';
 import { theme } from '@/theme';
 
-const schema = z.object({
-  customerName: z.string().min(2, 'Müşteri adı gerekli').max(80, 'Çok uzun'),
-  distanceKm: z
-    .string()
-    .optional()
-    .refine((v) => !v || /^\d+([.,]\d+)?$/.test(v), 'Sayı olmalı'),
-  etaMinutes: z
-    .string()
-    .optional()
-    .refine((v) => !v || /^\d+$/.test(v), 'Tam sayı olmalı'),
-  driverId: z.string().nullable().optional(),
-  notes: z.string().max(500, 'Çok uzun').optional(),
-});
-
-type FormData = z.infer<typeof schema>;
+type FormData = {
+  customerName: string;
+  distanceKm?: string;
+  etaMinutes?: string;
+  driverId?: string | null;
+  notes?: string;
+};
 
 type Coord = { lat: number; lng: number; address: string | null };
 
@@ -41,8 +33,35 @@ export default function NewJobScreen() {
   const { profile, session } = useAuth();
   const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
+
+  const schema = useMemo(
+    () =>
+      z.object({
+        customerName: z
+          .string()
+          .min(2, t('jobs.new.errors.customerRequired'))
+          .max(80, t('common.tooLong')),
+        distanceKm: z
+          .string()
+          .optional()
+          .refine((v) => !v || /^\d+([.,]\d+)?$/.test(v), t('jobs.new.errors.numeric')),
+        etaMinutes: z
+          .string()
+          .optional()
+          .refine((v) => !v || /^\d+$/.test(v), t('jobs.new.errors.integer')),
+        driverId: z.string().nullable().optional(),
+        notes: z.string().max(500, t('common.tooLong')).optional(),
+      }),
+    [t],
+  );
+
   const [driverOptions, setDriverOptions] = useState<PickerOption[]>([
-    { value: null, label: 'Otomatik · ilk alan kazanır', hint: 'Açık iş, tüm şoförler görür', icon: 'inbox' },
+    {
+      value: null,
+      label: t('jobs.new.driverAuto'),
+      hint: t('jobs.new.driverAutoHint'),
+      icon: 'inbox',
+    },
   ]);
   const [hq, setHq] = useState<Hq | null>(null);
   const [pickupCoord, setPickupCoord] = useState<Coord | null>(null);
@@ -57,8 +76,8 @@ export default function NewJobScreen() {
         setDriverOptions([
           {
             value: null,
-            label: 'Otomatik · ilk alan kazanır',
-            hint: 'Açık iş, tüm şoförler görür',
+            label: t('jobs.new.driverAuto'),
+            hint: t('jobs.new.driverAutoHint'),
             icon: 'inbox',
           },
           ...drivers.map((d) => ({
@@ -71,6 +90,7 @@ export default function NewJobScreen() {
       })
       .catch((e) => console.warn('[jobs/new] drivers fetch failed', e));
     getHq(profile.organization_id).then(setHq).catch(() => setHq(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.organization_id]);
 
   const {
@@ -103,7 +123,7 @@ export default function NewJobScreen() {
 
   const onSubmit = handleSubmit(async (data) => {
     if (!profile?.organization_id || !session?.user.id) {
-      toast.error('Hata', 'Oturum bilgisi eksik. Tekrar giriş yap.');
+      toast.error(t('common.sessionMissingTitle'), t('common.sessionMissingText'));
       return;
     }
     if (!pickupCoord) {
@@ -132,13 +152,13 @@ export default function NewJobScreen() {
         notes: data.notes || null,
       });
       toast.success(
-        'Tamam',
-        data.driverId ? 'İş şoföre atandı.' : 'İş açık olarak oluşturuldu, şoförler listede görür.',
+        t('jobs.new.successTitle'),
+        data.driverId ? t('jobs.new.successAssigned') : t('jobs.new.successOpen'),
       );
       router.replace('/(app)/jobs');
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Kayıt başarısız';
-      toast.error('İş oluşturulamadı', humanize(msg));
+      const msg = e instanceof Error ? e.message : t('jobs.new.errorTitle');
+      toast.error(t('jobs.new.errorTitle'), humanize(msg, t));
     } finally {
       setSubmitting(false);
     }
@@ -152,18 +172,16 @@ export default function NewJobScreen() {
         style={({ pressed }) => [styles.back, pressed && { opacity: 0.6 }]}
       >
         <Feather name="arrow-left" size={22} color={theme.colors.text} />
-        <Text style={styles.backText}>Geri</Text>
+        <Text style={styles.backText}>{t('common.back')}</Text>
       </Pressable>
 
       <View style={styles.header}>
         <View style={styles.eyebrow}>
           <Feather name="package" size={11} color={theme.colors.accent} />
-          <Text style={styles.eyebrowText}>Yeni iş</Text>
+          <Text style={styles.eyebrowText}>{t('jobs.new.eyebrow')}</Text>
         </View>
-        <Text style={styles.title}>İşi tanımla</Text>
-        <Text style={styles.subtitle}>
-          Şoför seçersen direkt atanır, seçmezsen tüm şoförler listede görür ve ilk alan kazanır.
-        </Text>
+        <Text style={styles.title}>{t('jobs.new.title')}</Text>
+        <Text style={styles.subtitle}>{t('jobs.new.subtitle')}</Text>
       </View>
 
       <View style={styles.form}>
@@ -278,15 +296,15 @@ export default function NewJobScreen() {
           name="driverId"
           render={({ field: { value, onChange } }) => (
             <Picker
-              label="Şoför"
+              label={t('jobs.new.driver')}
               icon="users"
               value={value ?? null}
               onChange={onChange}
               options={driverOptions}
               helper={
                 selectedDriverId
-                  ? 'Bildirim sadece atanan şoföre gider.'
-                  : 'Tüm şoförlere bildirim, ilk alan kazanır.'
+                  ? t('jobs.new.helperAssigned')
+                  : t('jobs.new.helperAuto')
               }
             />
           )}
@@ -297,9 +315,9 @@ export default function NewJobScreen() {
           name="notes"
           render={({ field: { value, onChange, onBlur } }) => (
             <TextField
-              label="Notlar (opsiyonel)"
+              label={t('jobs.new.notes')}
               icon="edit-3"
-              placeholder="Özel talimat, kapı kodu..."
+              placeholder={t('jobs.new.notesPlaceholder')}
               value={value ?? ''}
               onChangeText={onChange}
               onBlur={onBlur}
@@ -312,7 +330,9 @@ export default function NewJobScreen() {
         />
 
         <Button
-          title={selectedDriverId ? 'Şoföre ata ve aç' : 'İşi aç'}
+          title={
+            selectedDriverId ? t('jobs.new.submitAssign') : t('jobs.new.submitOpen')
+          }
           onPress={onSubmit}
           loading={submitting}
           disabled={!pickupCoord || !dropoffCoord}
@@ -413,9 +433,9 @@ function SelectedRow({
   );
 }
 
-function humanize(msg: string) {
-  if (/permission|policy|row.level/i.test(msg)) return 'Bu işlem için yetkin yok.';
-  if (/network/i.test(msg)) return 'İnternet bağlantını kontrol et.';
+function humanize(msg: string, t: (k: string) => string) {
+  if (/permission|policy|row.level/i.test(msg)) return t('common.permissionDeniedShort');
+  if (/network/i.test(msg)) return t('common.networkError');
   return msg;
 }
 

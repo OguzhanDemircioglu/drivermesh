@@ -1,5 +1,7 @@
 import { supabase } from './supabase';
 import type { Profile, UserRole } from './database.types';
+import { demo, isDemoActive, listDemoMemberPermissions } from '@/demo/store';
+import i18n from '@/i18n';
 
 export type PermissionCategory =
   | 'vehicles'
@@ -78,10 +80,59 @@ function mapPgError(message: string): PermissionError {
   return new PermissionError('unknown', message);
 }
 
+/**
+ * Hand the fleet over to another member. Atomically swaps the current owner
+ * with the target — the current owner becomes the target's previous role
+ * (manager or driver), the target becomes owner. There must remain exactly
+ * one owner at all times.
+ *
+ * The real backend needs a dedicated RPC (`transfer_ownership`); demo mode
+ * mutates the in-memory profiles list directly.
+ */
+export async function transferOwnership(toMemberId: string): Promise<void> {
+  if (isDemoActive()) {
+    const allProfiles = demo.profiles();
+    const owner = allProfiles.find((p) => p.role === 'owner');
+    const target = demo.profileById(toMemberId);
+    if (!owner) throw new PermissionError('member_not_found', 'No current owner');
+    if (!target) throw new PermissionError('member_not_found');
+    if (target.id === owner.id) {
+      throw new PermissionError('unauthorized', 'Already the owner');
+    }
+    const targetPreviousRole = target.role;
+    // Direct mutation — `demo.profiles()` returns a defensive copy so we
+    // can't write through it; reach into the underlying profile reference
+    // by id. Both `profileById` results are live references in the store.
+    const ownerLive = demo.profileById(owner.id)!;
+    const targetLive = demo.profileById(target.id)!;
+    targetLive.role = 'owner';
+    ownerLive.role = targetPreviousRole;
+    return;
+  }
+  // TODO: backend RPC — see permissions migration.
+  const { error } = await (supabase.rpc as unknown as (
+    name: string,
+    args: Record<string, unknown>,
+  ) => Promise<{ error: { message: string } | null }>)('transfer_ownership', {
+    p_to_member_id: toMemberId,
+  });
+  if (error) throw mapPgError(error.message);
+}
+
 export async function changeMemberRole(
   memberId: string,
   newRole: UserRole,
 ): Promise<void> {
+  if (isDemoActive()) {
+    if (newRole === 'owner') throw new PermissionError('cannot_promote_to_owner');
+    // demo store doesn't expose direct profile mutator — quick patch via vehicles map
+    // (we expose updateProfileRole below as a convenience)
+    const p = demo.profileById(memberId);
+    if (!p) throw new PermissionError('member_not_found');
+    if (p.role === 'owner') throw new PermissionError('cannot_edit_owner_permissions');
+    p.role = newRole;
+    return;
+  }
   // RPC not yet in generated types, cast minimally to avoid widening the type bundle.
   const { error } = await (supabase.rpc as unknown as (
     name: string,
@@ -94,6 +145,16 @@ export async function changeMemberRole(
 }
 
 export async function removeOrgMember(memberId: string): Promise<void> {
+  if (isDemoActive()) {
+    const p = demo.profileById(memberId);
+    if (!p) throw new PermissionError('member_not_found');
+    if (p.role === 'owner') throw new PermissionError('cannot_remove_owner');
+    // permanent removal — not exposed in demo (would shrink team count); soft-no-op
+    throw new PermissionError(
+      'unauthorized',
+      i18n.t('errors.demoMemberRemoveDisabled'),
+    );
+  }
   const { error } = await (supabase.rpc as unknown as (
     name: string,
     args: Record<string, unknown>,
@@ -106,6 +167,8 @@ export async function removeOrgMember(memberId: string): Promise<void> {
 export async function listMemberPermissions(
   memberId: string,
 ): Promise<MemberPermission[]> {
+  if (isDemoActive()) return listDemoMemberPermissions(memberId);
+
   const { data, error } = await supabase.rpc('list_member_permissions', {
     p_member_id: memberId,
   });
@@ -118,6 +181,10 @@ export async function setPermissionOverride(
   key: string,
   allowed: boolean | null,
 ): Promise<void> {
+  if (isDemoActive()) {
+    demo.setPermissionOverride(memberId, key, allowed);
+    return;
+  }
   // Backend RPC accepts NULL p_allowed to delete the override (revert to default).
   // Generated types declare it `boolean` non-null; cast keeps the nullable behaviour.
   const { error } = await supabase.rpc('set_permission_override', {
@@ -132,6 +199,13 @@ export async function checkPermission(
   userId: string,
   key: string,
 ): Promise<boolean> {
+  if (isDemoActive()) {
+    // Owner has full access in demo (mirrors the real backend semantics).
+    const profile = demo.profileById(userId);
+    if (profile?.role === 'owner') return true;
+    const perms = listDemoMemberPermissions(userId);
+    return perms.find((p) => p.key === key)?.effective_allowed ?? false;
+  }
   const { data, error } = await supabase.rpc('has_permission', {
     p_user_id: userId,
     p_key: key,
@@ -143,6 +217,21 @@ export async function checkPermission(
 export async function listNotifications(
   limit = 50,
 ): Promise<NotificationWithActor[]> {
+  if (isDemoActive()) {
+    return demo
+      .notifications()
+      .slice(0, limit)
+      .map((n) => {
+        const actor = n.actor_id ? demo.profileById(n.actor_id) : null;
+        return {
+          ...n,
+          payload: n.payload as Record<string, unknown>,
+          actor: actor
+            ? { id: actor.id, full_name: actor.full_name, role: actor.role }
+            : null,
+        };
+      });
+  }
   const { data, error } = await supabase
     .from('notifications')
     .select('*, actor:profiles!notifications_actor_id_fkey(id, full_name, role)')
@@ -153,6 +242,10 @@ export async function listNotifications(
 }
 
 export async function markNotificationRead(notificationId: string): Promise<void> {
+  if (isDemoActive()) {
+    demo.markNotificationRead(notificationId);
+    return;
+  }
   const { error } = await supabase.rpc('mark_notification_read', {
     p_notification_id: notificationId,
   });
@@ -162,6 +255,23 @@ export async function markNotificationRead(notificationId: string): Promise<void
 export async function listOrgMembers(
   organizationId: string,
 ): Promise<TeamMemberLite[]> {
+  if (isDemoActive()) {
+    const order: Record<UserRole, number> = { owner: 0, manager: 1, driver: 2 };
+    return demo
+      .profiles()
+      .map((p) => ({
+        id: p.id,
+        full_name: p.full_name,
+        email: p.email,
+        role: p.role,
+        created_at: p.created_at,
+      }))
+      .sort(
+        (a, b) =>
+          order[a.role] - order[b.role] || a.created_at.localeCompare(b.created_at),
+      );
+  }
+
   const { data, error } = await supabase
     .from('profiles')
     .select('id, full_name, email, role, created_at')

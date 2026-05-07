@@ -15,6 +15,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useTranslation } from 'react-i18next';
 import { MeshBackground } from '@/components/MeshBackground';
 import { Card } from '@/components/Card';
+import { CachedImage } from '@/components/CachedImage';
 import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { useAuth } from '@/auth/AuthProvider';
@@ -24,14 +25,11 @@ import {
   getVehicle,
   listVehicleJobs,
   setVehicleAtHq,
-  updateVehicle,
   type VehicleJobLite,
   type VehicleWithAdder,
 } from '@/lib/vehicles';
 import type { JobStatus, VehicleStatus } from '@/lib/database.types';
 import { theme } from '@/theme';
-
-const STATUS_OPTIONS: VehicleStatus[] = ['idle', 'active', 'maintenance'];
 
 const STATUS_TONE: Record<VehicleStatus, { fg: string; bg: string }> = {
   active: { fg: theme.colors.success, bg: 'rgba(34,197,94,0.14)' },
@@ -55,6 +53,21 @@ const PLATE_GRADIENTS: Array<readonly [string, string]> = [
   ['#22C55E', '#15803D'],
 ];
 
+// Hex → i18n key for the colour palette used in `vehicles/new.tsx`. Keeps
+// the detail screen showing human labels ("Kırmızı") instead of raw hex
+// for colours picked from the form's swatch row. Custom hex values that
+// don't match a palette entry fall back to the hex string itself.
+const COLOR_PALETTE_KEY_BY_HEX: Record<string, string> = {
+  '#f8fafc': 'white',
+  '#1f2937': 'black',
+  '#94a3b8': 'silver',
+  '#ef4444': 'red',
+  '#ff7a1a': 'orange',
+  '#f59e0b': 'yellow',
+  '#22c55e': 'green',
+  '#3d5ddb': 'blue',
+};
+
 export default function VehicleDetailScreen() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
@@ -67,7 +80,6 @@ export default function VehicleDetailScreen() {
   const [vehicle, setVehicle] = useState<VehicleWithAdder | null>(null);
   const [jobs, setJobs] = useState<VehicleJobLite[]>([]);
   const [loading, setLoading] = useState(true);
-  const [savingStatus, setSavingStatus] = useState<VehicleStatus | null>(null);
   const [savingAtHq, setSavingAtHq] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -92,29 +104,6 @@ export default function VehicleDetailScreen() {
     useCallback(() => {
       load();
     }, [load]),
-  );
-
-  const onChangeStatus = useCallback(
-    async (next: VehicleStatus) => {
-      if (!vehicle || vehicle.status === next || savingStatus) return;
-      if (!canUpdate.allowed) {
-        toast.warning(t('common.permissionMissingTitle'), canUpdate.reason ?? t('common.permissionMissing'));
-        return;
-      }
-      setSavingStatus(next);
-      const prev = vehicle.status;
-      setVehicle({ ...vehicle, status: next });
-      try {
-        await updateVehicle(vehicle.id, { status: next });
-        toast.success(t('vehicles.detail.statusSavedTitle'), t('vehicles.detail.statusSavedText'));
-      } catch (e) {
-        setVehicle({ ...vehicle, status: prev });
-        toast.error(t('vehicles.detail.statusError'), (e as Error).message);
-      } finally {
-        setSavingStatus(null);
-      }
-    },
-    [vehicle, savingStatus, canUpdate, t, toast],
   );
 
   const onMarkAtHq = useCallback(async () => {
@@ -198,10 +187,13 @@ export default function VehicleDetailScreen() {
     return PLATE_GRADIENTS[Math.abs(hash) % PLATE_GRADIENTS.length];
   }, [vehicle]);
 
-  const hasActiveJob = useMemo(
-    () => jobs.some((j) => j.status === 'assigned' || j.status === 'in_progress'),
+  const activeJob = useMemo(
+    () =>
+      jobs.find((j) => j.status === 'assigned' || j.status === 'in_progress') ?? null,
     [jobs],
   );
+  const hasActiveJob = activeJob !== null;
+  const currentDriverName = activeJob?.driver?.full_name ?? null;
 
   const dateFormatter = useCallback(
     (iso: string) =>
@@ -252,7 +244,17 @@ export default function VehicleDetailScreen() {
                 end={{ x: 1, y: 1 }}
                 style={styles.heroBg}
               />
-              <Feather name="truck" size={36} color="rgba(255,255,255,0.95)" />
+              {vehicle.photo_url ? (
+                <CachedImage
+                  uri={vehicle.photo_url}
+                  style={styles.heroPhoto}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.heroPhotoEmpty}>
+                  <Feather name="truck" size={48} color="rgba(255,255,255,0.95)" />
+                </View>
+              )}
               <Text style={styles.heroPlate}>{vehicle.plate}</Text>
               <Text style={styles.heroModel}>
                 {vehicle.brand} {vehicle.model} · {vehicle.year}
@@ -265,89 +267,63 @@ export default function VehicleDetailScreen() {
               </View>
             </View>
 
-            {/* Status switcher */}
-            <Card>
-              <Text style={styles.sectionTitle}>{t('vehicles.detail.sectionStatus')}</Text>
-              <Text style={styles.sectionHint}>{t('vehicles.detail.statusHint')}</Text>
-              <View style={styles.statusRow}>
-                {STATUS_OPTIONS.map((s) => {
-                  const active = vehicle.status === s;
-                  const tone = STATUS_TONE[s];
-                  return (
-                    <Pressable
-                      key={s}
-                      onPress={() => onChangeStatus(s)}
-                      disabled={savingStatus !== null || !canUpdate.allowed}
-                      style={({ pressed }) => [
-                        styles.statusBtn,
-                        active && {
-                          borderColor: tone.fg,
-                          backgroundColor: tone.bg,
-                        },
-                        (!canUpdate.allowed || savingStatus !== null) && { opacity: 0.55 },
-                        pressed && { opacity: 0.7 },
-                      ]}
-                    >
-                      {savingStatus === s ? (
-                        <ActivityIndicator color={tone.fg} size="small" />
-                      ) : (
-                        <View style={[styles.statusDot, { backgroundColor: tone.fg }]} />
-                      )}
-                      <Text style={[styles.statusBtnText, active && { color: tone.fg }]}>
-                        {t(`vehicles.status.${s}`)}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-              {!canUpdate.allowed && !canUpdate.loading ? (
-                <Text style={styles.permWarn}>
-                  <Feather name="lock" size={11} color={theme.colors.textDim} />{' '}
-                  {canUpdate.reason}
+            {/* "Vehicle returned to HQ" CTA — only shown when the vehicle is
+                NOT currently at HQ AND has no active job. New vehicles are
+                created with is_at_hq=true so this never shows for them; the
+                "at HQ" state is rendered as a passive InfoRow inside the
+                Bilgiler card below. The DB trigger flips is_at_hq to false
+                on dispatch, which is when this CTA reappears so the operator
+                can mark the vehicle as returned. */}
+            {canUpdate.allowed && !hasActiveJob && !vehicle.is_at_hq ? (
+              <Pressable
+                onPress={onMarkAtHq}
+                disabled={savingAtHq}
+                style={({ pressed }) => [
+                  styles.atHqBtn,
+                  savingAtHq && { opacity: 0.55 },
+                  pressed && { opacity: 0.85 },
+                ]}
+              >
+                {savingAtHq ? (
+                  <ActivityIndicator color={theme.colors.accent} size="small" />
+                ) : (
+                  <Feather name="home" size={16} color={theme.colors.accent} />
+                )}
+                <Text style={styles.atHqBtnText}>
+                  {t('vehicles.detail.atHqCta')}
                 </Text>
-              ) : null}
-            </Card>
-
-            {/* "At logistics HQ" pill. Only the operator (owner/manager with
-                vehicles.update) sees it, and only when the vehicle is NOT
-                currently out on a job (active jobs hide it entirely).
-                - Not marked yet → enabled CTA "...ise Tıklayınız"
-                - Marked → disabled label "Araç Lojistik üssünde"
-                The DB trigger auto-clears the flag on dispatch, returning
-                the button to its active CTA state without user intervention. */}
-            {canUpdate.allowed && !hasActiveJob ? (
-              vehicle.is_at_hq ? (
-                <View style={styles.atHqBtnDisabled}>
-                  <Feather name="home" size={16} color={theme.colors.success} />
-                  <Text style={styles.atHqBtnDisabledText}>
-                    {t('vehicles.detail.atHqMarked')}
-                  </Text>
-                </View>
-              ) : (
-                <Pressable
-                  onPress={onMarkAtHq}
-                  disabled={savingAtHq}
-                  style={({ pressed }) => [
-                    styles.atHqBtn,
-                    savingAtHq && { opacity: 0.55 },
-                    pressed && { opacity: 0.85 },
-                  ]}
-                >
-                  {savingAtHq ? (
-                    <ActivityIndicator color={theme.colors.accent} size="small" />
-                  ) : (
-                    <Feather name="home" size={16} color={theme.colors.accent} />
-                  )}
-                  <Text style={styles.atHqBtnText}>
-                    {t('vehicles.detail.atHqCta')}
-                  </Text>
-                </Pressable>
-              )
+              </Pressable>
             ) : null}
 
             {/* Info */}
             <Card>
               <Text style={styles.sectionTitle}>{t('vehicles.detail.sectionInfo')}</Text>
+              {currentDriverName ? (
+                <InfoRow
+                  icon="user-check"
+                  label={`${t('vehicles.detail.currentDriver')}: ${currentDriverName}`}
+                />
+              ) : null}
+              {vehicle.is_at_hq && !hasActiveJob ? (
+                <InfoRow
+                  icon="home"
+                  label={t('vehicles.detail.atHqMarked')}
+                />
+              ) : null}
+              {vehicle.color ? (
+                <View style={styles.infoRow}>
+                  <View style={[styles.colorSwatch, { backgroundColor: vehicle.color }]} />
+                  <Text style={styles.infoText}>
+                    {t('vehicles.detail.color')}:{' '}
+                    {(() => {
+                      const key = COLOR_PALETTE_KEY_BY_HEX[vehicle.color.toLowerCase()];
+                      return key
+                        ? t(`vehicles.new.colors.${key}`)
+                        : vehicle.color.toUpperCase();
+                    })()}
+                  </Text>
+                </View>
+              ) : null}
               {vehicle.added_by_profile?.full_name ? (
                 <InfoRow
                   icon="user"
@@ -477,6 +453,20 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   heroBg: { ...StyleSheet.absoluteFillObject, opacity: 0.18 },
+  heroPhoto: {
+    width: '100%',
+    aspectRatio: 16 / 10,
+    borderRadius: theme.radius.lg,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+  },
+  heroPhotoEmpty: {
+    width: '100%',
+    aspectRatio: 16 / 10,
+    borderRadius: theme.radius.lg,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   heroPlate: {
     color: theme.colors.text,
     fontSize: theme.font.size['3xl'],
@@ -509,26 +499,6 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
 
-  statusRow: { flexDirection: 'row', gap: 8 },
-  statusBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: 'rgba(255,255,255,0.02)',
-  },
-  statusDot: { width: 6, height: 6, borderRadius: 3 },
-  statusBtnText: {
-    color: theme.colors.textMuted,
-    fontSize: theme.font.size.xs,
-    fontWeight: theme.font.weight.semibold,
-  },
   permWarn: {
     color: theme.colors.textDim,
     fontSize: theme.font.size.xs,
@@ -543,7 +513,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.colors.border,
   },
-  infoText: { color: theme.colors.text, fontSize: theme.font.size.sm },
+  infoText: { color: theme.colors.text, fontSize: theme.font.size.sm, flex: 1 },
+  colorSwatch: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+  },
 
   empty: {
     color: theme.colors.textMuted,
@@ -575,22 +552,6 @@ const styles = StyleSheet.create({
   },
   atHqBtnText: {
     color: theme.colors.accent,
-    fontSize: theme.font.size.sm,
-    fontWeight: theme.font.weight.semibold,
-  },
-  atHqBtnDisabled: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(34,197,94,0.4)',
-    backgroundColor: 'rgba(34,197,94,0.10)',
-  },
-  atHqBtnDisabledText: {
-    color: theme.colors.success,
     fontSize: theme.font.size.sm,
     fontWeight: theme.font.weight.semibold,
   },

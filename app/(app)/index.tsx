@@ -314,9 +314,10 @@ export default function HomeScreen() {
 
 function FleetReadyHero({ stats }: { stats: HomeStats }) {
   const { t } = useTranslation();
+  const router = useRouter();
   return (
     <Pressable
-      onPress={() => {}}
+      onPress={() => router.push('/(app)/fleet-map')}
       style={({ pressed }) => [styles.hero, pressed && { opacity: 0.95 }]}
     >
       <LinearGradient

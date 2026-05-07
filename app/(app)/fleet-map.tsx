@@ -201,13 +201,11 @@ export default function FleetMapScreen() {
         // Drop alpha when zoomed in so pickup/dropoff teardrops underneath
         // remain readable.
         opacity: markerScale < 0.85 ? 0.7 : 1,
-        // Pill colour: operator-chosen (vehicles.color) takes precedence,
-        // otherwise fall back to plate-derived hash. Maintenance keeps the
-        // amber status colour either way.
-        bgOverride:
-          v.status === 'maintenance'
-            ? undefined
-            : v.color ?? vehicleColorFromPlate(v.plate),
+        // Pill colour ALWAYS matches the vehicle's own colour (operator-
+        // chosen via vehicles.color, with a plate-derived fallback) — even
+        // for maintenance vehicles, so an operator can recognise their
+        // truck on the map by colour at a glance regardless of status.
+        bgOverride: v.color ?? vehicleColorFromPlate(v.plate),
       });
     }
     return out;
@@ -294,7 +292,6 @@ export default function FleetMapScreen() {
                 // MapView-level handler is the only reliable way to catch
                 // taps on image-backed markers on Android (per-marker
                 // onPress is unreliable with the Google Maps SDK).
-                console.log('[fleet-map] marker press', JSON.stringify(e.nativeEvent));
                 const id = e.nativeEvent.id;
                 if (id && id.startsWith('v:')) {
                   router.push(`/(app)/vehicles/${id.slice(2)}`);

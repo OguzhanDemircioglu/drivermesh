@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { demo, isDemoActive } from '@/demo/store';
 
 export type Hq = {
   lat: number | null;
@@ -7,6 +8,11 @@ export type Hq = {
 };
 
 export async function getHq(orgId: string): Promise<Hq | null> {
+  if (isDemoActive()) {
+    const h = demo.hq();
+    return h ? { lat: h.lat, lng: h.lng, address: h.address } : null;
+  }
+
   const { data, error } = await supabase
     .from('organizations')
     .select('hq_lat, hq_lng, hq_address')
@@ -21,6 +27,11 @@ export async function getHq(orgId: string): Promise<Hq | null> {
 }
 
 export async function saveHq(orgId: string, hq: Hq): Promise<void> {
+  if (isDemoActive()) {
+    if (hq.lat == null || hq.lng == null) return;
+    demo.setHq({ lat: hq.lat, lng: hq.lng, address: hq.address?.trim() || '' });
+    return;
+  }
   const { error } = await supabase
     .from('organizations')
     .update({

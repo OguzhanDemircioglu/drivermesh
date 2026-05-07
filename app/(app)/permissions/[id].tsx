@@ -25,10 +25,12 @@ import {
   listMemberPermissions,
   removeOrgMember,
   setPermissionOverride,
+  transferOwnership,
   PermissionError,
   type MemberPermission,
   type PermissionCategory,
 } from '@/lib/permissions';
+import { demo, isDemoActive } from '@/demo/store';
 import type { UserRole } from '@/lib/database.types';
 import { theme } from '@/theme';
 
@@ -57,14 +59,16 @@ export default function MemberPermissionsScreen() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const toast = useToast();
   const { confirm } = useConfirm();
   const [member, setMember] = useState<Member | null>(null);
   const [permissions, setPermissions] = useState<MemberPermission[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingKey, setSavingKey] = useState<string | null>(null);
-  const [mgmtBusy, setMgmtBusy] = useState<'role' | 'remove' | null>(null);
+  const [mgmtBusy, setMgmtBusy] = useState<'role' | 'remove' | 'transfer' | null>(
+    null,
+  );
 
   const isOwner = profile?.role === 'owner';
   const locale = (i18n.language === 'en' ? 'en' : 'tr') as 'en' | 'tr';
@@ -72,17 +76,26 @@ export default function MemberPermissionsScreen() {
   const load = useCallback(async () => {
     if (!id) return;
     try {
-      const [{ data: m, error: mErr }, perms] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('id, full_name, email, role')
-          .eq('id', id)
-          .maybeSingle(),
-        listMemberPermissions(id),
-      ]);
-      if (mErr) throw mErr;
-      setMember(m as Member | null);
-      setPermissions(perms);
+      if (isDemoActive()) {
+        const p = demo.profileById(id);
+        const perms = await listMemberPermissions(id);
+        setMember(
+          p ? { id: p.id, full_name: p.full_name, email: p.email, role: p.role } : null,
+        );
+        setPermissions(perms);
+      } else {
+        const [{ data: m, error: mErr }, perms] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('id, full_name, email, role')
+            .eq('id', id)
+            .maybeSingle(),
+          listMemberPermissions(id),
+        ]);
+        if (mErr) throw mErr;
+        setMember(m as Member | null);
+        setPermissions(perms);
+      }
     } catch (e) {
       console.warn('[member-perms] load failed', e);
     } finally {
@@ -193,6 +206,44 @@ export default function MemberPermissionsScreen() {
     }
   }, [member, mgmtBusy, id, t, toast, confirm]);
 
+  const handleTransferOwnership = useCallback(async () => {
+    if (!member || mgmtBusy || !id) return;
+    if (member.role === 'owner') return;
+    const myFutureRole = member.role; // owner takes over the target's old role
+    const ok = await confirm({
+      title: t('permissions.transferOwnerConfirmTitle'),
+      message: t('permissions.transferOwnerConfirmText', {
+        name: member.full_name,
+        role: t(`roles.${myFutureRole}`),
+      }),
+      confirmText: t('permissions.transferOwnerConfirmBtn'),
+      cancelText: t('common.cancel'),
+      kind: 'warning',
+    });
+    if (!ok) return;
+    setMgmtBusy('transfer');
+    try {
+      await transferOwnership(id);
+      // Refresh both viewer profile (now demoted) and the on-screen member
+      // (now owner). We then bounce back to the team list — this screen
+      // requires owner to render and we are no longer that.
+      setMember({ ...member, role: 'owner' });
+      toast.success(t('common.done'), t('permissions.transferOwnerSuccess'));
+      await refreshProfile();
+      router.back();
+    } catch (e) {
+      const code = e instanceof PermissionError ? e.code : 'unknown';
+      const msg = t(
+        `permissions.errors.${code}`,
+        t('permissions.errors.unknown'),
+      );
+      toast.error(t('permissions.transferOwnerError'), msg);
+    } finally {
+      setMgmtBusy(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [member, mgmtBusy, id, t, toast, confirm, router]);
+
   const handleRemoveMember = useCallback(async () => {
     if (!member || mgmtBusy || !id) return;
     if (member.role === 'owner') return;
@@ -302,6 +353,34 @@ export default function MemberPermissionsScreen() {
                   <Feather name="chevron-right" size={16} color={theme.colors.textDim} />
                 </Pressable>
                 <Pressable
+                  onPress={handleTransferOwnership}
+                  disabled={mgmtBusy !== null}
+                  style={({ pressed }) => [
+                    styles.mgmtRow,
+                    mgmtBusy !== null && { opacity: 0.5 },
+                    pressed && { opacity: 0.7 },
+                  ]}
+                >
+                  <View style={styles.mgmtIconWrap}>
+                    {mgmtBusy === 'transfer' ? (
+                      <ActivityIndicator size="small" color={theme.colors.accent} />
+                    ) : (
+                      <Feather name="award" size={16} color={theme.colors.accent} />
+                    )}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.mgmtLabel}>
+                      {t('permissions.transferOwnerCta')}
+                    </Text>
+                    <Text style={styles.mgmtHint}>
+                      {t('permissions.transferOwnerHint', {
+                        role: t(`roles.${member.role}`),
+                      })}
+                    </Text>
+                  </View>
+                  <Feather name="chevron-right" size={16} color={theme.colors.textDim} />
+                </Pressable>
+                <Pressable
                   onPress={handleRemoveMember}
                   disabled={mgmtBusy !== null}
                   style={({ pressed }) => [
@@ -395,18 +474,14 @@ function PermissionRow({
             </View>
           ) : null}
         </View>
-        <View style={styles.permMeta}>
-          <Text style={styles.permKey}>{perm.key}</Text>
-          {hasOverride ? (
-            <>
-              <Text style={styles.metaSep}>·</Text>
-              <Text style={styles.overrideText}>{tOverrideBadge}</Text>
-              <Pressable hitSlop={8} onPress={onRevert} disabled={busy}>
-                <Text style={styles.revertText}>{tRevert}</Text>
-              </Pressable>
-            </>
-          ) : null}
-        </View>
+        {hasOverride ? (
+          <View style={styles.permMeta}>
+            <Text style={styles.overrideText}>{tOverrideBadge}</Text>
+            <Pressable hitSlop={8} onPress={onRevert} disabled={busy}>
+              <Text style={styles.revertText}>{tRevert}</Text>
+            </Pressable>
+          </View>
+        ) : null}
       </View>
       {busy ? (
         <ActivityIndicator size="small" color={theme.colors.accent} />
@@ -549,12 +624,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
     flexWrap: 'wrap',
   },
-  permKey: {
-    color: theme.colors.textDim,
-    fontSize: 11,
-    fontFamily: 'monospace',
-  },
-  metaSep: { color: theme.colors.textDim, fontSize: 11 },
   overrideText: {
     color: theme.colors.lavender,
     fontSize: 11,

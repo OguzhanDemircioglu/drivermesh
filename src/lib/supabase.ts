@@ -14,8 +14,10 @@ const SUPABASE_ANON_KEY =
   (Constants.expoConfig?.extra?.supabaseAnonKey as string | undefined);
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  // Dev-time warning only — runs at module load, before i18n is wired up,
+  // so it stays in English regardless of the user's app locale.
   console.warn(
-    '[supabase] EXPO_PUBLIC_SUPABASE_URL veya EXPO_PUBLIC_SUPABASE_ANON_KEY tanımlı değil. .env dosyanı kontrol et.',
+    '[supabase] EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY is not set. Check your .env file.',
   );
 }
 

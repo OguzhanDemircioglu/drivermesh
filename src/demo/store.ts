@@ -1,0 +1,568 @@
+/**
+ * In-memory demo store. Activated when AuthProvider.signInDemo() runs.
+ *
+ * The lib/ data layer checks `isDemoActive()` at the top of every
+ * query/mutation and short-circuits to this store instead of hitting
+ * Supabase. State lives only in JS memory — closing the app resets it.
+ */
+
+import type {
+  Invitation,
+  Job,
+  JobSource,
+  JobStatus,
+  Notification,
+  Profile,
+  UserRole,
+  Vehicle,
+} from '@/lib/database.types';
+import type { MemberPermission } from '@/lib/permissions';
+
+// ---------- IDs ----------
+
+export const DEMO_ORG_ID = 'demo-org';
+export const DEMO_OWNER_ID = 'demo-owner';
+export const DEMO_MANAGER_ID = 'demo-mgr';
+export const DEMO_DRIVER_IDS = ['demo-d1', 'demo-d2', 'demo-d3', 'demo-d4'] as const;
+
+// ---------- Helpers ----------
+
+const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
+const hoursAgo = (h: number) => minutesAgo(h * 60);
+
+// ---------- Listener pattern ----------
+
+let listeners: Array<() => void> = [];
+function emit() {
+  for (const fn of listeners) fn();
+}
+export function subscribeDemo(fn: () => void): () => void {
+  listeners.push(fn);
+  return () => {
+    listeners = listeners.filter((l) => l !== fn);
+  };
+}
+
+// ---------- Active flag ----------
+
+let _active = false;
+export function isDemoActive(): boolean {
+  return _active;
+}
+export function activateDemo() {
+  _active = true;
+  reseed();
+  emit();
+}
+export function deactivateDemo() {
+  _active = false;
+  emit();
+}
+
+// ---------- Mutable state ----------
+
+type Hq = { lat: number; lng: number; address: string };
+
+export type FeedbackChannels = {
+  email: { enabled: boolean; address: string };
+  push: { enabled: boolean };
+  telegram: {
+    enabled: boolean;
+    /** Public handle (without @). Drives the t.me/<botUsername> link the
+     * non-owner team members see in their account screen. */
+    botUsername: string;
+    /** Private — only owner sees this. Used server-side to send messages. */
+    botToken: string;
+    chatId: string;
+  };
+};
+
+// Demo-only test bot — provided by the project owner so the demo flow can
+// surface a real-looking Telegram setup without forcing the demo audience
+// to wire up their own. The demo never actually calls the Telegram API
+// (demo mode is UI-tour only); these values just pre-populate the wizard
+// form so a viewer can tap "Activate bot" → "Save" without typing anything.
+// The Open-in-Telegram button on the team-side card uses botUsername to
+// build a t.me/<username> link, which DOES open the real bot in Telegram.
+const DEMO_TELEGRAM_TEST_BOT = {
+  botUsername: 'offcats_bot',
+  botToken: '8594702070:AAG2QozW9tmcWWQLZ9M_jXzxG2VmUYi6hJQ',
+  chatId: '1943990878',
+};
+
+const DEFAULT_FEEDBACK: FeedbackChannels = {
+  email: { enabled: true, address: 'patron@demo.drivermesh' },
+  push: { enabled: true },
+  telegram: {
+    enabled: false,
+    ...DEMO_TELEGRAM_TEST_BOT,
+  },
+};
+
+const state = {
+  hq: null as Hq | null,
+  profiles: [] as Profile[],
+  vehicles: [] as Vehicle[],
+  jobs: [] as Job[],
+  invitations: [] as Invitation[],
+  notifications: [] as Notification[],
+  // permission overrides for permissions screen — keyed by member -> permission key
+  permissionOverrides: new Map<string, Map<string, boolean>>(),
+  feedbackChannels: { ...DEFAULT_FEEDBACK } as FeedbackChannels,
+};
+
+function reseed() {
+  state.hq = {
+    lat: 41.0082,
+    lng: 28.9784,
+    address: 'Demo Lojistik HQ — Sultanahmet, Fatih, İstanbul',
+  };
+
+  state.profiles = [
+    mkProfile(DEMO_OWNER_ID, 'Demo Patron', 'patron@demo.drivermesh', 'owner', 30),
+    mkProfile(DEMO_MANAGER_ID, 'Selin Yöneten', 'selin@demo.drivermesh', 'manager', 28),
+    mkProfile(DEMO_DRIVER_IDS[0], 'Ahmet Şoför', 'ahmet@demo.drivermesh', 'driver', 25),
+    mkProfile(DEMO_DRIVER_IDS[1], 'Mehmet Yıldız', 'mehmet@demo.drivermesh', 'driver', 24),
+    mkProfile(DEMO_DRIVER_IDS[2], 'Ayşe Demir', 'ayse@demo.drivermesh', 'driver', 20),
+    // 4. driver var ama atanmamış işle çalışır — toplam 6 kişi olmasın diye sadece 5 ana kişi
+    // kullanıcının istediği: 5 kişi — owner+manager+3 driver = 5 ✓
+    // (DEMO_DRIVER_IDS[3] ileride invitation olarak kullanılabilir, profile değil)
+  ];
+
+  // Demo vehicle photos uploaded to Cloudinary so the cached-image
+  // pipeline has real URLs to round-trip through. The first four cars
+  // get distinct photos; the fifth falls back to plate-derived gradient
+  // (no photo) — keeps the empty-state branch covered too.
+  const PHOTO_BASE = 'https://res.cloudinary.com/dotcw6tty/image/upload';
+  const photo1 = `${PHOTO_BASE}/v1778166028/drivermesh/cars/Screenshot_2026-05-07_174307.png`;
+  const photo2 = `${PHOTO_BASE}/v1778166031/drivermesh/cars/Screenshot_2026-05-07_174332.png`;
+  const photo3 = `${PHOTO_BASE}/v1778166033/drivermesh/cars/Screenshot_2026-05-07_174351.png`;
+  const photo4 = `${PHOTO_BASE}/v1778166035/drivermesh/cars/Screenshot_2026-05-07_174405.png`;
+
+  state.vehicles = [
+    mkVehicle('demo-v1', '34 ABC 123', 'Ford', 'Transit', 2022, 'active', '#5B7FFF', false, photo1),
+    mkVehicle('demo-v2', '34 DEF 456', 'Mercedes', 'Sprinter', 2023, 'active', '#FF7A1A', false, photo2),
+    mkVehicle('demo-v3', '06 GHI 789', 'Volkswagen', 'Crafter', 2021, 'idle', '#22C55E', true, photo3),
+    mkVehicle('demo-v4', '34 JKL 234', 'Iveco', 'Daily', 2020, 'maintenance', '#A855F7', true, photo4),
+    mkVehicle('demo-v5', '35 MNO 567', 'Renault', 'Master', 2024, 'idle', '#F59E0B', true, null),
+  ];
+
+  // Jobs — 2 active (1 in_progress, 1 assigned), 2 completed, 1 failed
+  state.jobs = [
+    mkJob('demo-j1', {
+      customer: 'Mavi Mağazacılık',
+      pickup: { addr: 'Levent Mahallesi, Beşiktaş', lat: 41.0816, lng: 29.0114 },
+      dropoff: { addr: 'Atatürk Havalimanı Kargo, Bakırköy', lat: 40.9769, lng: 28.8146 },
+      status: 'in_progress',
+      driverId: DEMO_DRIVER_IDS[0],
+      vehicleId: 'demo-v1',
+      distanceKm: 22.4,
+      etaMinutes: 38,
+      source: 'internal',
+      createdMinutesAgo: 95,
+      assignedMinutesAgo: 88,
+      startedMinutesAgo: 22,
+    }),
+    mkJob('demo-j2', {
+      customer: 'Trendyol Hızlı Teslimat',
+      pickup: { addr: 'Maltepe Depo, Maltepe', lat: 40.9351, lng: 29.1306 },
+      dropoff: { addr: 'Pendik Şube, Pendik', lat: 40.8783, lng: 29.2389 },
+      status: 'assigned',
+      driverId: DEMO_DRIVER_IDS[1],
+      vehicleId: 'demo-v2',
+      distanceKm: 14.1,
+      etaMinutes: 30,
+      source: 'internal',
+      createdMinutesAgo: 35,
+      assignedMinutesAgo: 12,
+    }),
+    mkJob('demo-j3', {
+      customer: 'Hepsiburada Lojistik',
+      pickup: { addr: 'Ümraniye Dağıtım Merkezi', lat: 41.0167, lng: 29.1167 },
+      dropoff: { addr: 'Kadıköy Showroom', lat: 40.9833, lng: 29.0333 },
+      status: 'completed',
+      driverId: DEMO_DRIVER_IDS[0],
+      vehicleId: 'demo-v1',
+      distanceKm: 11.8,
+      etaMinutes: 25,
+      source: 'internal',
+      createdMinutesAgo: 320,
+      assignedMinutesAgo: 315,
+      startedMinutesAgo: 280,
+      completedMinutesAgo: 245,
+    }),
+    mkJob('demo-j4', {
+      customer: 'Migros Online',
+      pickup: { addr: 'Esenyurt Soğuk Hava Deposu', lat: 41.0289, lng: 28.6708 },
+      dropoff: { addr: 'Şişli Mağaza, Şişli', lat: 41.0602, lng: 28.9869 },
+      status: 'completed',
+      driverId: DEMO_DRIVER_IDS[2],
+      vehicleId: 'demo-v3',
+      distanceKm: 26.7,
+      etaMinutes: 55,
+      source: 'driver_request',
+      createdMinutesAgo: 180,
+      assignedMinutesAgo: 175,
+      startedMinutesAgo: 160,
+      completedMinutesAgo: 90,
+    }),
+    mkJob('demo-j5', {
+      customer: 'Yemeksepeti Hızlı',
+      pickup: { addr: 'Beyoğlu Restoran, Beyoğlu', lat: 41.0369, lng: 28.9850 },
+      dropoff: { addr: 'Sarıyer Müşteri', lat: 41.1664, lng: 29.0571 },
+      status: 'failed',
+      driverId: DEMO_DRIVER_IDS[1],
+      vehicleId: 'demo-v2',
+      distanceKm: 19.3,
+      etaMinutes: 42,
+      source: 'ride',
+      failReason: 'Müşteri adreste bulunamadı, telefonla ulaşılamadı.',
+      createdMinutesAgo: 220,
+      assignedMinutesAgo: 215,
+      startedMinutesAgo: 200,
+      completedMinutesAgo: 150,
+    }),
+  ];
+
+  // Pending invitation — bir 6. kişi davet edildi ama henüz kabul etmedi
+  state.invitations = [
+    {
+      id: 'demo-inv1',
+      organization_id: DEMO_ORG_ID,
+      email: 'kerem@demo.drivermesh',
+      full_name: 'Kerem Aday',
+      role: 'driver',
+      status: 'pending',
+      invited_by: DEMO_OWNER_ID,
+      created_at: hoursAgo(6),
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60_000).toISOString(),
+      token: 'D3M0AB12345678901234567890123456',
+      accepted_at: null,
+      accepted_by: null,
+    },
+  ];
+
+  // Notifications
+  state.notifications = [
+    {
+      id: 'demo-n1',
+      organization_id: DEMO_ORG_ID,
+      recipient_id: DEMO_OWNER_ID,
+      actor_id: DEMO_DRIVER_IDS[0],
+      type: 'driver_request',
+      payload: {
+        job_id: 'demo-j2',
+        requester_name: 'Ahmet Şoför',
+        customer_name: 'Trendyol Hızlı Teslimat',
+      },
+      read_at: null,
+      created_at: minutesAgo(38),
+    },
+    {
+      id: 'demo-n2',
+      organization_id: DEMO_ORG_ID,
+      recipient_id: DEMO_OWNER_ID,
+      actor_id: DEMO_MANAGER_ID,
+      type: 'permission_grant',
+      payload: {
+        key: 'jobs.create',
+        allowed: true,
+        member_id: DEMO_DRIVER_IDS[2],
+        label_tr: 'İş oluşturma',
+        label_en: 'Create job',
+        is_critical: false,
+      },
+      read_at: hoursAgo(2),
+      created_at: hoursAgo(3),
+    },
+    {
+      id: 'demo-n3',
+      organization_id: DEMO_ORG_ID,
+      recipient_id: DEMO_OWNER_ID,
+      actor_id: DEMO_DRIVER_IDS[1],
+      type: 'request_approved',
+      payload: {
+        job_id: 'demo-j4',
+        customer_name: 'Migros Online',
+      },
+      read_at: hoursAgo(1),
+      created_at: hoursAgo(1.5),
+    },
+  ];
+
+  state.permissionOverrides = new Map();
+  state.feedbackChannels = {
+    email: { ...DEFAULT_FEEDBACK.email },
+    push: { ...DEFAULT_FEEDBACK.push },
+    telegram: { ...DEFAULT_FEEDBACK.telegram },
+  };
+}
+
+// ---------- Factories ----------
+
+function mkProfile(
+  id: string,
+  fullName: string,
+  email: string,
+  role: UserRole,
+  daysAgo: number,
+): Profile {
+  return {
+    id,
+    organization_id: DEMO_ORG_ID,
+    full_name: fullName,
+    email,
+    phone: null,
+    role,
+    avatar_url: null,
+    created_at: new Date(Date.now() - daysAgo * 86_400_000).toISOString(),
+  };
+}
+
+function mkVehicle(
+  id: string,
+  plate: string,
+  brand: string,
+  model: string,
+  year: number,
+  status: 'active' | 'maintenance' | 'idle',
+  color: string,
+  isAtHq: boolean,
+  photoUrl: string | null = null,
+): Vehicle {
+  return {
+    id,
+    organization_id: DEMO_ORG_ID,
+    added_by: DEMO_OWNER_ID,
+    plate,
+    brand,
+    model,
+    year,
+    status,
+    color,
+    photo_url: photoUrl,
+    is_at_hq: isAtHq,
+    created_at: new Date(Date.now() - 20 * 86_400_000).toISOString(),
+  };
+}
+
+type JobSpec = {
+  customer: string;
+  pickup: { addr: string; lat: number; lng: number };
+  dropoff: { addr: string; lat: number; lng: number };
+  status: JobStatus;
+  driverId: string | null;
+  vehicleId: string | null;
+  distanceKm: number;
+  etaMinutes: number;
+  source: JobSource;
+  createdMinutesAgo: number;
+  assignedMinutesAgo?: number;
+  startedMinutesAgo?: number;
+  completedMinutesAgo?: number;
+  failReason?: string;
+};
+
+function mkJob(id: string, spec: JobSpec): Job {
+  return {
+    id,
+    organization_id: DEMO_ORG_ID,
+    created_by: DEMO_OWNER_ID,
+    customer_name: spec.customer,
+    pickup_address: spec.pickup.addr,
+    pickup_lat: spec.pickup.lat,
+    pickup_lng: spec.pickup.lng,
+    dropoff_address: spec.dropoff.addr,
+    dropoff_lat: spec.dropoff.lat,
+    dropoff_lng: spec.dropoff.lng,
+    distance_km: spec.distanceKm,
+    eta_minutes: spec.etaMinutes,
+    vehicle_id: spec.vehicleId,
+    driver_id: spec.driverId,
+    status: spec.status,
+    source: spec.source,
+    notes: null,
+    fail_reason: spec.failReason ?? null,
+    created_at: minutesAgo(spec.createdMinutesAgo),
+    assigned_at:
+      spec.assignedMinutesAgo != null ? minutesAgo(spec.assignedMinutesAgo) : null,
+    started_at:
+      spec.startedMinutesAgo != null ? minutesAgo(spec.startedMinutesAgo) : null,
+    completed_at:
+      spec.completedMinutesAgo != null ? minutesAgo(spec.completedMinutesAgo) : null,
+  };
+}
+
+// ---------- Read accessors (read-only snapshots) ----------
+
+export const demo = {
+  ownerProfile: () => state.profiles.find((p) => p.id === DEMO_OWNER_ID)!,
+  hq: () => state.hq,
+  profiles: () => [...state.profiles],
+  profileById: (id: string) => state.profiles.find((p) => p.id === id) ?? null,
+  vehicles: () => [...state.vehicles],
+  vehicleById: (id: string) => state.vehicles.find((v) => v.id === id) ?? null,
+  jobs: () => [...state.jobs].sort((a, b) => b.created_at.localeCompare(a.created_at)),
+  jobById: (id: string) => state.jobs.find((j) => j.id === id) ?? null,
+  invitations: () => [...state.invitations],
+  notifications: () =>
+    [...state.notifications].sort((a, b) => b.created_at.localeCompare(a.created_at)),
+
+  // ---- mutations ----
+
+  setHq(next: Hq) {
+    state.hq = { ...next };
+    emit();
+  },
+
+  addJob(job: Job) {
+    state.jobs.push(job);
+    emit();
+  },
+  updateJob(id: string, patch: Partial<Job>) {
+    const i = state.jobs.findIndex((j) => j.id === id);
+    if (i < 0) return;
+    state.jobs[i] = { ...state.jobs[i], ...patch };
+    emit();
+  },
+
+  addVehicle(v: Vehicle) {
+    state.vehicles.unshift(v);
+    emit();
+  },
+  updateVehicle(id: string, patch: Partial<Vehicle>) {
+    const i = state.vehicles.findIndex((v) => v.id === id);
+    if (i < 0) return;
+    state.vehicles[i] = { ...state.vehicles[i], ...patch };
+    emit();
+  },
+
+  updateProfile(
+    id: string,
+    patch: Partial<Pick<Profile, 'full_name' | 'phone' | 'avatar_url'>>,
+  ) {
+    const i = state.profiles.findIndex((p) => p.id === id);
+    if (i < 0) return;
+    state.profiles[i] = { ...state.profiles[i], ...patch };
+    emit();
+  },
+  deleteVehicle(id: string) {
+    state.vehicles = state.vehicles.filter((v) => v.id !== id);
+    emit();
+  },
+
+  addInvitation(inv: Invitation) {
+    state.invitations.unshift(inv);
+    emit();
+  },
+  updateInvitation(id: string, patch: Partial<Invitation>) {
+    const i = state.invitations.findIndex((x) => x.id === id);
+    if (i < 0) return;
+    state.invitations[i] = { ...state.invitations[i], ...patch };
+    emit();
+  },
+
+  markNotificationRead(id: string) {
+    const n = state.notifications.find((x) => x.id === id);
+    if (!n) return;
+    n.read_at = new Date().toISOString();
+    emit();
+  },
+
+  // ---- feedback channels ----
+
+  feedbackChannels(): FeedbackChannels {
+    return {
+      email: { ...state.feedbackChannels.email },
+      push: { ...state.feedbackChannels.push },
+      telegram: { ...state.feedbackChannels.telegram },
+    };
+  },
+  setFeedbackChannels(patch: Partial<FeedbackChannels>) {
+    state.feedbackChannels = {
+      email: { ...state.feedbackChannels.email, ...(patch.email ?? {}) },
+      push: { ...state.feedbackChannels.push, ...(patch.push ?? {}) },
+      telegram: { ...state.feedbackChannels.telegram, ...(patch.telegram ?? {}) },
+    };
+    emit();
+  },
+
+  // ---- permissions ----
+
+  getPermissionOverride(memberId: string, key: string): boolean | null {
+    return state.permissionOverrides.get(memberId)?.get(key) ?? null;
+  },
+  setPermissionOverride(memberId: string, key: string, allowed: boolean | null) {
+    let map = state.permissionOverrides.get(memberId);
+    if (!map) {
+      map = new Map();
+      state.permissionOverrides.set(memberId, map);
+    }
+    if (allowed == null) {
+      map.delete(key);
+    } else {
+      map.set(key, allowed);
+    }
+    emit();
+  },
+};
+
+// ---------- Permission catalog (subset, demo-only) ----------
+
+const PERMISSION_CATALOG = [
+  // vehicles
+  { key: 'vehicles.view', category: 'vehicles', label_tr: 'Araç listesini görme', label_en: 'View vehicles', is_critical: false, sort_order: 10 },
+  { key: 'vehicles.create', category: 'vehicles', label_tr: 'Araç ekleme', label_en: 'Add vehicle', is_critical: false, sort_order: 11 },
+  { key: 'vehicles.update', category: 'vehicles', label_tr: 'Araç güncelleme', label_en: 'Update vehicle', is_critical: false, sort_order: 12 },
+  { key: 'vehicles.delete', category: 'vehicles', label_tr: 'Araç silme', label_en: 'Delete vehicle', is_critical: true, sort_order: 13 },
+  // jobs
+  { key: 'jobs.view', category: 'jobs', label_tr: 'İş listesi', label_en: 'View jobs', is_critical: false, sort_order: 20 },
+  { key: 'jobs.create', category: 'jobs', label_tr: 'İş oluşturma', label_en: 'Create job', is_critical: false, sort_order: 21 },
+  { key: 'jobs.assign', category: 'jobs', label_tr: 'İş atama', label_en: 'Assign job', is_critical: false, sort_order: 22 },
+  { key: 'jobs.update_any', category: 'jobs', label_tr: 'İş güncelleme (her iş)', label_en: 'Update any job', is_critical: false, sort_order: 23 },
+  { key: 'jobs.cancel', category: 'jobs', label_tr: 'İş iptali', label_en: 'Cancel job', is_critical: true, sort_order: 24 },
+  // members
+  { key: 'members.invite', category: 'members', label_tr: 'Ekip davet etme', label_en: 'Invite team', is_critical: false, sort_order: 30 },
+  { key: 'members.remove', category: 'members', label_tr: 'Ekipten çıkarma', label_en: 'Remove member', is_critical: true, sort_order: 31 },
+  // reports
+  { key: 'reports.view', category: 'reports', label_tr: 'Raporları görüntüleme', label_en: 'View reports', is_critical: false, sort_order: 40 },
+] as const;
+
+const ROLE_DEFAULTS: Record<UserRole, Record<string, boolean>> = {
+  owner: Object.fromEntries(PERMISSION_CATALOG.map((p) => [p.key, true])),
+  manager: {
+    'vehicles.view': true, 'vehicles.create': true, 'vehicles.update': true, 'vehicles.delete': false,
+    'jobs.view': true, 'jobs.create': true, 'jobs.assign': true, 'jobs.update_any': true, 'jobs.cancel': false,
+    'members.invite': true, 'members.remove': false,
+    'reports.view': true,
+  },
+  driver: {
+    'vehicles.view': true, 'vehicles.create': false, 'vehicles.update': false, 'vehicles.delete': false,
+    'jobs.view': true, 'jobs.create': false, 'jobs.assign': false, 'jobs.update_any': false, 'jobs.cancel': false,
+    'members.invite': false, 'members.remove': false,
+    'reports.view': false,
+  },
+};
+
+export function listDemoMemberPermissions(memberId: string): MemberPermission[] {
+  const member = state.profiles.find((p) => p.id === memberId);
+  if (!member) return [];
+  const overrides = state.permissionOverrides.get(memberId);
+  return PERMISSION_CATALOG.map((p) => {
+    const defaultAllowed = ROLE_DEFAULTS[member.role][p.key] ?? false;
+    const override = overrides?.get(p.key);
+    const overrideAllowed = override == null ? null : override;
+    const effective = overrideAllowed ?? defaultAllowed;
+    return {
+      key: p.key,
+      category: p.category as MemberPermission['category'],
+      is_critical: p.is_critical,
+      label_tr: p.label_tr,
+      label_en: p.label_en,
+      sort_order: p.sort_order,
+      default_allowed: defaultAllowed,
+      override_allowed: overrideAllowed,
+      effective_allowed: effective,
+    };
+  });
+}

@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Screen } from '@/components/Screen';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
@@ -15,45 +16,59 @@ import { theme } from '@/theme';
 
 const currentYear = new Date().getFullYear();
 
-// Common car colours. Stored as hex on the vehicle row so the operator's
-// pick drives the marker / card / hero gradient. Kept short on purpose —
-// 8 swatches is enough to cover real-world fleets without scroll fatigue.
-const COLOR_PALETTE: Array<{ key: string; hex: string; label: string }> = [
-  { key: 'white', hex: '#F8FAFC', label: 'Beyaz' },
-  { key: 'black', hex: '#1F2937', label: 'Siyah' },
-  { key: 'silver', hex: '#94A3B8', label: 'Gri' },
-  { key: 'red', hex: '#EF4444', label: 'Kırmızı' },
-  { key: 'orange', hex: '#FF7A1A', label: 'Turuncu' },
-  { key: 'yellow', hex: '#F59E0B', label: 'Sarı' },
-  { key: 'green', hex: '#22C55E', label: 'Yeşil' },
-  { key: 'blue', hex: '#3D5DDB', label: 'Mavi' },
+// Hex palette is constant; user-facing labels come from i18n via key lookup.
+const COLOR_PALETTE: Array<{ key: 'white' | 'black' | 'silver' | 'red' | 'orange' | 'yellow' | 'green' | 'blue'; hex: string }> = [
+  { key: 'white', hex: '#F8FAFC' },
+  { key: 'black', hex: '#1F2937' },
+  { key: 'silver', hex: '#94A3B8' },
+  { key: 'red', hex: '#EF4444' },
+  { key: 'orange', hex: '#FF7A1A' },
+  { key: 'yellow', hex: '#F59E0B' },
+  { key: 'green', hex: '#22C55E' },
+  { key: 'blue', hex: '#3D5DDB' },
 ];
 
-const schema = z.object({
-  plate: z
-    .string()
-    .min(4, 'Plaka çok kısa')
-    .max(15, 'Plaka çok uzun')
-    .regex(/^[0-9A-Za-z\s]+$/, 'Sadece harf ve rakam'),
-  brand: z.string().min(2, 'Marka gerekli').max(40, 'Çok uzun'),
-  model: z.string().min(1, 'Model gerekli').max(40, 'Çok uzun'),
-  year: z
-    .string()
-    .regex(/^\d{4}$/, '4 haneli yıl gir')
-    .refine((v) => {
-      const n = Number(v);
-      return n >= 1990 && n <= currentYear + 1;
-    }, `Yıl 1990-${currentYear + 1} aralığında olmalı`),
-});
-
-type FormData = z.infer<typeof schema>;
+type FormData = {
+  plate: string;
+  brand: string;
+  model: string;
+  year: string;
+};
 
 export default function NewVehicleScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { profile, session } = useAuth();
   const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [color, setColor] = useState<string | null>(null);
+
+  const schema = useMemo(
+    () =>
+      z.object({
+        plate: z
+          .string()
+          .min(4, t('vehicles.new.errors.plateShort'))
+          .max(15, t('vehicles.new.errors.plateLong'))
+          .regex(/^[0-9A-Za-z\s]+$/, t('vehicles.new.errors.plateChars')),
+        brand: z
+          .string()
+          .min(2, t('vehicles.new.errors.brandRequired'))
+          .max(40, t('common.tooLong')),
+        model: z
+          .string()
+          .min(1, t('vehicles.new.errors.modelRequired'))
+          .max(40, t('common.tooLong')),
+        year: z
+          .string()
+          .regex(/^\d{4}$/, t('vehicles.new.errors.yearFormat'))
+          .refine((v) => {
+            const n = Number(v);
+            return n >= 1990 && n <= currentYear + 1;
+          }, t('vehicles.new.errors.yearRange', { min: 1990, max: currentYear + 1 })),
+      }),
+    [t],
+  );
 
   const {
     control,
@@ -67,7 +82,7 @@ export default function NewVehicleScreen() {
 
   const onSubmit = handleSubmit(async (data) => {
     if (!profile?.organization_id || !session?.user.id) {
-      toast.error('Oturum bilgisi eksik', 'Tekrar giriş yap.');
+      toast.error(t('common.sessionMissingTitle'), t('common.sessionMissingText'));
       return;
     }
     try {
@@ -81,11 +96,11 @@ export default function NewVehicleScreen() {
         year: Number(data.year),
         color,
       });
-      toast.success('Araç filoya eklendi');
+      toast.success(t('vehicles.new.successTitle'), t('vehicles.new.successText'));
       router.replace('/(app)/vehicles');
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Kayıt başarısız';
-      toast.error('Araç eklenemedi', humanize(msg));
+      const msg = e instanceof Error ? e.message : t('vehicles.new.errorTitle');
+      toast.error(t('vehicles.new.errorTitle'), humanize(msg, t));
     } finally {
       setSubmitting(false);
     }
@@ -99,18 +114,16 @@ export default function NewVehicleScreen() {
         style={({ pressed }) => [styles.back, pressed && { opacity: 0.6 }]}
       >
         <Feather name="arrow-left" size={22} color={theme.colors.text} />
-        <Text style={styles.backText}>Geri</Text>
+        <Text style={styles.backText}>{t('common.back')}</Text>
       </Pressable>
 
       <View style={styles.header}>
         <View style={styles.eyebrow}>
           <Feather name="truck" size={11} color={theme.colors.accent} />
-          <Text style={styles.eyebrowText}>Yeni araç</Text>
+          <Text style={styles.eyebrowText}>{t('vehicles.new.eyebrow')}</Text>
         </View>
-        <Text style={styles.title}>Aracı tanımla</Text>
-        <Text style={styles.subtitle}>
-          Plaka, marka ve model. Fotoğraf adımı sonraki sürümde gelecek.
-        </Text>
+        <Text style={styles.title}>{t('vehicles.new.title')}</Text>
+        <Text style={styles.subtitle}>{t('vehicles.new.subtitle')}</Text>
       </View>
 
       <View style={styles.form}>
@@ -119,13 +132,13 @@ export default function NewVehicleScreen() {
           name="plate"
           render={({ field: { value, onChange, onBlur } }) => (
             <TextField
-              label="Plaka"
+              label={t('vehicles.new.plate')}
               icon="hash"
-              placeholder="34 ABC 123"
+              placeholder={t('vehicles.new.platePlaceholder')}
               autoCapitalize="characters"
               autoCorrect={false}
               value={value}
-              onChangeText={(t) => onChange(t.toUpperCase())}
+              onChangeText={(v) => onChange(v.toUpperCase())}
               onBlur={onBlur}
               error={errors.plate?.message}
               returnKeyType="next"
@@ -138,9 +151,9 @@ export default function NewVehicleScreen() {
           name="brand"
           render={({ field: { value, onChange, onBlur } }) => (
             <TextField
-              label="Marka"
+              label={t('vehicles.new.brand')}
               icon="award"
-              placeholder="Ford"
+              placeholder={t('vehicles.new.brandPlaceholder')}
               autoCapitalize="words"
               value={value}
               onChangeText={onChange}
@@ -156,9 +169,9 @@ export default function NewVehicleScreen() {
           name="model"
           render={({ field: { value, onChange, onBlur } }) => (
             <TextField
-              label="Model"
+              label={t('vehicles.new.model')}
               icon="layers"
-              placeholder="Transit"
+              placeholder={t('vehicles.new.modelPlaceholder')}
               autoCapitalize="words"
               value={value}
               onChangeText={onChange}
@@ -174,7 +187,7 @@ export default function NewVehicleScreen() {
           name="year"
           render={({ field: { value, onChange, onBlur } }) => (
             <TextField
-              label="Model yılı"
+              label={t('vehicles.new.year')}
               icon="calendar"
               placeholder={String(currentYear)}
               keyboardType="number-pad"
@@ -193,10 +206,11 @@ export default function NewVehicleScreen() {
             fleet map matches the real vehicle. Optional: leaving it blank
             falls back to the plate-derived gradient. */}
         <View style={styles.colorWrap}>
-          <Text style={styles.colorLabel}>Renk</Text>
+          <Text style={styles.colorLabel}>{t('vehicles.new.colorLabel')}</Text>
           <View style={styles.colorRow}>
             {COLOR_PALETTE.map((c) => {
               const active = color === c.hex;
+              const colorLabel = t(`vehicles.new.colors.${c.key}`);
               return (
                 <Pressable
                   key={c.key}
@@ -213,7 +227,7 @@ export default function NewVehicleScreen() {
                     },
                     pressed && { opacity: 0.7 },
                   ]}
-                  accessibilityLabel={c.label}
+                  accessibilityLabel={colorLabel}
                 >
                   {active ? (
                     <Feather
@@ -228,22 +242,26 @@ export default function NewVehicleScreen() {
           </View>
           <Text style={styles.colorHint}>
             {color
-              ? `Seçili: ${COLOR_PALETTE.find((c) => c.hex === color)?.label}`
-              : 'Seçim opsiyonel — boş bırakırsan plakadan otomatik atanır.'}
+              ? t('vehicles.new.colorPickedHint', {
+                  label: t(
+                    `vehicles.new.colors.${COLOR_PALETTE.find((c) => c.hex === color)?.key ?? 'white'}`,
+                  ),
+                })
+              : t('vehicles.new.colorEmptyHint')}
           </Text>
         </View>
 
-        <Button title="Aracı ekle" onPress={onSubmit} loading={submitting} />
+        <Button title={t('vehicles.new.submit')} onPress={onSubmit} loading={submitting} />
       </View>
     </Screen>
   );
 }
 
-function humanize(msg: string) {
+function humanize(msg: string, t: (k: string, opts?: Record<string, unknown>) => string) {
   if (/duplicate|unique|already exists|vehicles_organization_id_plate_key/i.test(msg))
-    return 'Bu plaka filonda zaten kayıtlı.';
-  if (/permission|policy|row.level/i.test(msg)) return 'Bu işlem için yetkin yok.';
-  if (/network/i.test(msg)) return 'İnternet bağlantını kontrol et.';
+    return t('vehicles.new.errors.duplicate');
+  if (/permission|policy|row.level/i.test(msg)) return t('common.permissionDeniedShort');
+  if (/network/i.test(msg)) return t('common.networkError');
   return msg;
 }
 
