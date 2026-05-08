@@ -39,6 +39,8 @@ yarn-error.*
 
 # dev/test artifacts
 screenshots/
+.scratch/
+.claude/
 
 # typescript
 *.tsbuildinfo
