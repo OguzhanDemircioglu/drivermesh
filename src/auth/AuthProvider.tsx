@@ -41,9 +41,15 @@ type AuthState = {
 
 const AuthContext = createContext<AuthState | null>(null);
 
-// Eager kick-off: AsyncStorage'tan token okumayı module load anında başlat,
-// AuthProvider mount edildiğinde Promise muhtemelen hazır olur.
-const initialSessionPromise = supabase.auth.getSession();
+// Eager kick-off: AsyncStorage'tan token okumayı module load anında başlat.
+// Promise resolve olur olmaz `initialSessionResolved`'a yazıyoruz; AuthProvider
+// mount olduğunda zaten hazırsa loading=false ile başlatıp ekstra splash
+// frame'i atlıyoruz.
+let initialSessionResolved: { session: Session | null } | null = null;
+const initialSessionPromise = supabase.auth.getSession().then((res) => {
+  initialSessionResolved = { session: res.data.session };
+  return res;
+});
 
 // Demo mode'da gerçek bir Supabase session yok — UI'in "session var" branch'ini
 // memnun edecek minimum yapıdaki sahte session. AuthGate sadece truthy kontrolü
@@ -67,9 +73,13 @@ function fakeDemoSession(profile: Profile): Session {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
+  // Modül yüklendikten beri yeterince zaman geçtiyse initialSessionResolved
+  // dolu olur — o durumda hiç splash göstermeden direkt routing'e geçeriz.
+  const [session, setSession] = useState<Session | null>(
+    initialSessionResolved?.session ?? null,
+  );
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialSessionResolved === null);
   const [isDemo, setIsDemo] = useState(isDemoActiveStore());
   const profileFetchToken = useRef(0);
 

@@ -11,15 +11,16 @@ const SUPPORTED: AppLocale[] = ['tr', 'en'];
 const STORAGE_KEY = 'drivermesh.locale';
 
 /**
- * Cihazın tercih sırası listesinde Türkçe varsa 'tr', yoksa 'en'.
- * `expo-localization.getLocales()` kullanıcının system Settings → Languages
- * sıralı listesini döndürür; biri 'tr' ise (regionCode'tan bağımsız —
- * Almanya'da yaşayan TR konuşan biri için de Türkçe gelsin) Türkçe açarız.
+ * Cihazın tercih sırası listesinde Türkçe veya Azerbaycan'ca varsa 'tr',
+ * yoksa 'en'. `expo-localization.getLocales()` regionCode'tan bağımsız
+ * sadece languageCode bakar: 'tr', 'az' → TR; 'en-US', 'en-GB', 'en-AU',
+ * 'en-IN' hepsi → EN.
  */
 function detectDeviceLocale(): AppLocale {
+  const TR_LIKE = new Set(['tr', 'az']);
   try {
     const list = getLocales();
-    if (list.some((l) => l.languageCode?.toLowerCase() === 'tr')) {
+    if (list.some((l) => TR_LIKE.has(l.languageCode?.toLowerCase() ?? ''))) {
       return 'tr';
     }
   } catch {
@@ -28,16 +29,18 @@ function detectDeviceLocale(): AppLocale {
   return 'en';
 }
 
-// Module-load senkron init — UI ilk render'da TR default ile direkt çalışır.
-// AsyncStorage'dan stored locale'i okuma setupI18n() üzerinden arka planda yapılır.
+// Module-load senkron init — UI ilk render'da cihaz diline göre çalışır,
+// hiçbir flicker yok. setupI18n() yeniden detect ederek değişiklikleri
+// senkronlar.
 if (!i18n.isInitialized) {
+  const initial = detectDeviceLocale();
   i18n.use(initReactI18next).init({
     resources: {
       tr: { translation: tr },
       en: { translation: en },
     },
-    lng: 'tr',
-    fallbackLng: 'tr',
+    lng: initial,
+    fallbackLng: 'en',
     interpolation: { escapeValue: false },
     returnNull: false,
     compatibilityJSON: 'v4',
@@ -45,26 +48,16 @@ if (!i18n.isInitialized) {
 }
 
 export async function setupI18n(): Promise<AppLocale> {
-  // Önce kullanıcının daha önce manuel seçtiği locale'i ara — bu hep
-  // önceliklidir. Eğer yoksa cihaz dil tercihinden oku, "tr" varsa
-  // Türkçe, yoksa İngilizce. İlk seferde de diske yazıyoruz ki sonraki
-  // açılışta cihazı tekrar sorgulamak zorunda kalmayalım.
-  let locale: AppLocale | null = null;
+  // Sistem dili her açılışta source of truth. AsyncStorage'a in-app toggle
+  // ile yazılan değer son session'a aittir; sistem dili değiştiyse onu
+  // override etmemeli. Bu yüzden ilk olarak cihaz dilini tespit ediyoruz,
+  // stored sadece sistem ile EŞLEŞTİĞİNDE veya o session'da set edildiyse
+  // anlamlıdır. Pratik karar: stored'ı yok say, cihaz dili kazansın.
+  const locale = detectDeviceLocale();
   try {
-    const stored = await AsyncStorage.getItem(STORAGE_KEY);
-    if (stored && SUPPORTED.includes(stored as AppLocale)) {
-      locale = stored as AppLocale;
-    }
+    await AsyncStorage.setItem(STORAGE_KEY, locale);
   } catch {
     /* ignore */
-  }
-  if (!locale) {
-    locale = detectDeviceLocale();
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY, locale);
-    } catch {
-      /* ignore */
-    }
   }
   if (locale !== i18n.language) {
     await i18n.changeLanguage(locale);

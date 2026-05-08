@@ -93,21 +93,21 @@ export default function WelcomeScreen() {
 
           <Button
             title={t('auth.welcome.signIn')}
+            variant="secondary"
             onPress={() => router.push('/(auth)/login')}
+            style={{ backgroundColor: 'rgb(238, 106, 29)', borderColor: 'rgb(238, 106, 29)' }}
           />
           <Button
             title={t('auth.welcome.startFleet')}
             variant="secondary"
             onPress={() => router.push('/(auth)/register')}
+            style={{ backgroundColor: 'rgb(140, 30, 200)', borderColor: 'rgb(140, 30, 200)' }}
           />
-          <Pressable
+          <Button
+            title={t('auth.welcome.hasInvite')}
+            variant="secondary"
             onPress={() => router.push('/(auth)/redeem')}
-            hitSlop={10}
-            style={({ pressed }) => [styles.inviteRow, pressed && { opacity: 0.6 }]}
-          >
-            <Text style={styles.inviteLink}>{t('auth.welcome.hasInvite')}</Text>
-          </Pressable>
-          <Text style={styles.footnote}>{t('auth.welcome.footnote')}</Text>
+          />
         </View>
       }
     />
@@ -142,31 +142,14 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.textDim,
   },
   ctaWrap: {
-    gap: theme.spacing.md,
-  },
-  inviteRow: {
-    alignItems: 'center',
-    paddingVertical: theme.spacing.sm,
-  },
-  inviteLink: {
-    color: theme.colors.lavender,
-    fontSize: theme.font.size.sm,
-    fontWeight: theme.font.weight.semibold,
-    letterSpacing: 0.2,
-  },
-  footnote: {
-    color: theme.colors.textDim,
-    fontSize: theme.font.size.xs,
-    textAlign: 'center',
-    letterSpacing: 1,
-    marginTop: theme.spacing.sm,
+    gap: theme.spacing.sm,
   },
 
   demoCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
     borderRadius: theme.radius.lg,
     borderWidth: 1,

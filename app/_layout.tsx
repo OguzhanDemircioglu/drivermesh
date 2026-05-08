@@ -31,20 +31,11 @@ const setDefaultFont = (Cmp: WithDefaultProps) => {
 setDefaultFont(Text as unknown as WithDefaultProps);
 setDefaultFont(TextInput as unknown as WithDefaultProps);
 
-const MIN_SPLASH_MS = 800;
-
 function AuthGate() {
   const { session, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
-  const [minElapsed, setMinElapsed] = useState(false);
   const splashHiddenRef = useRef(false);
-
-  // Min süre timer — WelcomeHero overlay'in kullanıcıya gözükecek garanti süresi.
-  useEffect(() => {
-    const t = setTimeout(() => setMinElapsed(true), MIN_SPLASH_MS);
-    return () => clearTimeout(t);
-  }, []);
 
   // Auth resolve olur olmaz doğru route'a yönlendir.
   useEffect(() => {
@@ -66,7 +57,10 @@ function AuthGate() {
     SplashScreen.hideAsync().catch(() => {});
   };
 
-  const showSplash = loading || !minElapsed;
+  // Min splash süresi yok — auth resolve eder etmez routing devreye girer.
+  // Native splash + JS overlay görsel olarak birebir aynı resmi gösterdiği
+  // için flicker yaşanmaz.
+  const showSplash = loading;
 
   return (
     <View style={styles.root} onLayout={handleRootLayout}>
@@ -75,6 +69,7 @@ function AuthGate() {
           headerShown: false,
           contentStyle: { backgroundColor: theme.colors.bg },
           animation: 'none',
+          statusBarTranslucent: true,
         }}
       />
       {showSplash ? (
@@ -87,11 +82,11 @@ function AuthGate() {
 }
 
 export default function RootLayout() {
-  // Noto Sans (Google Fonts, ücretsiz, OFL). 4 weight yüklü; RN fontWeight
-  // prop'u native synthesis ile bold/medium varyantları seçer ama biz default
-  // olarak 'NotoSans' family adını set ettik → sistem regular'i kullanır,
-  // explicit weight set edenler kendi map'ini bizden alır.
-  const [fontsLoaded] = useFonts({
+  // Noto Sans (Google Fonts, OFL). Yüklenirken UI'i bloklamıyoruz — system
+  // sans fallback ile başla, font hazır olunca otomatik swap. Bu önceki
+  // davranışta `if (!fontsLoaded) return <splash>` ile harcanan süreyi geri
+  // kazandırır (~200-500ms).
+  useFonts({
     NotoSans: NotoSans_400Regular,
     NotoSans_500Medium,
     NotoSans_600SemiBold,
@@ -101,19 +96,6 @@ export default function RootLayout() {
   useEffect(() => {
     setupI18n().catch((e) => console.warn('[i18n] init failed', e));
   }, []);
-
-  if (!fontsLoaded) {
-    // Font yüklenene kadar render etme — yoksa Verdana fallback ile flash olur.
-    return (
-      <GestureHandlerRootView style={styles.root}>
-        <SafeAreaProvider>
-          <View style={StyleSheet.absoluteFill}>
-            <WelcomeHero />
-          </View>
-        </SafeAreaProvider>
-      </GestureHandlerRootView>
-    );
-  }
 
   return (
     <GestureHandlerRootView style={styles.root}>
