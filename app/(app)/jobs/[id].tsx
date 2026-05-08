@@ -356,7 +356,7 @@ export default function JobDetailScreen() {
           {job.driver ? (
             <Card style={styles.subCard}>
               <View style={styles.subRow}>
-                <Avatar name={job.driver.full_name} size={40} />
+                <Avatar name={job.driver.full_name} size={40} uri={job.driver.avatar_url} />
                 <View style={styles.subBody}>
                   <Text style={styles.subLabel}>{t('jobs.detail.assignedDriver')}</Text>
                   <Text style={styles.subValue}>{job.driver.full_name}</Text>
@@ -668,7 +668,7 @@ export default function JobDetailScreen() {
                           pressed && { opacity: 0.7 },
                         ]}
                       >
-                        <Avatar name={d.full_name} size={36} />
+                        <Avatar name={d.full_name} size={36} uri={d.avatar_url} />
                         <View style={{ flex: 1 }}>
                           <Text style={styles.modalRowName}>{d.full_name}</Text>
                           <Text style={styles.modalRowMeta} numberOfLines={1}>

@@ -51,8 +51,11 @@ function regionThatFits(snap: FleetMapSnapshot): Region {
   const maxLat = Math.max(...lats);
   const minLng = Math.min(...lngs);
   const maxLng = Math.max(...lngs);
-  const padLat = Math.max((maxLat - minLat) * 1.6, 0.008);
-  const padLng = Math.max((maxLng - minLng) * 1.6, 0.008);
+  // Bbox'a %15 padding (önce %60 idi, kartlar üst üste geliyordu).
+  // Floor 0.012 → tek araçlık veya çok yakın küme'lerde mahalleye kadar
+  // zoom in eder ama hâlâ marker label'ları okunur.
+  const padLat = Math.max((maxLat - minLat) * 1.15, 0.012);
+  const padLng = Math.max((maxLng - minLng) * 1.15, 0.012);
   return {
     latitude: (minLat + maxLat) / 2,
     longitude: (minLng + maxLng) / 2,
@@ -264,7 +267,6 @@ export default function FleetMapScreen() {
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>{t('fleetMap.title')}</Text>
-            <Text style={styles.subtitle}>{t('fleetMap.subtitle')}</Text>
           </View>
           <Pressable
             onPress={load}

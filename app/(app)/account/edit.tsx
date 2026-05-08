@@ -42,8 +42,20 @@ export default function AccountEditScreen() {
           .string()
           .trim()
           .min(2, t('account.edit.errors.nameMin'))
-          .max(80, t('common.tooLong')),
-        phone: z.string().trim().max(32, t('common.tooLong')).optional().or(z.literal('')),
+          .max(20, t('common.tooLong'))
+          // Sadece harf + boşluk. Sanitizer onChangeText'te zaten temizliyor;
+          // bu paste/copy ya da unbeklenmeyen yollarla giren karakterler için
+          // backstop.
+          .regex(/^[\p{L}\s]+$/u, t('account.edit.errors.nameFormat')),
+        phone: z
+          .string()
+          .trim()
+          .max(20, t('common.tooLong'))
+          // Sadece rakam + boşluk; opsiyonel `+` sadece en başta. Boş string
+          // de geçerli (telefonu silmek = null kaydetmek).
+          .regex(/^\+?[\d\s]*$/, t('account.edit.errors.phoneFormat'))
+          .optional()
+          .or(z.literal('')),
       }),
     [t],
   );
@@ -235,10 +247,30 @@ export default function AccountEditScreen() {
                   icon="user"
                   placeholder={t('account.edit.namePlaceholder')}
                   value={value}
-                  onChangeText={onChange}
+                  onChangeText={(next) => {
+                    // Sadece harf + boşluk; rakam/sembol atılır.
+                    // Her kelimenin ilk harfi locale-aware (Türkçe i→İ)
+                    // büyür, geri kalanı küçültülür → "ahmet YILMAZ" → "Ahmet Yılmaz".
+                    const stripped = next
+                      .replace(/[^\p{L}\s]/gu, '')
+                      .replace(/^\s+/, ''); // baştaki boşluğu engelle
+                    const titled = stripped
+                      .split(/(\s+)/)
+                      .map((part) => {
+                        if (!part || /^\s+$/.test(part)) return part;
+                        return (
+                          part.charAt(0).toLocaleUpperCase('tr') +
+                          part.slice(1).toLocaleLowerCase('tr')
+                        );
+                      })
+                      .join('');
+                    onChange(titled);
+                  }}
                   onBlur={onBlur}
                   error={errors.full_name?.message}
                   returnKeyType="next"
+                  maxLength={20}
+                  autoCapitalize="words"
                 />
               )}
             />
@@ -256,22 +288,35 @@ export default function AccountEditScreen() {
                   autoComplete="tel"
                   textContentType="telephoneNumber"
                   value={value ?? ''}
-                  onChangeText={onChange}
+                  onChangeText={(next) => {
+                    // Native maxLength=20 + tek `+` sadece başta. Aşan/yanlış
+                    // karakterleri kullanıcı yazarken sessizce reddet — schema
+                    // hata mesajı sadece son care'i için kalsın.
+                    let cleaned = next.replace(/[^\d\s+]/g, '');
+                    if (cleaned.startsWith('+')) {
+                      cleaned = '+' + cleaned.slice(1).replace(/\+/g, '');
+                    } else {
+                      cleaned = cleaned.replace(/\+/g, '');
+                    }
+                    onChange(cleaned);
+                  }}
                   onBlur={onBlur}
                   error={errors.phone?.message}
                   returnKeyType="done"
                   onSubmitEditing={onSubmit}
+                  maxLength={20}
                 />
               )}
             />
 
-            <View style={styles.readonly}>
-              <Feather name="mail" size={14} color={theme.colors.textDim} />
-              <Text style={styles.readonlyText} numberOfLines={1}>
-                {session?.user.email}
-              </Text>
-              <Feather name="lock" size={12} color={theme.colors.textDim} />
-            </View>
+            <TextField
+              label={t('account.rowEmail')}
+              icon="mail"
+              rightIcon="lock"
+              value={session?.user.email ?? ''}
+              editable={false}
+              selectTextOnFocus={false}
+            />
           </Card>
 
           <Button
@@ -358,18 +403,6 @@ const styles = StyleSheet.create({
     fontSize: theme.font.size.md,
     fontWeight: theme.font.weight.semibold,
     marginBottom: theme.spacing.md,
-  },
-  readonly: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingTop: theme.spacing.md,
-    paddingHorizontal: theme.spacing.xs,
-  },
-  readonlyText: {
-    flex: 1,
-    color: theme.colors.textDim,
-    fontSize: theme.font.size.sm,
   },
   avatarBlock: {
     alignItems: 'center',

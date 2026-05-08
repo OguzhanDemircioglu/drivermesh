@@ -133,7 +133,7 @@ export default function PermissionsListScreen() {
                       pressed && { opacity: 0.7 },
                     ]}
                   >
-                    <Avatar name={m.full_name} size={42} />
+                    <Avatar name={m.full_name} size={42} uri={m.avatar_url} />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.memberName}>{m.full_name}</Text>
                       <View style={styles.memberMeta}>

@@ -139,7 +139,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) throw error;
       },
       signInDemo: async () => {
-        activateDemo();
+        // activateDemo loads persisted state from AsyncStorage if present,
+        // otherwise seeds + saves. Await it so the UI doesn't flash an
+        // empty list before hydration finishes.
+        await activateDemo();
         const owner = demo.ownerProfile();
         setProfile(owner);
         setSession(fakeDemoSession(owner));

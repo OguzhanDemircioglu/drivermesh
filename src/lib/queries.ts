@@ -12,6 +12,9 @@ export type HomeStats = {
   jobsInProgress: number;
   jobsCompletedToday: number;
   todaysJobs: Array<Job & { driver: Pick<Profile, 'full_name'> | null }>;
+  /** Filo Ritmi widget'ının ihtiyaç duyduğu per-vehicle status snapshot.
+   * En fazla ilk 8 araç gösterilir (UI dot satırı kalabalıklaşmasın). */
+  vehiclesList: Array<Pick<Vehicle, 'id' | 'plate' | 'status'>>;
 };
 
 export async function fetchHomeStats(): Promise<HomeStats> {
@@ -24,6 +27,7 @@ export async function fetchHomeStats(): Promise<HomeStats> {
   const [
     vehiclesRes,
     activeVehiclesRes,
+    vehiclesListRes,
     teamRes,
     pendingInvRes,
     todaysJobsRes,
@@ -37,6 +41,12 @@ export async function fetchHomeStats(): Promise<HomeStats> {
       .from('vehicles')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'active'),
+    // Fleet Rhythm widget'ı: ilk 8 araç (per-vehicle dot satırı için)
+    supabase
+      .from('vehicles')
+      .select('id, plate, status')
+      .order('created_at', { ascending: false })
+      .limit(8),
     supabase.from('profiles').select('id', { count: 'exact', head: true }),
     supabase
       .from('invitations')
@@ -70,6 +80,7 @@ export async function fetchHomeStats(): Promise<HomeStats> {
   const errors = [
     vehiclesRes.error,
     activeVehiclesRes.error,
+    vehiclesListRes.error,
     teamRes.error,
     pendingInvRes.error,
     todaysJobsRes.error,
@@ -92,6 +103,7 @@ export async function fetchHomeStats(): Promise<HomeStats> {
     jobsInProgress: inProgressJobsRes.count ?? 0,
     jobsCompletedToday: completedTodayRes.count ?? 0,
     todaysJobs: (todaysJobsListRes.data ?? []) as HomeStats['todaysJobs'],
+    vehiclesList: (vehiclesListRes.data ?? []) as HomeStats['vehiclesList'],
   };
 }
 
@@ -129,6 +141,9 @@ function fetchDemoHomeStats(): HomeStats {
         new Date(j.completed_at).getTime() >= startMs,
     ).length,
     todaysJobs,
+    vehiclesList: vehicles
+      .slice(0, 8)
+      .map((v) => ({ id: v.id, plate: v.plate, status: v.status })),
   };
 }
 
@@ -141,7 +156,7 @@ export type ReportStats = {
   totalJobs: number;
   byStatus: Record<JobStatus, number>;
   bySource: Record<JobSource, number>;
-  topDrivers: Array<{ id: string; name: string; completed: number; failed: number }>;
+  topDrivers: Array<{ id: string; name: string; avatar_url: string | null; completed: number; failed: number }>;
   topVehicles: Array<{ id: string; plate: string; brand: string; model: string; jobs: number }>;
   totalDistanceKm: number;
   averageDistanceKm: number | null;
@@ -206,20 +221,28 @@ export async function fetchReportStats(rangeDays = 30): Promise<ReportStats> {
 
   const [driversRes, vehiclesRes] = await Promise.all([
     driverIds.length
-      ? supabase.from('profiles').select('id, full_name').in('id', driverIds)
-      : Promise.resolve({ data: [] as Pick<Profile, 'id' | 'full_name'>[], error: null }),
+      ? supabase.from('profiles').select('id, full_name, avatar_url').in('id', driverIds)
+      : Promise.resolve({
+          data: [] as Pick<Profile, 'id' | 'full_name' | 'avatar_url'>[],
+          error: null,
+        }),
     vehicleIds.length
       ? supabase.from('vehicles').select('id, plate, brand, model').in('id', vehicleIds)
       : Promise.resolve({ data: [] as Pick<Vehicle, 'id' | 'plate' | 'brand' | 'model'>[], error: null }),
   ]);
 
-  const driverMap = new Map((driversRes.data ?? []).map((p) => [p.id, p.full_name]));
+  const driverMap = new Map(
+    (driversRes.data ?? []).map((p) => [p.id, { name: p.full_name, avatar_url: p.avatar_url }]),
+  );
   const vehicleMap = new Map(
     (vehiclesRes.data ?? []).map((v) => [v.id, { plate: v.plate, brand: v.brand, model: v.model }]),
   );
 
   const topDrivers = [...driverAgg.entries()]
-    .map(([id, agg]) => ({ id, name: driverMap.get(id) ?? '—', ...agg }))
+    .map(([id, agg]) => {
+      const d = driverMap.get(id);
+      return { id, name: d?.name ?? '—', avatar_url: d?.avatar_url ?? null, ...agg };
+    })
     .sort((a, b) => b.completed + b.failed - (a.completed + a.failed))
     .slice(0, 5);
 
@@ -277,7 +300,10 @@ function fetchDemoReportStats(rangeDays: number): ReportStats {
   }
 
   const topDrivers = [...driverAgg.entries()]
-    .map(([id, agg]) => ({ id, name: demo.profileById(id)?.full_name ?? '—', ...agg }))
+    .map(([id, agg]) => {
+      const p = demo.profileById(id);
+      return { id, name: p?.full_name ?? '—', avatar_url: p?.avatar_url ?? null, ...agg };
+    })
     .sort((a, b) => b.completed + b.failed - (a.completed + a.failed))
     .slice(0, 5);
 

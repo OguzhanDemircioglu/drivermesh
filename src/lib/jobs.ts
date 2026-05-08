@@ -5,12 +5,12 @@ import i18n from '@/i18n';
 
 export type JobWithRefs = Job & {
   vehicle: Pick<Vehicle, 'id' | 'plate' | 'brand' | 'model'> | null;
-  driver: Pick<Profile, 'id' | 'full_name' | 'role'> | null;
+  driver: Pick<Profile, 'id' | 'full_name' | 'role' | 'avatar_url'> | null;
   creator: Pick<Profile, 'full_name'> | null;
 };
 
 const SELECT =
-  '*, vehicle:vehicles(id,plate,brand,model), driver:profiles!jobs_driver_id_fkey(id,full_name,role), creator:profiles!jobs_created_by_fkey(full_name)';
+  '*, vehicle:vehicles(id,plate,brand,model), driver:profiles!jobs_driver_id_fkey(id,full_name,role,avatar_url), creator:profiles!jobs_created_by_fkey(full_name)';
 
 function inflate(j: Job): JobWithRefs {
   const v = j.vehicle_id ? demo.vehicleById(j.vehicle_id) : null;
@@ -19,7 +19,9 @@ function inflate(j: Job): JobWithRefs {
   return {
     ...j,
     vehicle: v ? { id: v.id, plate: v.plate, brand: v.brand, model: v.model } : null,
-    driver: d ? { id: d.id, full_name: d.full_name, role: d.role } : null,
+    driver: d
+      ? { id: d.id, full_name: d.full_name, role: d.role, avatar_url: d.avatar_url }
+      : null,
     creator: c ? { full_name: c.full_name } : null,
   };
 }

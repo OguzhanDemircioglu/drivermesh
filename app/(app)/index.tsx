@@ -19,8 +19,8 @@ import { KpiCard } from '@/components/KpiCard';
 import { JobCard } from '@/components/JobCard';
 import { BottomNav } from '@/components/BottomNav';
 import { Card } from '@/components/Card';
-import { useConfirm } from '@/components/ConfirmDialog';
 import { useAuth } from '@/auth/AuthProvider';
+import { setAppLocale, type AppLocale } from '@/i18n';
 import { fetchHomeStats, type HomeStats } from '@/lib/queries';
 import { theme } from '@/theme';
 
@@ -34,14 +34,35 @@ const EMPTY_STATS: HomeStats = {
   jobsInProgress: 0,
   jobsCompletedToday: 0,
   todaysJobs: [],
+  vehiclesList: [],
 };
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { t } = useTranslation();
-  const { session, profile, signOut } = useAuth();
-  const { confirm } = useConfirm();
+  const { t, i18n } = useTranslation();
+  const { session, profile } = useAuth();
+  const currentLocale = (i18n.language as AppLocale) ?? 'tr';
+  // Tap → diğer dil. Etiket aktif dili gösterir (kullanıcı hangisinde
+  // olduğunu, basınca neye geçeceğini bilsin diye flag + kod).
+  const localeFlag = currentLocale === 'tr' ? '🇹🇷' : '🇬🇧';
+  const localeLabel = currentLocale === 'tr' ? 'TR' : 'EN';
+  const toggleLocale = () => {
+    setAppLocale(currentLocale === 'tr' ? 'en' : 'tr');
+  };
+
+  // Saat dilimine göre selamlama. JavaScript `new Date().getHours()` cihazın
+  // sistem timezone'unu kullanır → kullanıcı hangi ülkedeyse o yerel saatte
+  // doğru karşılama gelir, ekstra timezone hesabı gerekmez.
+  // Aralıklar: 05–11 sabah, 12–17 öğleden sonra, 18–22 akşam, 23–04 gece.
+  const greetingKey = useMemo(() => {
+    const h = new Date().getHours();
+    if (h >= 5 && h < 12) return 'home.greetingMorning';
+    if (h >= 12 && h < 18) return 'home.greetingAfternoon';
+    if (h >= 18 && h < 23) return 'home.greetingEvening';
+    return 'home.greetingNight';
+  }, []);
+
   const [tab, setTab] = useState<'home' | 'jobs' | 'fleet' | 'account'>('home');
   const [stats, setStats] = useState<HomeStats>(EMPTY_STATS);
   const [refreshing, setRefreshing] = useState(false);
@@ -129,9 +150,9 @@ export default function HomeScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Avatar name={fullName} size={48} />
+              <Avatar name={fullName} size={48} uri={profile?.avatar_url} />
               <View style={styles.headerText}>
-                <Text style={styles.greet}>{t('home.greeting')}</Text>
+                <Text style={styles.greet}>{t(greetingKey)}</Text>
                 <Text style={styles.name} numberOfLines={1}>
                   {firstName}
                 </Text>
@@ -147,65 +168,58 @@ export default function HomeScreen() {
               </Pressable>
               <Pressable
                 hitSlop={10}
-                onPress={async () => {
-                  const ok = await confirm({
-                    title: t('home.logoutTitle'),
-                    message: t('home.logoutMessage'),
-                    confirmText: t('home.logoutConfirm'),
-                    cancelText: t('home.logoutCancel'),
-                    kind: 'warning',
-                  });
-                  if (ok) signOut();
-                }}
-                style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.7 }]}
+                onPress={toggleLocale}
+                accessibilityRole="button"
+                accessibilityLabel={`Dil: ${localeLabel}`}
+                style={({ pressed }) => [
+                  styles.localeBtn,
+                  pressed && { opacity: 0.7 },
+                ]}
               >
-                <Feather name="log-out" size={20} color={theme.colors.text} />
+                <Text style={styles.localeFlag}>{localeFlag}</Text>
+                <Text style={styles.localeText}>{localeLabel}</Text>
               </Pressable>
             </View>
           </View>
 
-          {/* Hero */}
-          {isFleetReady ? (
-            <FleetReadyHero stats={stats} />
-          ) : (
+          {/* Setup mode'da onboarding hero'su, ready mode'da tek satırlık
+              "live status strip" — KPI'lar saymakla meşgul, bu şerit "şu an
+              ne oluyor + Haritaya git" tetikleyicisi. */}
+          {!isFleetReady ? (
             <FleetSetupHero
               stats={stats}
               onInvite={() => router.push('/(app)/team')}
               onAddVehicle={() => router.push('/(app)/vehicles/new')}
             />
+          ) : (
+            <Pressable
+              onPress={() => router.push('/(app)/fleet-map')}
+              style={({ pressed }) => [styles.liveStrip, pressed && { opacity: 0.85 }]}
+            >
+              <View style={styles.livePulseDot} />
+              <Text style={styles.liveLabel}>{t('home.heroLive')}</Text>
+              <Text style={styles.liveSep}>·</Text>
+              <Text style={styles.liveCount}>
+                {stats.jobsInProgress > 0
+                  ? t('home.liveStripActive', { count: stats.jobsInProgress })
+                  : t('home.liveStripIdle')}
+              </Text>
+              <View style={styles.liveSpacer} />
+              <Text style={styles.liveCta}>{t('home.liveStripCta')}</Text>
+              <Feather name="chevron-right" size={14} color={theme.colors.accent} />
+            </Pressable>
           )}
 
-          {/* KPI grid */}
-          <View style={styles.kpiGrid}>
-            <KpiCard
-              label={t('home.kpiActiveVehicles')}
-              value={`${stats.vehiclesActive} / ${stats.vehiclesTotal}`}
-              icon="truck"
-              tone="orange"
-              style={styles.kpiHalf}
-            />
-            <KpiCard
-              label={t('home.kpiTodayJobs')}
-              value={stats.jobsToday}
-              icon="package"
-              tone="mesh"
-              style={styles.kpiHalf}
-            />
-            <KpiCard
-              label={t('home.kpiOpenJobs')}
-              value={stats.jobsOpen}
-              icon="alert-circle"
-              tone="lavender"
-              style={styles.kpiHalf}
-            />
-            <KpiCard
-              label={t('home.kpiCompleted')}
-              value={stats.jobsCompletedToday}
-              icon="check-circle"
-              tone="success"
-              style={styles.kpiHalf}
-            />
-          </View>
+          {/* Filo Ritmi — KPI grid'in yerini aldı: filo durumunu macro
+              (segmentli bar) + micro (per-vehicle dot) + mikro KPI metni
+              tek karede. Klasik 4-cell sayım yerine "filomun ritmi nasıl?"
+              hissi veriyor. */}
+          <FleetRhythm
+            vehicles={stats.vehiclesList}
+            jobsCompletedToday={stats.jobsCompletedToday}
+            jobsOpen={stats.jobsOpen}
+            onVehicleTap={(id) => router.push(`/(app)/vehicles/${id}`)}
+          />
 
           {/* Quick actions */}
           <View style={styles.section}>
@@ -230,11 +244,6 @@ export default function HomeScreen() {
                 onPress={() =>
                   router.push(canAdd ? '/(app)/vehicles/new' : '/(app)/vehicles')
                 }
-              />
-              <QuickAction
-                label={t('fleetMap.openShort')}
-                icon="map"
-                onPress={() => router.push('/(app)/fleet-map')}
               />
               <QuickAction
                 label={t('home.quickReports')}
@@ -283,27 +292,150 @@ export default function HomeScreen() {
         </ScrollView>
       </SafeAreaView>
 
-      {/* FAB */}
-      <Pressable
-        onPress={() =>
-          router.push(canAdd ? '/(app)/jobs/new' : '/(app)/jobs')
-        }
-        style={({ pressed }) => [
-          styles.fab,
-          { bottom: insets.bottom + 92 },
-          pressed && { transform: [{ scale: 0.95 }] },
-        ]}
-      >
-        <LinearGradient
-          colors={['#FF8C3D', '#FF7A1A', '#F36300']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[StyleSheet.absoluteFill, { borderRadius: 30 }]}
-        />
-        <Feather name="plus" size={26} color="#0A0E1F" />
-      </Pressable>
-
       <BottomNav active={tab} onChange={onTabChange} />
+    </View>
+  );
+}
+
+// ============================================================
+// Filo Ritmi — segmentli bar + per-vehicle dot satırı + mikro KPI
+// ============================================================
+
+type FleetRhythmProps = {
+  vehicles: HomeStats['vehiclesList'];
+  jobsCompletedToday: number;
+  jobsOpen: number;
+  onVehicleTap: (id: string) => void;
+};
+
+const STATUS_COLORS: Record<'active' | 'idle' | 'maintenance', string> = {
+  active: theme.colors.success,
+  idle: theme.colors.textMuted,
+  maintenance: theme.colors.warning,
+};
+
+function FleetRhythm({
+  vehicles,
+  jobsCompletedToday,
+  jobsOpen,
+  onVehicleTap,
+}: FleetRhythmProps) {
+  const { t } = useTranslation();
+  const total = vehicles.length;
+  const counts = {
+    active: vehicles.filter((v) => v.status === 'active').length,
+    idle: vehicles.filter((v) => v.status === 'idle').length,
+    maintenance: vehicles.filter((v) => v.status === 'maintenance').length,
+  };
+
+  // Plate'in son 3 hane gibi okunan kısmı (ör. "34 ABC 123" → "123").
+  // Tek hücreye sığsın diye kısa label.
+  const plateTail = (plate: string) => plate.replace(/\s+/g, '').slice(-3);
+
+  return (
+    <View style={styles.rhythmCard}>
+      <View style={styles.rhythmTopRow}>
+        <Text style={styles.rhythmCountText}>
+          <Text style={[styles.rhythmCountStrong, { color: STATUS_COLORS.active }]}>
+            {counts.active}
+          </Text>{' '}
+          {t('home.fleetRhythm.active')}
+          {counts.idle > 0 ? (
+            <Text>
+              {'  ·  '}
+              <Text style={[styles.rhythmCountStrong, { color: STATUS_COLORS.idle }]}>
+                {counts.idle}
+              </Text>{' '}
+              {t('home.fleetRhythm.idle')}
+            </Text>
+          ) : null}
+          {counts.maintenance > 0 ? (
+            <Text>
+              {'  ·  '}
+              <Text
+                style={[styles.rhythmCountStrong, { color: STATUS_COLORS.maintenance }]}
+              >
+                {counts.maintenance}
+              </Text>{' '}
+              {t('home.fleetRhythm.maintenance')}
+            </Text>
+          ) : null}
+        </Text>
+      </View>
+
+      {/* Stacked bar — flex oranları doğrudan filo karışımını verir. */}
+      {total > 0 ? (
+        <View style={styles.rhythmBar}>
+          {counts.active > 0 ? (
+            <View
+              style={[
+                styles.rhythmBarSeg,
+                { flex: counts.active, backgroundColor: STATUS_COLORS.active },
+              ]}
+            />
+          ) : null}
+          {counts.idle > 0 ? (
+            <View
+              style={[
+                styles.rhythmBarSeg,
+                { flex: counts.idle, backgroundColor: STATUS_COLORS.idle },
+              ]}
+            />
+          ) : null}
+          {counts.maintenance > 0 ? (
+            <View
+              style={[
+                styles.rhythmBarSeg,
+                { flex: counts.maintenance, backgroundColor: STATUS_COLORS.maintenance },
+              ]}
+            />
+          ) : null}
+        </View>
+      ) : (
+        <View style={[styles.rhythmBar, styles.rhythmBarEmpty]} />
+      )}
+
+      {/* Per-vehicle dot satırı — tap → araç detay. */}
+      {vehicles.length > 0 ? (
+        <View style={styles.rhythmDotsRow}>
+          {vehicles.map((v) => {
+            const c =
+              STATUS_COLORS[v.status as 'active' | 'idle' | 'maintenance'] ??
+              theme.colors.textMuted;
+            return (
+              <Pressable
+                key={v.id}
+                onPress={() => onVehicleTap(v.id)}
+                style={({ pressed }) => [
+                  styles.rhythmDotCell,
+                  pressed && { opacity: 0.7 },
+                ]}
+                hitSlop={6}
+              >
+                <View style={[styles.rhythmDot, { backgroundColor: c }]} />
+                <Text style={styles.rhythmDotLabel} numberOfLines={1}>
+                  {plateTail(v.plate)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
+
+      {/* Mikro KPI footer — eski grid'deki "Bugün biten" + "Açık iş". */}
+      <View style={styles.rhythmFooter}>
+        <Text style={styles.rhythmFooterText}>
+          <Feather name="check-circle" size={11} color={theme.colors.success} />{' '}
+          {t('home.completedToday')}:{' '}
+          <Text style={styles.rhythmFooterStrong}>{jobsCompletedToday}</Text>
+        </Text>
+        <Text style={styles.rhythmFooterSep}>·</Text>
+        <Text style={styles.rhythmFooterText}>
+          <Feather name="alert-circle" size={11} color={theme.colors.lavender} />{' '}
+          {t('home.kpiOpenJobs')}:{' '}
+          <Text style={styles.rhythmFooterStrong}>{jobsOpen}</Text>
+        </Text>
+      </View>
     </View>
   );
 }
@@ -478,21 +610,22 @@ function QuickAction({
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       style={({ pressed }) => [
         styles.quickItem,
+        pressed && !disabled && styles.quickItemPressed,
         disabled && { opacity: 0.45 },
-        pressed && !disabled && { opacity: 0.8 },
       ]}
     >
       <View style={styles.quickIconWrap}>
-        <Feather name={icon} size={20} color={theme.colors.accent} />
+        <Feather name={icon} size={24} color={theme.colors.accent} />
         {badge ? (
           <View style={styles.badgePill}>
             <Text style={styles.badgePillText}>{badge}</Text>
           </View>
         ) : null}
       </View>
-      <Text style={styles.quickLabel} numberOfLines={1}>
+      <Text style={styles.quickLabel} numberOfLines={2}>
         {label}
       </Text>
     </Pressable>
@@ -567,6 +700,127 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  localeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 42,
+    paddingHorizontal: 12,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.bgElevated,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  localeFlag: { fontSize: 18 },
+  localeText: {
+    color: theme.colors.text,
+    fontSize: theme.font.size.sm,
+    fontWeight: theme.font.weight.semibold,
+    letterSpacing: 0.4,
+  },
+
+  liveStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(34,197,94,0.32)',
+    backgroundColor: 'rgba(34,197,94,0.08)',
+  },
+  livePulseDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.colors.success,
+  },
+  liveLabel: {
+    fontSize: theme.font.size.xs,
+    fontWeight: theme.font.weight.semibold,
+    color: theme.colors.success,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  liveSep: { color: theme.colors.textDim, fontSize: 12 },
+  liveCount: {
+    color: theme.colors.text,
+    fontSize: theme.font.size.sm,
+    fontWeight: theme.font.weight.medium,
+  },
+  liveSpacer: { flex: 1 },
+  liveCta: {
+    color: theme.colors.accent,
+    fontSize: theme.font.size.xs,
+    fontWeight: theme.font.weight.semibold,
+  },
+
+  rhythmCard: {
+    borderRadius: theme.radius.xl,
+    backgroundColor: theme.colors.bgElevated,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: theme.spacing.lg,
+    gap: theme.spacing.md,
+  },
+  rhythmTopRow: { flexDirection: 'row', alignItems: 'center' },
+  rhythmCountText: {
+    color: theme.colors.textMuted,
+    fontSize: theme.font.size.sm,
+    fontWeight: theme.font.weight.medium,
+  },
+  rhythmCountStrong: {
+    fontWeight: theme.font.weight.bold,
+    fontSize: theme.font.size.md,
+  },
+  rhythmBar: {
+    flexDirection: 'row',
+    height: 10,
+    borderRadius: 5,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  rhythmBarSeg: { height: '100%' },
+  rhythmBarEmpty: { backgroundColor: 'rgba(255,255,255,0.04)' },
+  rhythmDotsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'flex-start',
+    paddingTop: 2,
+  },
+  rhythmDotCell: { alignItems: 'center', gap: 6, minWidth: 36 },
+  rhythmDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  rhythmDotLabel: {
+    color: theme.colors.textDim,
+    fontSize: 10,
+    fontWeight: theme.font.weight.medium,
+    letterSpacing: 0.4,
+  },
+  rhythmFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingTop: theme.spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.border,
+  },
+  rhythmFooterText: {
+    color: theme.colors.textMuted,
+    fontSize: theme.font.size.xs,
+  },
+  rhythmFooterStrong: {
+    color: theme.colors.text,
+    fontWeight: theme.font.weight.semibold,
+  },
+  rhythmFooterSep: { color: theme.colors.textDim, fontSize: 11 },
 
   hero: {
     borderRadius: theme.radius['2xl'],
@@ -678,30 +932,45 @@ const styles = StyleSheet.create({
     fontWeight: theme.font.weight.medium,
   },
 
+  // 5 item → 2 sütun grid (2 satır 2 + son satır 1 sola yaslı). Tek
+  // satıra sıkışmış 5 ufacık item yerine, her aksiyona belirgin geniş
+  // bir kart. Daha az aksiyon görünür ama her biri rahat tap-target.
   quickRow: {
     flexDirection: 'row',
-    gap: 8,
+    flexWrap: 'wrap',
+    gap: 12,
   },
   quickItem: {
-    flex: 1,
+    width: '48%',
     backgroundColor: theme.colors.bgElevated,
     borderWidth: 1,
     borderColor: theme.colors.border,
     borderRadius: theme.radius.lg,
-    paddingVertical: 14,
-    paddingHorizontal: 4,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.sm,
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
+  },
+  quickItemPressed: {
+    borderColor: theme.colors.accent,
+    backgroundColor: theme.colors.surface,
   },
   quickIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.colors.accentMuted,
+    borderWidth: 1,
+    borderColor: 'rgba(255,122,26,0.32)',
   },
-  quickLabel: { fontSize: 12, color: theme.colors.text, fontWeight: theme.font.weight.medium },
+  quickLabel: {
+    fontSize: theme.font.size.sm,
+    color: theme.colors.text,
+    fontWeight: theme.font.weight.semibold,
+    textAlign: 'center',
+  },
   badgePill: {
     position: 'absolute',
     top: -4,

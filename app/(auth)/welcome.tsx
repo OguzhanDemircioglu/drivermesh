@@ -87,9 +87,6 @@ export default function WelcomeScreen() {
                   </Text>
                 </View>
               </View>
-              <Text style={styles.demoSubtitle} numberOfLines={2}>
-                {t('auth.login.tryDemoSubtitle')}
-              </Text>
             </View>
             <Feather name="arrow-right" size={18} color={theme.colors.textMuted} />
           </Pressable>
@@ -121,26 +118,26 @@ const styles = StyleSheet.create({
   langPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    gap: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
     borderRadius: theme.radius.full,
     borderWidth: 1,
     borderColor: theme.colors.border,
     backgroundColor: 'rgba(19,24,41,0.55)',
   },
   langText: {
-    fontSize: theme.font.size.xs,
-    fontWeight: theme.font.weight.semibold,
+    fontSize: theme.font.size.lg,
+    fontWeight: theme.font.weight.bold,
     color: theme.colors.textDim,
-    letterSpacing: 1.2,
+    letterSpacing: 1.4,
   },
   langTextActive: {
     color: theme.colors.text,
   },
   langDot: {
-    width: 3,
-    height: 3,
+    width: 4,
+    height: 4,
     borderRadius: 2,
     backgroundColor: theme.colors.textDim,
   },

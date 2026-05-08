@@ -21,16 +21,19 @@ export const theme = {
     full: 9999,
   },
   font: {
+    // Boyutlar — orijinal değerlere göre +3px. Üçüncü "biraz daha büyült"
+    // adımı. xs:12→15, sm:13→16, base:15→18, md:16→19, lg:18→21, xl:22→25,
+    // 2xl:28→31, 3xl:34→37, 4xl:42→45.
     size: {
-      xs: 12,
-      sm: 13,
-      base: 15,
-      md: 16,
-      lg: 18,
-      xl: 22,
-      '2xl': 28,
-      '3xl': 34,
-      '4xl': 42,
+      xs: 15,
+      sm: 16,
+      base: 18,
+      md: 19,
+      lg: 21,
+      xl: 25,
+      '2xl': 31,
+      '3xl': 37,
+      '4xl': 45,
     },
     weight: {
       regular: '400' as const,
@@ -39,6 +42,10 @@ export const theme = {
       bold: '700' as const,
       black: '800' as const,
     },
+    // Noto Sans — Google Fonts (SIL OFL), Verdana benzeri ferah karakter.
+    // @expo-google-fonts/noto-sans paketinden useFonts ile yükleniyor.
+    // Cross-platform tutarlı.
+    family: 'NotoSans',
   },
 } as const;
 

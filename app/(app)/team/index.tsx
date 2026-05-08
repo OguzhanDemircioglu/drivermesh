@@ -248,7 +248,7 @@ export default function TeamScreen() {
                       ]}
                     >
                       <Card style={styles.memberCard}>
-                        <Avatar name={m.full_name} size={42} />
+                        <Avatar name={m.full_name} size={42} uri={m.avatar_url} />
                         <View style={styles.memberBody}>
                           <Text style={styles.memberName} numberOfLines={1}>
                             {m.full_name}

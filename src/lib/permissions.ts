@@ -41,12 +41,12 @@ export type Notification = {
 };
 
 export type NotificationWithActor = Notification & {
-  actor: Pick<Profile, 'id' | 'full_name' | 'role'> | null;
+  actor: Pick<Profile, 'id' | 'full_name' | 'role' | 'avatar_url'> | null;
 };
 
 export type TeamMemberLite = Pick<
   Profile,
-  'id' | 'full_name' | 'email' | 'role' | 'created_at'
+  'id' | 'full_name' | 'email' | 'role' | 'created_at' | 'avatar_url'
 >;
 
 export class PermissionError extends Error {
@@ -227,14 +227,19 @@ export async function listNotifications(
           ...n,
           payload: n.payload as Record<string, unknown>,
           actor: actor
-            ? { id: actor.id, full_name: actor.full_name, role: actor.role }
+            ? {
+                id: actor.id,
+                full_name: actor.full_name,
+                role: actor.role,
+                avatar_url: actor.avatar_url,
+              }
             : null,
         };
       });
   }
   const { data, error } = await supabase
     .from('notifications')
-    .select('*, actor:profiles!notifications_actor_id_fkey(id, full_name, role)')
+    .select('*, actor:profiles!notifications_actor_id_fkey(id, full_name, role, avatar_url)')
     .order('created_at', { ascending: false })
     .limit(limit);
   if (error) throw new PermissionError('notifications_fetch_failed', error.message);
@@ -265,6 +270,7 @@ export async function listOrgMembers(
         email: p.email,
         role: p.role,
         created_at: p.created_at,
+        avatar_url: p.avatar_url,
       }))
       .sort(
         (a, b) =>
@@ -274,7 +280,7 @@ export async function listOrgMembers(
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, email, role, created_at')
+    .select('id, full_name, email, role, created_at, avatar_url')
     .eq('organization_id', organizationId)
     .order('role', { ascending: true })
     .order('created_at', { ascending: true });

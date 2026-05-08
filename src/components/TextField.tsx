@@ -14,11 +14,14 @@ type Props = TextInputProps & {
   label: string;
   error?: string;
   icon?: keyof typeof Feather.glyphMap;
+  /** Sağ tarafta gösterilen küçük ipucu ikonu (örn. read-only alanlar için
+   * kilit). isPassword ile aynı anda kullanılmaz — eye-toggle önceliklidir. */
+  rightIcon?: keyof typeof Feather.glyphMap;
   isPassword?: boolean;
 };
 
 export const TextField = forwardRef<TextInput, Props>(function TextField(
-  { label, error, icon, isPassword, style, onFocus, onBlur, ...rest },
+  { label, error, icon, rightIcon, isPassword, style, onFocus, onBlur, ...rest },
   ref,
 ) {
   const [focused, setFocused] = useState(false);
@@ -85,6 +88,13 @@ export const TextField = forwardRef<TextInput, Props>(function TextField(
               color={theme.colors.textMuted}
             />
           </Pressable>
+        ) : rightIcon ? (
+          <Feather
+            name={rightIcon}
+            size={14}
+            color={theme.colors.textDim}
+            style={styles.rightIcon}
+          />
         ) : null}
       </View>
       {hasError ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -129,6 +139,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   toggle: { padding: 4, marginLeft: 8 },
+  rightIcon: { marginLeft: 8 },
   errorText: {
     fontSize: theme.font.size.xs,
     color: theme.colors.danger,

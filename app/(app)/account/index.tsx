@@ -128,6 +128,46 @@ export default function AccountScreen() {
     }
   };
 
+  const onDeleteAccount = async () => {
+    // Patron'un yalnız "hesabımı sil" yolu yok — fleet'in başka kimsesi
+    // kalmaz. Önce patronluğu devretsin ya da filoyu silsin.
+    if (isOwner) {
+      toast.warning(
+        t('account.deleteAccountOwnerBlockTitle'),
+        t('account.deleteAccountOwnerBlockText'),
+      );
+      return;
+    }
+    const ok = await confirm({
+      title: t('account.deleteAccountConfirmTitle'),
+      message: t('account.deleteAccountConfirmText'),
+      confirmText: t('account.deleteAccountConfirmBtn'),
+      cancelText: t('common.cancel'),
+      kind: 'destructive',
+    });
+    if (!ok) return;
+    const finalOk = await confirm({
+      title: t('account.deleteAccountFinalConfirmTitle'),
+      message: t('account.deleteAccountFinalConfirmText'),
+      confirmText: t('account.deleteAccountFinalConfirmBtn'),
+      cancelText: t('common.cancel'),
+      kind: 'destructive',
+    });
+    if (!finalOk) return;
+    try {
+      // TODO(backend): self-delete RPC (delete profile + cascade
+      // notifications/permission_overrides). Şu an demo'da sadece signOut
+      // yapıyoruz; gerçek mod için backend RPC eklenmeli.
+      toast.success(
+        t('account.deleteAccountSuccessTitle'),
+        t('account.deleteAccountSuccessText'),
+      );
+      await signOut();
+    } catch (e) {
+      toast.error(t('account.deleteAccountError'), (e as Error).message);
+    }
+  };
+
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
@@ -264,8 +304,8 @@ export default function AccountScreen() {
               />
               <Action
                 icon="trash-2"
-                label={t('account.ownerActionDelete')}
-                hint={t('account.ownerActionDeleteHint')}
+                label={t('account.ownerActionDeleteFleet')}
+                hint={t('account.ownerActionDeleteFleetHint')}
                 onPress={onDeleteFleet}
                 danger
               />
@@ -345,13 +385,26 @@ export default function AccountScreen() {
             <Action
               icon="help-circle"
               label={t('account.actionSupport')}
-              onPress={() => toast.info(t('account.actionSupport'), t('common.notImplemented'))}
+              onPress={() => router.push('/(app)/account/support')}
             />
             <Action
               icon="info"
               label={t('account.actionAbout')}
               hint={t('account.aboutHint')}
               onPress={() => toast.info(t('common.appName'), t('account.aboutText'))}
+            />
+          </Card>
+
+          {/* Hesap sil — her rol için. Patron'da "önce devret/filo sil"
+              uyarısıyla erken döner; manager/şoförde 2-aşamalı onay. */}
+          <Card>
+            <Text style={styles.sectionTitle}>{t('account.dangerZone')}</Text>
+            <Action
+              icon="user-x"
+              label={t('account.actionDeleteAccount')}
+              hint={t('account.actionDeleteAccountHint')}
+              onPress={onDeleteAccount}
+              danger
             />
           </Card>
 

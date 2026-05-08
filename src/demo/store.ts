@@ -1,11 +1,20 @@
 /**
- * In-memory demo store. Activated when AuthProvider.signInDemo() runs.
+ * Demo store. Activated when AuthProvider.signInDemo() runs.
  *
  * The lib/ data layer checks `isDemoActive()` at the top of every
  * query/mutation and short-circuits to this store instead of hitting
- * Supabase. State lives only in JS memory — closing the app resets it.
+ * Supabase.
+ *
+ * **Persistence:** the seed function (`reseed`) plays the role of a "DB"
+ * that runs once on first activation; afterwards the entire state is
+ * mirrored to AsyncStorage under DEMO_STATE_KEY. Subsequent activations
+ * load from disk so demo mutations (avatar uploads, job state changes,
+ * permission overrides, …) survive app kills. `clearDemoStorage()` wipes
+ * the disk copy — call it from the explicit "delete fleet" action so the
+ * next sign-in re-seeds.
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type {
   Invitation,
   Job,
@@ -17,6 +26,12 @@ import type {
   Vehicle,
 } from '@/lib/database.types';
 import type { MemberPermission } from '@/lib/permissions';
+
+// v2: profile seed'i artık avatar_url içeriyor (pravatar.cc CDN). v1
+// kalıntıları devre dışı bırakıldığı için kullanıcı uygulamayı bir
+// kere açtığında yeni seed otomatik gelir; eski saved state diskte
+// orphan kalır, GC'lenmez ama okunmaz.
+const DEMO_STATE_KEY = 'drivermesh.demo.state.v2';
 
 // ---------- IDs ----------
 
@@ -30,11 +45,25 @@ export const DEMO_DRIVER_IDS = ['demo-d1', 'demo-d2', 'demo-d3', 'demo-d4'] as c
 const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
 const hoursAgo = (h: number) => minutesAgo(h * 60);
 
-// ---------- Listener pattern ----------
+// ---------- Listener pattern + debounced disk save ----------
 
 let listeners: Array<() => void> = [];
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+
 function emit() {
   for (const fn of listeners) fn();
+  // Persistence — every state mutation routes through emit(); we coalesce
+  // rapid bursts (e.g. driver-position updates, multi-field form save) into
+  // a single AsyncStorage write to avoid I/O thrash.
+  if (_active) {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      saveTimer = null;
+      saveToDisk().catch(() => {
+        /* swallow — disk persistence is best-effort, in-memory is canonical */
+      });
+    }, 250);
+  }
 }
 export function subscribeDemo(fn: () => void): () => void {
   listeners.push(fn);
@@ -43,20 +72,104 @@ export function subscribeDemo(fn: () => void): () => void {
   };
 }
 
-// ---------- Active flag ----------
+// ---------- Active flag + activation/deactivation ----------
 
 let _active = false;
 export function isDemoActive(): boolean {
   return _active;
 }
-export function activateDemo() {
+
+/**
+ * Activate demo mode. First call after a fresh install hits the "DB" (the
+ * `reseed` function) once and writes the result to AsyncStorage. Every
+ * subsequent activation hydrates state from AsyncStorage so demo
+ * mutations survive app restarts. `signInDemo` in AuthProvider awaits
+ * this so UI doesn't render a stale-empty state on cold launch.
+ */
+export async function activateDemo(): Promise<void> {
   _active = true;
-  reseed();
+  const loaded = await loadFromDisk();
+  if (!loaded) {
+    reseed();
+    // First-ever activation — push the seed to disk so next launch reads
+    // exactly what the user is about to see (no double "DB" hit).
+    await saveToDisk().catch(() => {});
+  }
   emit();
 }
+
 export function deactivateDemo() {
   _active = false;
+  // NOTE: disk state is intentionally KEPT — signing back into demo
+  // brings the user to the same state they left. To reset, call
+  // `clearDemoStorage()` (deleteFleet does this).
   emit();
+}
+
+/** Wipe the persisted demo state. Next `activateDemo()` re-seeds from scratch. */
+export async function clearDemoStorage(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(DEMO_STATE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+// ---------- Disk persistence ----------
+
+type SerializedState = {
+  hq: Hq | null;
+  profiles: Profile[];
+  vehicles: Vehicle[];
+  jobs: Job[];
+  invitations: Invitation[];
+  notifications: Notification[];
+  // Map<string, Map<string, boolean>> → nested plain objects
+  permissionOverrides: Record<string, Record<string, boolean>>;
+  feedbackChannels: FeedbackChannels;
+};
+
+async function saveToDisk(): Promise<void> {
+  const overridesObj: Record<string, Record<string, boolean>> = {};
+  for (const [memberId, perms] of state.permissionOverrides.entries()) {
+    overridesObj[memberId] = Object.fromEntries(perms.entries());
+  }
+  const payload: SerializedState = {
+    hq: state.hq,
+    profiles: state.profiles,
+    vehicles: state.vehicles,
+    jobs: state.jobs,
+    invitations: state.invitations,
+    notifications: state.notifications,
+    permissionOverrides: overridesObj,
+    feedbackChannels: state.feedbackChannels,
+  };
+  await AsyncStorage.setItem(DEMO_STATE_KEY, JSON.stringify(payload));
+}
+
+async function loadFromDisk(): Promise<boolean> {
+  try {
+    const raw = await AsyncStorage.getItem(DEMO_STATE_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw) as Partial<SerializedState>;
+    if (!parsed || typeof parsed !== 'object') return false;
+    state.hq = parsed.hq ?? null;
+    state.profiles = parsed.profiles ?? [];
+    state.vehicles = parsed.vehicles ?? [];
+    state.jobs = parsed.jobs ?? [];
+    state.invitations = parsed.invitations ?? [];
+    state.notifications = parsed.notifications ?? [];
+    state.permissionOverrides = new Map(
+      Object.entries(parsed.permissionOverrides ?? {}).map(([memberId, perms]) => [
+        memberId,
+        new Map(Object.entries(perms)),
+      ]),
+    );
+    state.feedbackChannels = parsed.feedbackChannels ?? { ...DEFAULT_FEEDBACK };
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // ---------- Mutable state ----------
@@ -118,12 +231,16 @@ function reseed() {
     address: 'Demo Lojistik HQ — Sultanahmet, Fatih, İstanbul',
   };
 
+  // Demo profile avatarları — pravatar.cc CDN'inden deterministik gerçek
+  // foto'lar (?img=N parametresi ID'lere stable). CachedImage offline
+  // cache yapar, kullanıcı bir kere açtıktan sonra ağ olmadan da görünür.
+  const AVATAR = (id: number) => `https://i.pravatar.cc/200?img=${id}`;
   state.profiles = [
-    mkProfile(DEMO_OWNER_ID, 'Demo Patron', 'patron@demo.drivermesh', 'owner', 30),
-    mkProfile(DEMO_MANAGER_ID, 'Selin Yöneten', 'selin@demo.drivermesh', 'manager', 28),
-    mkProfile(DEMO_DRIVER_IDS[0], 'Ahmet Şoför', 'ahmet@demo.drivermesh', 'driver', 25),
-    mkProfile(DEMO_DRIVER_IDS[1], 'Mehmet Yıldız', 'mehmet@demo.drivermesh', 'driver', 24),
-    mkProfile(DEMO_DRIVER_IDS[2], 'Ayşe Demir', 'ayse@demo.drivermesh', 'driver', 20),
+    mkProfile(DEMO_OWNER_ID, 'Demo Patron', 'patron@demo.drivermesh', 'owner', 30, AVATAR(12)),
+    mkProfile(DEMO_MANAGER_ID, 'Selin Yöneten', 'selin@demo.drivermesh', 'manager', 28, AVATAR(47)),
+    mkProfile(DEMO_DRIVER_IDS[0], 'Ahmet Şoför', 'ahmet@demo.drivermesh', 'driver', 25, AVATAR(33)),
+    mkProfile(DEMO_DRIVER_IDS[1], 'Mehmet Yıldız', 'mehmet@demo.drivermesh', 'driver', 24, AVATAR(11)),
+    mkProfile(DEMO_DRIVER_IDS[2], 'Ayşe Demir', 'ayse@demo.drivermesh', 'driver', 20, AVATAR(44)),
     // 4. driver var ama atanmamış işle çalışır — toplam 6 kişi olmasın diye sadece 5 ana kişi
     // kullanıcının istediği: 5 kişi — owner+manager+3 driver = 5 ✓
     // (DEMO_DRIVER_IDS[3] ileride invitation olarak kullanılabilir, profile değil)
@@ -142,12 +259,13 @@ function reseed() {
   state.vehicles = [
     mkVehicle('demo-v1', '34 ABC 123', 'Ford', 'Transit', 2022, 'active', '#5B7FFF', false, photo1),
     mkVehicle('demo-v2', '34 DEF 456', 'Mercedes', 'Sprinter', 2023, 'active', '#FF7A1A', false, photo2),
-    mkVehicle('demo-v3', '06 GHI 789', 'Volkswagen', 'Crafter', 2021, 'idle', '#22C55E', true, photo3),
+    mkVehicle('demo-v3', '06 GHI 789', 'Volkswagen', 'Crafter', 2021, 'active', '#22C55E', false, photo3),
     mkVehicle('demo-v4', '34 JKL 234', 'Iveco', 'Daily', 2020, 'maintenance', '#A855F7', true, photo4),
     mkVehicle('demo-v5', '35 MNO 567', 'Renault', 'Master', 2024, 'idle', '#F59E0B', true, null),
   ];
 
-  // Jobs — 2 active (1 in_progress, 1 assigned), 2 completed, 1 failed
+  // Jobs — full coverage of statuses so the demo audience sees every state:
+  //   3 active (1 in_progress + 2 assigned), 2 completed, 1 failed, 1 cancelled.
   state.jobs = [
     mkJob('demo-j1', {
       customer: 'Mavi Mağazacılık',
@@ -221,6 +339,33 @@ function reseed() {
       assignedMinutesAgo: 215,
       startedMinutesAgo: 200,
       completedMinutesAgo: 150,
+    }),
+    // 3rd active job — Ayşe + VW Crafter çıktı (vehicle is_at_hq=false yapıldı).
+    mkJob('demo-j6', {
+      customer: 'Hepsi Express',
+      pickup: { addr: 'Bostancı Dağıtım, Kadıköy', lat: 40.9633, lng: 29.0905 },
+      dropoff: { addr: 'Tuzla AVM, Tuzla', lat: 40.8161, lng: 29.3027 },
+      status: 'assigned',
+      driverId: DEMO_DRIVER_IDS[2],
+      vehicleId: 'demo-v3',
+      distanceKm: 31.2,
+      etaMinutes: 48,
+      source: 'internal',
+      createdMinutesAgo: 18,
+      assignedMinutesAgo: 6,
+    }),
+    // 1 cancelled — müşteri vazgeçti, atama yapılmadan kapatıldı.
+    mkJob('demo-j7', {
+      customer: 'Aksu Lojistik',
+      pickup: { addr: 'Kartal Şube, Kartal', lat: 40.9036, lng: 29.1865 },
+      dropoff: { addr: 'Sultanbeyli Depo', lat: 40.9605, lng: 29.2680 },
+      status: 'cancelled',
+      driverId: null,
+      vehicleId: null,
+      distanceKm: 12.4,
+      etaMinutes: 26,
+      source: 'internal',
+      createdMinutesAgo: 130,
     }),
   ];
 
@@ -306,6 +451,7 @@ function mkProfile(
   email: string,
   role: UserRole,
   daysAgo: number,
+  avatarUrl: string | null = null,
 ): Profile {
   return {
     id,
@@ -314,7 +460,7 @@ function mkProfile(
     email,
     phone: null,
     role,
-    avatar_url: null,
+    avatar_url: avatarUrl,
     created_at: new Date(Date.now() - daysAgo * 86_400_000).toISOString(),
   };
 }

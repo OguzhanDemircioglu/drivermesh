@@ -1,19 +1,20 @@
 import { supabase } from './supabase';
-import { isDemoActive } from '@/demo/store';
+import { clearDemoStorage, isDemoActive } from '@/demo/store';
 
 /**
  * Permanently delete the entire fleet (organization, members, vehicles,
  * jobs, invitations, notifications, permission overrides). Owner-only.
  *
- * Demo mode is a no-op here — there's no real DB to wipe. The caller is
- * expected to `signOut()` immediately after, which is what actually
- * deactivates demo + clears React auth state. Doing the deactivation
- * here would race with signOut and leave `isDemo` flag stuck true.
- * Real backend needs an RPC (`delete_fleet`) that cascades inside a
+ * Demo mode wipes the persisted demo state on disk so the next sign-in
+ * re-seeds from scratch. The deactivation itself happens via signOut()
+ * the caller invokes immediately after — running deactivateDemo here
+ * would race with signOut and leave `isDemo` flag stuck true. Real
+ * backend needs an RPC (`delete_fleet`) that cascades inside a
  * transaction.
  */
 export async function deleteFleet(orgId: string): Promise<void> {
   if (isDemoActive()) {
+    await clearDemoStorage();
     return;
   }
   // TODO: backend RPC — delete_fleet must cascade across:

@@ -189,7 +189,7 @@ export default function ReportsScreen() {
                   <Text style={styles.sectionTitle}>{t('reports.topDrivers')}</Text>
                   {stats.topDrivers.map((d) => (
                     <View key={d.id} style={styles.driverRow}>
-                      <Avatar name={d.name} size={36} />
+                      <Avatar name={d.name} size={36} uri={d.avatar_url} />
                       <View style={{ flex: 1 }}>
                         <Text style={styles.driverName}>{d.name}</Text>
                         <Text style={styles.driverMeta}>

@@ -316,7 +316,7 @@ function NotificationItem({
     >
       <View style={styles.notifIconWrap}>
         {item.actor ? (
-          <Avatar name={actorName} size={36} />
+          <Avatar name={actorName} size={36} uri={item.actor?.avatar_url} />
         ) : (
           <Feather name="bell" size={20} color={theme.colors.accent} />
         )}

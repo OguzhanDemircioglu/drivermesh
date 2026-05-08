@@ -53,6 +53,7 @@ type Member = {
   full_name: string;
   email: string;
   role: UserRole;
+  avatar_url: string | null;
 };
 
 export default function MemberPermissionsScreen() {
@@ -80,14 +81,22 @@ export default function MemberPermissionsScreen() {
         const p = demo.profileById(id);
         const perms = await listMemberPermissions(id);
         setMember(
-          p ? { id: p.id, full_name: p.full_name, email: p.email, role: p.role } : null,
+          p
+            ? {
+                id: p.id,
+                full_name: p.full_name,
+                email: p.email,
+                role: p.role,
+                avatar_url: p.avatar_url,
+              }
+            : null,
         );
         setPermissions(perms);
       } else {
         const [{ data: m, error: mErr }, perms] = await Promise.all([
           supabase
             .from('profiles')
-            .select('id, full_name, email, role')
+            .select('id, full_name, email, role, avatar_url')
             .eq('id', id)
             .maybeSingle(),
           listMemberPermissions(id),
@@ -304,7 +313,7 @@ export default function MemberPermissionsScreen() {
           >
             <Card>
               <View style={styles.memberHeader}>
-                <Avatar name={member.full_name} size={56} />
+                <Avatar name={member.full_name} size={56} uri={member.avatar_url} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.memberName}>{member.full_name}</Text>
                   <View style={styles.roleRow}>
