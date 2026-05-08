@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { InteractionManager, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -38,13 +38,10 @@ export default function ReportsScreen() {
     setLoading(false);
   }, [profile?.organization_id]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
   useFocusEffect(
     useCallback(() => {
-      load();
+      const handle = InteractionManager.runAfterInteractions(load);
+      return () => handle.cancel();
     }, [load]),
   );
 

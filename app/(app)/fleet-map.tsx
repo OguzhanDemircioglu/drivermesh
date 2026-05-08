@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  InteractionManager,
   Pressable,
   StyleSheet,
   Text,
@@ -228,13 +229,10 @@ export default function FleetMapScreen() {
     }
   }, [profile?.organization_id]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
   useFocusEffect(
     useCallback(() => {
-      load();
+      const handle = InteractionManager.runAfterInteractions(load);
+      return () => handle.cancel();
     }, [load]),
   );
 

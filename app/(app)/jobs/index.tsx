@@ -1,9 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
+  InteractionManager,
   Pressable,
   RefreshControl,
   ScrollView,
+  SectionList,
   StyleSheet,
   Text,
   View,
@@ -53,13 +56,10 @@ export default function JobsScreen() {
     }
   }, [profile?.organization_id]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
   useFocusEffect(
     useCallback(() => {
-      load();
+      const handle = InteractionManager.runAfterInteractions(load);
+      return () => handle.cancel();
     }, [load]),
   );
 
@@ -108,6 +108,44 @@ export default function JobsScreen() {
     [jobs, isDriver, session?.user.id],
   );
 
+  const onSimulate = useCallback(async () => {
+    try {
+      await simulateRideJob();
+      await load();
+      toast.success(t('jobs.simSuccessTitle'), t('jobs.simSuccessText'));
+    } catch (e: unknown) {
+      toast.error(
+        t('errors.generic'),
+        e instanceof Error ? e.message : t('errors.generic'),
+      );
+    }
+  }, [load, toast, t]);
+
+  const topActions = canCreate ? (
+    <View style={styles.topActions}>
+      <Button
+        title={t('jobs.newJob')}
+        leftIcon={<Feather name="plus" size={18} color="#0A0E1F" />}
+        onPress={() => router.push('/(app)/jobs/new')}
+      />
+      <Pressable
+        onPress={onSimulate}
+        style={({ pressed }) => [styles.simBtn, pressed && { opacity: 0.7 }]}
+      >
+        <Feather name="zap" size={14} color={theme.colors.mesh} />
+        <Text style={styles.simText}>{t('jobs.simulateRide')}</Text>
+      </Pressable>
+    </View>
+  ) : isDriver ? (
+    <View style={styles.topActions}>
+      <Button
+        title={t('jobs.requestCta')}
+        leftIcon={<Feather name="send" size={18} color="#0A0E1F" />}
+        onPress={() => router.push('/(app)/jobs/request')}
+      />
+    </View>
+  ) : null;
+
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
@@ -125,69 +163,31 @@ export default function JobsScreen() {
           <View style={styles.backBtn} />
         </View>
 
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={theme.colors.accent}
-              colors={[theme.colors.accent]}
-            />
-          }
-        >
-          {canCreate ? (
-            <View style={{ gap: 10 }}>
-              <Button
-                title={t('jobs.newJob')}
-                leftIcon={<Feather name="plus" size={18} color="#0A0E1F" />}
-                onPress={() => router.push('/(app)/jobs/new')}
-              />
-              <Pressable
-                onPress={async () => {
-                  try {
-                    await simulateRideJob();
-                    await load();
-                    toast.success(t('jobs.simSuccessTitle'), t('jobs.simSuccessText'));
-                  } catch (e: unknown) {
-                    toast.error(
-                      t('errors.generic'),
-                      e instanceof Error ? e.message : t('errors.generic'),
-                    );
-                  }
-                }}
-                style={({ pressed }) => [styles.simBtn, pressed && { opacity: 0.7 }]}
-              >
-                <Feather name="zap" size={14} color={theme.colors.mesh} />
-                <Text style={styles.simText}>{t('jobs.simulateRide')}</Text>
-              </Pressable>
-            </View>
-          ) : isDriver ? (
-            <Button
-              title={t('jobs.requestCta')}
-              leftIcon={<Feather name="send" size={18} color="#0A0E1F" />}
-              onPress={() => router.push('/(app)/jobs/request')}
-            />
-          ) : null}
-
-          {loading ? (
+        {loading ? (
+          <View style={styles.scrollContent}>
+            {topActions}
             <ActivityIndicator color={theme.colors.accent} style={{ marginVertical: 24 }} />
-          ) : isDriver ? (
-            <DriverView
-              openJobs={driverOpenJobs}
-              myJobs={driverMyJobs}
-              onPressJob={(id) => router.push(`/(app)/jobs/${id}`)}
-            />
-          ) : (
-            <ManagerView
-              jobs={visibleJobs}
-              filter={filter}
-              onFilterChange={setFilter}
-              onPressJob={(id) => router.push(`/(app)/jobs/${id}`)}
-            />
-          )}
-        </ScrollView>
+          </View>
+        ) : isDriver ? (
+          <DriverView
+            openJobs={driverOpenJobs}
+            myJobs={driverMyJobs}
+            topActions={topActions}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            onPressJob={(id) => router.push(`/(app)/jobs/${id}`)}
+          />
+        ) : (
+          <ManagerView
+            jobs={visibleJobs}
+            filter={filter}
+            onFilterChange={setFilter}
+            topActions={topActions}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            onPressJob={(id) => router.push(`/(app)/jobs/${id}`)}
+          />
+        )}
       </SafeAreaView>
     </View>
   );
@@ -201,145 +201,186 @@ function ManagerView({
   jobs,
   filter,
   onFilterChange,
+  topActions,
+  refreshing,
+  onRefresh,
   onPressJob,
 }: {
   jobs: JobWithRefs[];
   filter: JobStatus | 'all';
   onFilterChange: (s: JobStatus | 'all') => void;
+  topActions: React.ReactNode;
+  refreshing: boolean;
+  onRefresh: () => void;
   onPressJob: (id: string) => void;
 }) {
   const { t } = useTranslation();
   return (
-    <>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filters}
-      >
-        {FILTER_KEYS.map((key) => {
-          const active = key === filter;
-          return (
-            <Pressable
-              key={key}
-              onPress={() => onFilterChange(key)}
-              style={({ pressed }) => [
-                styles.filterChip,
-                active && styles.filterChipActive,
-                pressed && { opacity: 0.85 },
-              ]}
-            >
-              <Text style={[styles.filterText, active && styles.filterTextActive]}>
-                {t(`jobs.filters.${key}`)}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
-      {jobs.length === 0 ? (
+    <FlatList
+      style={styles.scroll}
+      contentContainerStyle={styles.scrollContent}
+      data={jobs}
+      keyExtractor={(j) => j.id}
+      removeClippedSubviews
+      windowSize={10}
+      maxToRenderPerBatch={10}
+      initialNumToRender={8}
+      renderItem={({ item: j }) => (
+        <JobCard
+          customer={j.customer_name}
+          pickup={j.pickup_address}
+          dropoff={j.dropoff_address}
+          driver={j.driver?.full_name ?? null}
+          distanceKm={j.distance_km != null ? Number(j.distance_km) : null}
+          etaMinutes={j.eta_minutes ?? null}
+          status={j.status}
+          source={j.source}
+          onPress={() => onPressJob(j.id)}
+        />
+      )}
+      ItemSeparatorComponent={() => <View style={styles.itemGap} />}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={theme.colors.accent}
+          colors={[theme.colors.accent]}
+        />
+      }
+      ListHeaderComponent={
+        <View style={styles.headerStack}>
+          {topActions}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filters}
+          >
+            {FILTER_KEYS.map((key) => {
+              const active = key === filter;
+              return (
+                <Pressable
+                  key={key}
+                  onPress={() => onFilterChange(key)}
+                  style={({ pressed }) => [
+                    styles.filterChip,
+                    active && styles.filterChipActive,
+                    pressed && { opacity: 0.85 },
+                  ]}
+                >
+                  <Text style={[styles.filterText, active && styles.filterTextActive]}>
+                    {t(`jobs.filters.${key}`)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+      }
+      ListEmptyComponent={
         <Card style={styles.emptyCard}>
           <Feather name="package" size={26} color={theme.colors.accent} />
           <Text style={styles.emptyTitle}>{t('jobs.emptyFilterTitle')}</Text>
           <Text style={styles.emptyText}>{t('jobs.emptyFilterText')}</Text>
         </Card>
-      ) : (
-        <View style={styles.list}>
-          {jobs.map((j) => (
-            <JobCard
-              key={j.id}
-              customer={j.customer_name}
-              pickup={j.pickup_address}
-              dropoff={j.dropoff_address}
-              driver={j.driver?.full_name ?? null}
-              distanceKm={j.distance_km != null ? Number(j.distance_km) : null}
-              etaMinutes={j.eta_minutes ?? null}
-              status={j.status}
-              source={j.source}
-              onPress={() => onPressJob(j.id)}
-            />
-          ))}
-        </View>
-      )}
-    </>
+      }
+    />
   );
 }
 
 // =============================================================
-// Driver view
+// Driver view — SectionList for two sections (open + mine)
 // =============================================================
+
+type DriverSection = {
+  title: string;
+  data: JobWithRefs[];
+  emptyTitle: string;
+  emptyText: string;
+  emptyIcon: keyof typeof Feather.glyphMap;
+};
 
 function DriverView({
   openJobs,
   myJobs,
+  topActions,
+  refreshing,
+  onRefresh,
   onPressJob,
 }: {
   openJobs: JobWithRefs[];
   myJobs: JobWithRefs[];
+  topActions: React.ReactNode;
+  refreshing: boolean;
+  onRefresh: () => void;
   onPressJob: (id: string) => void;
 }) {
   const { t } = useTranslation();
-  return (
-    <>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          {t('jobs.driverOpenTitle', { count: openJobs.length })}
-        </Text>
-        {openJobs.length === 0 ? (
-          <Card style={styles.emptyCard}>
-            <Feather name="inbox" size={22} color={theme.colors.textMuted} />
-            <Text style={styles.emptyTitle}>{t('jobs.driverNoOpenTitle')}</Text>
-            <Text style={styles.emptyText}>{t('jobs.driverNoOpenText')}</Text>
-          </Card>
-        ) : (
-          <View style={styles.list}>
-            {openJobs.map((j) => (
-              <JobCard
-                key={j.id}
-                customer={j.customer_name}
-                pickup={j.pickup_address}
-                dropoff={j.dropoff_address}
-                driver={null}
-                distanceKm={j.distance_km != null ? Number(j.distance_km) : null}
-                etaMinutes={j.eta_minutes ?? null}
-                status={j.status}
-                source={j.source}
-                onPress={() => onPressJob(j.id)}
-              />
-            ))}
-          </View>
-        )}
-      </View>
+  const sections: DriverSection[] = [
+    {
+      title: t('jobs.driverOpenTitle', { count: openJobs.length }),
+      data: openJobs,
+      emptyTitle: t('jobs.driverNoOpenTitle'),
+      emptyText: t('jobs.driverNoOpenText'),
+      emptyIcon: 'inbox',
+    },
+    {
+      title: t('jobs.driverMyTitle', { count: myJobs.length }),
+      data: myJobs,
+      emptyTitle: t('jobs.driverNoMyTitle'),
+      emptyText: t('jobs.driverNoMyText'),
+      emptyIcon: 'user-check',
+    },
+  ];
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          {t('jobs.driverMyTitle', { count: myJobs.length })}
-        </Text>
-        {myJobs.length === 0 ? (
+  return (
+    <SectionList
+      style={styles.scroll}
+      contentContainerStyle={styles.scrollContent}
+      sections={sections}
+      keyExtractor={(j) => j.id}
+      stickySectionHeadersEnabled={false}
+      removeClippedSubviews
+      windowSize={10}
+      maxToRenderPerBatch={10}
+      initialNumToRender={8}
+      renderItem={({ item: j }) => (
+        <JobCard
+          customer={j.customer_name}
+          pickup={j.pickup_address}
+          dropoff={j.dropoff_address}
+          driver={j.driver?.full_name ?? null}
+          distanceKm={j.distance_km != null ? Number(j.distance_km) : null}
+          etaMinutes={j.eta_minutes ?? null}
+          status={j.status}
+          source={j.source}
+          onPress={() => onPressJob(j.id)}
+        />
+      )}
+      ItemSeparatorComponent={() => <View style={styles.itemGap} />}
+      renderSectionHeader={({ section }) => (
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{section.title}</Text>
+        </View>
+      )}
+      renderSectionFooter={({ section }) =>
+        section.data.length === 0 ? (
           <Card style={styles.emptyCard}>
-            <Feather name="user-check" size={22} color={theme.colors.textMuted} />
-            <Text style={styles.emptyTitle}>{t('jobs.driverNoMyTitle')}</Text>
-            <Text style={styles.emptyText}>{t('jobs.driverNoMyText')}</Text>
+            <Feather name={section.emptyIcon} size={22} color={theme.colors.textMuted} />
+            <Text style={styles.emptyTitle}>{section.emptyTitle}</Text>
+            <Text style={styles.emptyText}>{section.emptyText}</Text>
           </Card>
-        ) : (
-          <View style={styles.list}>
-            {myJobs.map((j) => (
-              <JobCard
-                key={j.id}
-                customer={j.customer_name}
-                pickup={j.pickup_address}
-                dropoff={j.dropoff_address}
-                driver={j.driver?.full_name ?? null}
-                distanceKm={j.distance_km != null ? Number(j.distance_km) : null}
-                etaMinutes={j.eta_minutes ?? null}
-                status={j.status}
-                source={j.source}
-                onPress={() => onPressJob(j.id)}
-              />
-            ))}
-          </View>
-        )}
-      </View>
-    </>
+        ) : null
+      }
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={theme.colors.accent}
+          colors={[theme.colors.accent]}
+        />
+      }
+      ListHeaderComponent={topActions ? <View>{topActions}</View> : null}
+    />
   );
 }
 
@@ -363,8 +404,10 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: theme.spacing.xl,
     paddingBottom: theme.spacing['3xl'],
-    gap: theme.spacing.lg,
   },
+
+  topActions: { gap: 10, marginBottom: theme.spacing.lg },
+  headerStack: { gap: theme.spacing.lg, marginBottom: theme.spacing.lg },
 
   filters: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
   filterChip: {
@@ -382,14 +425,14 @@ const styles = StyleSheet.create({
   filterText: { color: theme.colors.textMuted, fontSize: theme.font.size.sm, fontWeight: '500' },
   filterTextActive: { color: theme.colors.accent, fontWeight: '600' },
 
-  section: { gap: theme.spacing.md },
+  sectionHeader: { paddingTop: theme.spacing.lg, paddingBottom: theme.spacing.md },
   sectionTitle: {
     color: theme.colors.text,
     fontSize: theme.font.size.lg,
     fontWeight: theme.font.weight.semibold,
     letterSpacing: -0.3,
   },
-  list: { gap: 10 },
+  itemGap: { height: 10 },
   emptyCard: {
     alignItems: 'center',
     gap: 6,

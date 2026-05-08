@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
+  InteractionManager,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -79,13 +80,10 @@ export default function NotificationsScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
   useFocusEffect(
     useCallback(() => {
-      load();
+      const handle = InteractionManager.runAfterInteractions(load);
+      return () => handle.cancel();
     }, [load]),
   );
 
@@ -189,10 +187,26 @@ export default function NotificationsScreen() {
           </Pressable>
         </View>
 
-        <ScrollView
+        <FlatList
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          data={loading || items.length === 0 ? [] : items}
+          keyExtractor={(n) => n.id}
+          removeClippedSubviews
+          windowSize={10}
+          maxToRenderPerBatch={10}
+          initialNumToRender={8}
+          renderItem={({ item: n }) => (
+            <NotificationItem
+              item={n}
+              members={members}
+              onPress={() => handlePress(n)}
+              isOwnAction={n.actor_id === profile?.id}
+              locale={i18n.language as 'tr' | 'en'}
+            />
+          )}
+          ItemSeparatorComponent={() => <View style={styles.itemGap} />}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -200,35 +214,24 @@ export default function NotificationsScreen() {
               tintColor={theme.colors.accent}
             />
           }
-        >
-          <Text style={styles.subtitle}>{t('notifications.subtitle')}</Text>
-
-          {loading ? (
-            <View style={styles.center}>
-              <ActivityIndicator color={theme.colors.accent} />
-            </View>
-          ) : items.length === 0 ? (
-            <Card>
-              <View style={styles.emptyWrap}>
-                <Feather name="bell-off" size={28} color={theme.colors.textDim} />
-                <Text style={styles.emptyText}>{t('notifications.empty')}</Text>
+          ListHeaderComponent={
+            <Text style={styles.subtitle}>{t('notifications.subtitle')}</Text>
+          }
+          ListEmptyComponent={
+            loading ? (
+              <View style={styles.center}>
+                <ActivityIndicator color={theme.colors.accent} />
               </View>
-            </Card>
-          ) : (
-            <View style={{ gap: theme.spacing.sm }}>
-              {items.map((n) => (
-                <NotificationItem
-                  key={n.id}
-                  item={n}
-                  members={members}
-                  onPress={() => handlePress(n)}
-                  isOwnAction={n.actor_id === profile?.id}
-                  locale={i18n.language as 'tr' | 'en'}
-                />
-              ))}
-            </View>
-          )}
-        </ScrollView>
+            ) : (
+              <Card>
+                <View style={styles.emptyWrap}>
+                  <Feather name="bell-off" size={28} color={theme.colors.textDim} />
+                  <Text style={styles.emptyText}>{t('notifications.empty')}</Text>
+                </View>
+              </Card>
+            )
+          }
+        />
       </SafeAreaView>
     </View>
   );
@@ -392,12 +395,13 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: theme.spacing.xl,
     paddingBottom: theme.spacing['3xl'],
-    gap: theme.spacing.lg,
   },
+  itemGap: { height: theme.spacing.sm },
   subtitle: {
     color: theme.colors.textMuted,
     fontSize: theme.font.size.sm,
     lineHeight: 20,
+    marginBottom: theme.spacing.lg,
   },
   center: { paddingVertical: theme.spacing['2xl'], alignItems: 'center' },
   emptyWrap: {

@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
+  InteractionManager,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -41,13 +42,10 @@ export default function VehiclesScreen() {
     }
   }, [profile?.organization_id]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
   useFocusEffect(
     useCallback(() => {
-      load();
+      const handle = InteractionManager.runAfterInteractions(load);
+      return () => handle.cancel();
     }, [load]),
   );
 
@@ -77,9 +75,29 @@ export default function VehiclesScreen() {
           <View style={styles.backBtn} />
         </View>
 
-        <ScrollView
+        <FlatList
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
+          data={loading || vehicles.length === 0 ? [] : vehicles}
+          keyExtractor={(v) => v.id}
+          removeClippedSubviews
+          windowSize={10}
+          maxToRenderPerBatch={10}
+          initialNumToRender={8}
+          renderItem={({ item: v }) => (
+            <VehicleCard
+              plate={v.plate}
+              brand={v.brand}
+              model={v.model}
+              year={v.year}
+              status={v.status}
+              addedBy={v.added_by_profile?.full_name ?? null}
+              photoUrl={v.photo_url}
+              color={v.color}
+              onPress={() => router.push(`/(app)/vehicles/${v.id}`)}
+            />
+          )}
+          ItemSeparatorComponent={() => <View style={styles.listGap} />}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -88,78 +106,64 @@ export default function VehiclesScreen() {
               colors={[theme.colors.accent]}
             />
           }
-        >
-          {/* Summary */}
-          <Card style={styles.summary}>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryValue}>{vehicles.length}</Text>
-              <Text style={styles.summaryLabel}>{t('vehicles.summaryTotal')}</Text>
-            </View>
-            <View style={styles.summarySep} />
-            <View style={styles.summaryItem}>
-              <Text style={[styles.summaryValue, { color: theme.colors.success }]}>
-                {activeCount}
-              </Text>
-              <Text style={styles.summaryLabel}>{t('vehicles.summaryActive')}</Text>
-            </View>
-            <View style={styles.summarySep} />
-            <View style={styles.summaryItem}>
-              <Text style={[styles.summaryValue, { color: theme.colors.warning }]}>
-                {vehicles.filter((v) => v.status === 'maintenance').length}
-              </Text>
-              <Text style={styles.summaryLabel}>{t('vehicles.summaryMaintenance')}</Text>
-            </View>
-          </Card>
+          ListHeaderComponent={
+            <View style={styles.headerStack}>
+              <Card style={styles.summary}>
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryValue}>{vehicles.length}</Text>
+                  <Text style={styles.summaryLabel}>{t('vehicles.summaryTotal')}</Text>
+                </View>
+                <View style={styles.summarySep} />
+                <View style={styles.summaryItem}>
+                  <Text style={[styles.summaryValue, { color: theme.colors.success }]}>
+                    {activeCount}
+                  </Text>
+                  <Text style={styles.summaryLabel}>{t('vehicles.summaryActive')}</Text>
+                </View>
+                <View style={styles.summarySep} />
+                <View style={styles.summaryItem}>
+                  <Text style={[styles.summaryValue, { color: theme.colors.warning }]}>
+                    {vehicles.filter((v) => v.status === 'maintenance').length}
+                  </Text>
+                  <Text style={styles.summaryLabel}>{t('vehicles.summaryMaintenance')}</Text>
+                </View>
+              </Card>
 
-          <View style={styles.ctaRow}>
-            {canAdd ? (
-              <Button
-                title={t('vehicles.addCta')}
-                leftIcon={<Feather name="plus" size={18} color="#0A0E1F" />}
-                onPress={() => router.push('/(app)/vehicles/new')}
-                style={{ flex: 1 }}
-              />
-            ) : null}
-            <Button
-              title={t('fleetMap.openCta')}
-              variant="secondary"
-              leftIcon={<Feather name="map" size={16} color={theme.colors.text} />}
-              onPress={() => router.push('/(app)/fleet-map')}
-              style={canAdd ? { flex: 1 } : undefined}
-            />
-          </View>
-
-          {loading ? (
-            <ActivityIndicator color={theme.colors.accent} style={{ marginVertical: 24 }} />
-          ) : vehicles.length === 0 ? (
-            <Card style={styles.emptyCard}>
-              <View style={styles.emptyIcon}>
-                <Feather name="truck" size={26} color={theme.colors.accent} />
-              </View>
-              <Text style={styles.emptyTitle}>{t('vehicles.emptyTitle')}</Text>
-              <Text style={styles.emptyText}>
-                {canAdd ? t('vehicles.emptyTextCanAdd') : t('vehicles.emptyTextReadOnly')}
-              </Text>
-            </Card>
-          ) : (
-            <View style={styles.list}>
-              {vehicles.map((v) => (
-                <VehicleCard
-                  key={v.id}
-                  plate={v.plate}
-                  brand={v.brand}
-                  model={v.model}
-                  year={v.year}
-                  status={v.status}
-                  addedBy={v.added_by_profile?.full_name ?? null}
-                  photoUrl={v.photo_url}
-                  color={v.color}
-                  onPress={() => router.push(`/(app)/vehicles/${v.id}`)}
+              <View style={styles.ctaRow}>
+                {canAdd ? (
+                  <Button
+                    title={t('vehicles.addCta')}
+                    leftIcon={<Feather name="plus" size={18} color="#0A0E1F" />}
+                    onPress={() => router.push('/(app)/vehicles/new')}
+                    style={{ flex: 1 }}
+                  />
+                ) : null}
+                <Button
+                  title={t('fleetMap.openCta')}
+                  variant="secondary"
+                  leftIcon={<Feather name="map" size={16} color={theme.colors.text} />}
+                  onPress={() => router.push('/(app)/fleet-map')}
+                  style={canAdd ? { flex: 1 } : undefined}
                 />
-              ))}
+              </View>
             </View>
-          )}
-        </ScrollView>
+          }
+          ListEmptyComponent={
+            loading ? (
+              <ActivityIndicator color={theme.colors.accent} style={{ marginVertical: 24 }} />
+            ) : (
+              <Card style={styles.emptyCard}>
+                <View style={styles.emptyIcon}>
+                  <Feather name="truck" size={26} color={theme.colors.accent} />
+                </View>
+                <Text style={styles.emptyTitle}>{t('vehicles.emptyTitle')}</Text>
+                <Text style={styles.emptyText}>
+                  {canAdd ? t('vehicles.emptyTextCanAdd') : t('vehicles.emptyTextReadOnly')}
+                </Text>
+              </Card>
+            )
+          }
+        />
       </SafeAreaView>
     </View>
   );
@@ -202,8 +206,9 @@ const styles = StyleSheet.create({
   },
   summaryLabel: { color: theme.colors.textMuted, fontSize: theme.font.size.xs },
 
+  headerStack: { gap: theme.spacing.lg, marginBottom: theme.spacing.lg },
   ctaRow: { flexDirection: 'row', gap: 10 },
-  list: { gap: 10 },
+  listGap: { height: 10 },
   emptyCard: { alignItems: 'center', gap: 10, paddingVertical: theme.spacing.xl },
   emptyIcon: {
     width: 48,

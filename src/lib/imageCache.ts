@@ -19,11 +19,29 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PREFIX = 'imgcache:v1:';
 
+// Process-lifetime memory cache. AsyncStorage hits cost ~50–150 ms each on
+// Android (read + base64 decode), which is enough to push a list-screen first
+// paint past the 250 ms slide-animation budget and make the screen visibly
+// reflow after the transition finishes. Mirroring the disk hit in memory
+// makes every subsequent CachedImage render in this app session synchronous.
+const memCache = new Map<string, string>();
+
+/** Synchronous peek into the memory cache. CachedImage uses this to render
+ * the cached bytes on the first paint — no async dance, no flicker. */
+export function peekImageCache(url: string | null | undefined): string | null {
+  if (!url) return null;
+  return memCache.get(url) ?? null;
+}
+
 /** Read the cached data URI for a remote URL, or null if not cached. */
 export async function getCachedDataUri(url: string): Promise<string | null> {
   if (!url) return null;
+  const mem = memCache.get(url);
+  if (mem) return mem;
   try {
-    return (await AsyncStorage.getItem(PREFIX + url)) ?? null;
+    const disk = await AsyncStorage.getItem(PREFIX + url);
+    if (disk) memCache.set(url, disk);
+    return disk ?? null;
   } catch {
     return null;
   }
@@ -48,6 +66,7 @@ export async function cacheRemoteImage(url: string): Promise<string | null> {
           resolve(null);
           return;
         }
+        memCache.set(url, dataUri);
         // Fire-and-forget persist — the value is what we return regardless
         // of whether AsyncStorage actually finishes writing it.
         AsyncStorage.setItem(PREFIX + url, dataUri).catch(() => {});
@@ -63,6 +82,7 @@ export async function cacheRemoteImage(url: string): Promise<string | null> {
 
 /** Clear every entry in this cache namespace (no-op on failure). */
 export async function clearImageCache(): Promise<void> {
+  memCache.clear();
   try {
     const keys = await AsyncStorage.getAllKeys();
     const ours = keys.filter((k) => k.startsWith(PREFIX));

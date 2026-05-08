@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  InteractionManager,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -49,13 +50,10 @@ export default function PermissionsListScreen() {
     }
   }, [profile?.organization_id, profile?.id]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
   useFocusEffect(
     useCallback(() => {
-      load();
+      const handle = InteractionManager.runAfterInteractions(load);
+      return () => handle.cancel();
     }, [load]),
   );
 

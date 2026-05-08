@@ -7,6 +7,7 @@ export default function AppLayout() {
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: theme.colors.bg },
+        animation: 'slide_from_right',
       }}
     />
   );

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Image, type ImageProps, type ImageSourcePropType } from 'react-native';
-import { cacheRemoteImage, getCachedDataUri } from '@/lib/imageCache';
+import { cacheRemoteImage, getCachedDataUri, peekImageCache } from '@/lib/imageCache';
 
 type Props = Omit<ImageProps, 'source'> & {
   /** Remote URL to display + cache. null/undefined renders the fallback. */
@@ -22,13 +22,25 @@ type Props = Omit<ImageProps, 'source'> & {
  * On every subsequent launch the cache hit short-circuits the network entirely.
  */
 export function CachedImage({ uri, fallback, ...rest }: Props) {
-  const [source, setSource] = useState<ImageSourcePropType | null>(
-    uri ? { uri } : fallback ?? null,
-  );
+  // Synchronous mem-cache peek lets the second-and-onward render of any
+  // already-seen image be instantaneous on the first paint of a new screen.
+  // This is what stops the vehicles-list slide animation from being followed
+  // by a visible 150–200 ms thumb-decode pop.
+  const [source, setSource] = useState<ImageSourcePropType | null>(() => {
+    if (!uri) return fallback ?? null;
+    const mem = peekImageCache(uri);
+    return mem ? { uri: mem } : { uri };
+  });
 
   useEffect(() => {
     if (!uri) {
       setSource(fallback ?? null);
+      return;
+    }
+    if (peekImageCache(uri)) {
+      // Already serving the cached bytes from the synchronous initializer —
+      // no need to re-read disk or fetch.
+      setSource({ uri: peekImageCache(uri)! });
       return;
     }
     let cancelled = false;

@@ -45,13 +45,11 @@ export const DEMO_DRIVER_IDS = ['demo-d1', 'demo-d2', 'demo-d3', 'demo-d4'] as c
 const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
 const hoursAgo = (h: number) => minutesAgo(h * 60);
 
-// ---------- Listener pattern + debounced disk save ----------
+// ---------- Debounced disk save ----------
 
-let listeners: Array<() => void> = [];
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
 function emit() {
-  for (const fn of listeners) fn();
   // Persistence — every state mutation routes through emit(); we coalesce
   // rapid bursts (e.g. driver-position updates, multi-field form save) into
   // a single AsyncStorage write to avoid I/O thrash.
@@ -64,12 +62,6 @@ function emit() {
       });
     }, 250);
   }
-}
-export function subscribeDemo(fn: () => void): () => void {
-  listeners.push(fn);
-  return () => {
-    listeners = listeners.filter((l) => l !== fn);
-  };
 }
 
 // ---------- Active flag + activation/deactivation ----------

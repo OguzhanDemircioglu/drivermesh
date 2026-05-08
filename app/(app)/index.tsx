@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
+  InteractionManager,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -15,7 +16,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useTranslation } from 'react-i18next';
 import { MeshBackground } from '@/components/MeshBackground';
 import { Avatar } from '@/components/Avatar';
-import { KpiCard } from '@/components/KpiCard';
 import { JobCard } from '@/components/JobCard';
 import { BottomNav } from '@/components/BottomNav';
 import { Card } from '@/components/Card';
@@ -76,14 +76,15 @@ export default function HomeScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    if (!profile?.organization_id) return;
-    loadStats();
-  }, [profile?.organization_id, loadStats]);
-
+  // Defer the stats fetch until the slide-in animation has finished. The
+  // load itself is a few hundred ms of bridge + JSON work; running it
+  // concurrently with the screen transition makes the tail of the slide
+  // visibly stutter on slower devices.
   useFocusEffect(
     useCallback(() => {
-      if (profile?.organization_id) loadStats();
+      if (!profile?.organization_id) return;
+      const handle = InteractionManager.runAfterInteractions(loadStats);
+      return () => handle.cancel();
     }, [profile?.organization_id, loadStats]),
   );
 
@@ -444,55 +445,6 @@ function FleetRhythm({
 // Hero variants
 // ============================================================
 
-function FleetReadyHero({ stats }: { stats: HomeStats }) {
-  const { t } = useTranslation();
-  const router = useRouter();
-  return (
-    <Pressable
-      onPress={() => router.push('/(app)/fleet-map')}
-      style={({ pressed }) => [styles.hero, pressed && { opacity: 0.95 }]}
-    >
-      <LinearGradient
-        colors={['#1A2348', '#0F1530', '#0A0E1F']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.heroBg}
-      />
-      <View style={styles.heroBorder} />
-      <View style={styles.heroBadge}>
-        <View style={styles.pulseDot} />
-        <Text style={styles.heroBadgeText}>{t('home.heroLive')}</Text>
-      </View>
-      <Text style={styles.heroTitle}>{t('home.heroReadyTitle')}</Text>
-      <Text style={styles.heroSubtitle}>
-        {t('home.heroReadySubtitle', {
-          open: stats.jobsOpen,
-          progress: stats.jobsInProgress,
-          active: stats.vehiclesActive,
-        })}
-      </Text>
-      <View style={styles.heroStats}>
-        <View style={styles.heroStat}>
-          <Text style={styles.heroStatValue}>{stats.teamCount}</Text>
-          <Text style={styles.heroStatLabel}>{t('home.teamMembers')}</Text>
-        </View>
-        <View style={styles.heroDivider} />
-        <View style={styles.heroStat}>
-          <Text style={styles.heroStatValue}>{stats.vehiclesTotal}</Text>
-          <Text style={styles.heroStatLabel}>{t('home.vehicles')}</Text>
-        </View>
-        <View style={styles.heroDivider} />
-        <View style={styles.heroStat}>
-          <Text style={[styles.heroStatValue, { color: theme.colors.success }]}>
-            {stats.jobsCompletedToday}
-          </Text>
-          <Text style={styles.heroStatLabel}>{t('home.completedToday')}</Text>
-        </View>
-      </View>
-    </Pressable>
-  );
-}
-
 function FleetSetupHero({
   stats,
   onInvite,
@@ -847,12 +799,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
   },
-  pulseDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: theme.colors.success,
-  },
   heroBadgeText: {
     fontSize: 11,
     color: theme.colors.text,
@@ -866,20 +812,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   heroSubtitle: { color: theme.colors.textMuted, fontSize: theme.font.size.sm, lineHeight: 20 },
-  heroStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: theme.spacing.sm,
-    gap: theme.spacing.md,
-  },
-  heroStat: { flex: 1, gap: 2 },
-  heroStatValue: {
-    fontSize: theme.font.size.lg,
-    fontWeight: theme.font.weight.bold,
-    color: theme.colors.text,
-  },
-  heroStatLabel: { fontSize: 11, color: theme.colors.textDim },
-  heroDivider: { width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.08)' },
 
   setupSteps: { gap: 10, marginTop: theme.spacing.sm },
   setupStep: {
@@ -906,13 +838,6 @@ const styles = StyleSheet.create({
   setupBody: { flex: 1, gap: 2 },
   setupTitle: { color: theme.colors.text, fontSize: theme.font.size.md, fontWeight: '600' },
   setupSubtitle: { color: theme.colors.textMuted, fontSize: theme.font.size.xs },
-
-  kpiGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.md,
-  },
-  kpiHalf: { flexBasis: '47%', flexGrow: 1 },
 
   section: { gap: theme.spacing.md },
   sectionHeader: {
@@ -1023,20 +948,4 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   emptyCtaText: { color: theme.colors.accent, fontWeight: theme.font.weight.semibold },
-
-  fab: {
-    position: 'absolute',
-    right: 24,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    shadowColor: '#FF7A1A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 14,
-    elevation: 12,
-  },
 });

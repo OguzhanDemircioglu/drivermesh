@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
+  InteractionManager,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -63,13 +64,10 @@ export default function TeamScreen() {
     }
   }, [profile?.organization_id]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
   useFocusEffect(
     useCallback(() => {
-      load();
+      const handle = InteractionManager.runAfterInteractions(load);
+      return () => handle.cancel();
     }, [load]),
   );
 
@@ -125,9 +123,62 @@ export default function TeamScreen() {
           <View style={styles.backBtn} />
         </View>
 
-        <ScrollView
+        <FlatList
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
+          data={loading || members.length === 0 ? [] : members}
+          keyExtractor={(m) => m.id}
+          removeClippedSubviews
+          windowSize={10}
+          maxToRenderPerBatch={10}
+          initialNumToRender={8}
+          renderItem={({ item: m }) => {
+            const canOpenPerms =
+              profile?.role === 'owner' && m.id !== profile?.id && m.role !== 'owner';
+            const Wrapper = canOpenPerms ? Pressable : View;
+            return (
+              <Wrapper
+                onPress={
+                  canOpenPerms
+                    ? () => router.push(`/(app)/permissions/${m.id}`)
+                    : undefined
+                }
+                style={({ pressed }: { pressed?: boolean } = {}) => [
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <Card style={styles.memberCard}>
+                  <Avatar name={m.full_name} size={42} uri={m.avatar_url} />
+                  <View style={styles.memberBody}>
+                    <Text style={styles.memberName} numberOfLines={1}>
+                      {m.full_name}
+                      {m.id === profile?.id ? (
+                        <Text style={styles.youTag}> · {t('common.you')}</Text>
+                      ) : null}
+                    </Text>
+                    <Text style={styles.memberEmail} numberOfLines={1}>
+                      {m.email}
+                    </Text>
+                  </View>
+                  <View style={[styles.roleBadge, { backgroundColor: 'rgba(255,255,255,0.06)' }]}>
+                    <View style={[styles.roleDot, { backgroundColor: ROLE_TONE[m.role] }]} />
+                    <Text style={[styles.roleText, { color: ROLE_TONE[m.role] }]}>
+                      {t(`roles.${m.role}`)}
+                    </Text>
+                  </View>
+                  {canOpenPerms ? (
+                    <Feather
+                      name="chevron-right"
+                      size={16}
+                      color={theme.colors.textDim}
+                      style={{ marginLeft: 4 }}
+                    />
+                  ) : null}
+                </Card>
+              </Wrapper>
+            );
+          }}
+          ItemSeparatorComponent={() => <View style={styles.itemGap} />}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -136,157 +187,111 @@ export default function TeamScreen() {
               colors={[theme.colors.accent]}
             />
           }
-        >
-          <View style={styles.inviteRow}>
-            <Button
-              title={t('team.addManager')}
-              variant="secondary"
-              fullWidth={false}
-              style={[styles.inviteBtn, !inviteCheck.allowed && styles.btnLocked]}
-              leftIcon={
-                <Feather
-                  name={inviteCheck.allowed ? 'user-plus' : 'lock'}
-                  size={16}
-                  color={inviteCheck.allowed ? theme.colors.text : theme.colors.textDim}
+          ListHeaderComponent={
+            <View style={styles.headerStack}>
+              <View style={styles.inviteRow}>
+                <Button
+                  title={t('team.addManager')}
+                  variant="secondary"
+                  fullWidth={false}
+                  style={[styles.inviteBtn, !inviteCheck.allowed && styles.btnLocked]}
+                  leftIcon={
+                    <Feather
+                      name={inviteCheck.allowed ? 'user-plus' : 'lock'}
+                      size={16}
+                      color={inviteCheck.allowed ? theme.colors.text : theme.colors.textDim}
+                    />
+                  }
+                  onPress={() => onInvite('manager')}
                 />
-              }
-              onPress={() => onInvite('manager')}
-            />
-            <Button
-              title={t('team.addDriver')}
-              variant="secondary"
-              fullWidth={false}
-              style={[styles.inviteBtn, !inviteCheck.allowed && styles.btnLocked]}
-              leftIcon={
-                <Feather
-                  name={inviteCheck.allowed ? 'truck' : 'lock'}
-                  size={16}
-                  color={inviteCheck.allowed ? theme.colors.text : theme.colors.textDim}
+                <Button
+                  title={t('team.addDriver')}
+                  variant="secondary"
+                  fullWidth={false}
+                  style={[styles.inviteBtn, !inviteCheck.allowed && styles.btnLocked]}
+                  leftIcon={
+                    <Feather
+                      name={inviteCheck.allowed ? 'truck' : 'lock'}
+                      size={16}
+                      color={inviteCheck.allowed ? theme.colors.text : theme.colors.textDim}
+                    />
+                  }
+                  onPress={() => onInvite('driver')}
                 />
-              }
-              onPress={() => onInvite('driver')}
-            />
-          </View>
+              </View>
 
-          {/* Pending invitations */}
-          {pending.length > 0 ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{t('team.pendingTitle')}</Text>
-              <View style={styles.list}>
-                {pending.map((inv) => (
-                  <Card key={inv.id} style={styles.invCard}>
-                    <View style={styles.invHead}>
-                      <View style={styles.invIdent}>
-                        <Text style={styles.invName} numberOfLines={1}>
-                          {inv.full_name}
-                        </Text>
-                        <Text style={styles.invEmail} numberOfLines={1}>
-                          {inv.email}
-                        </Text>
-                      </View>
-                      <View style={[styles.roleBadge, { backgroundColor: 'rgba(255,255,255,0.06)' }]}>
-                        <View style={[styles.roleDot, { backgroundColor: ROLE_TONE[inv.role] }]} />
-                        <Text style={[styles.roleText, { color: ROLE_TONE[inv.role] }]}>
-                          {t(`roles.${inv.role}`)}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.codeBox}>
-                      <Text style={styles.codeLabel}>{t('team.inviteCode')}</Text>
-                      <Text selectable style={styles.codeValue}>
-                        {shortCode(inv.token)}
-                      </Text>
-                    </View>
-                    <View style={styles.invActions}>
-                      <Pressable
-                        hitSlop={8}
-                        onPress={() => onRevoke(inv)}
-                        style={({ pressed }) => [styles.invAction, pressed && { opacity: 0.6 }]}
-                      >
-                        <Feather name="x-circle" size={14} color={theme.colors.danger} />
-                        <Text style={[styles.invActionText, { color: theme.colors.danger }]}>
-                          {t('team.cancel')}
-                        </Text>
-                      </Pressable>
-                      <Text style={styles.expiry}>
-                        {t('team.expiresIn', { time: formatExpiry(inv.expires_at, t) })}
-                      </Text>
-                    </View>
-                  </Card>
-                ))}
+              {pending.length > 0 ? (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>{t('team.pendingTitle')}</Text>
+                  <View style={styles.list}>
+                    {pending.map((inv) => (
+                      <Card key={inv.id} style={styles.invCard}>
+                        <View style={styles.invHead}>
+                          <View style={styles.invIdent}>
+                            <Text style={styles.invName} numberOfLines={1}>
+                              {inv.full_name}
+                            </Text>
+                            <Text style={styles.invEmail} numberOfLines={1}>
+                              {inv.email}
+                            </Text>
+                          </View>
+                          <View style={[styles.roleBadge, { backgroundColor: 'rgba(255,255,255,0.06)' }]}>
+                            <View style={[styles.roleDot, { backgroundColor: ROLE_TONE[inv.role] }]} />
+                            <Text style={[styles.roleText, { color: ROLE_TONE[inv.role] }]}>
+                              {t(`roles.${inv.role}`)}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.codeBox}>
+                          <Text style={styles.codeLabel}>{t('team.inviteCode')}</Text>
+                          <Text selectable style={styles.codeValue}>
+                            {shortCode(inv.token)}
+                          </Text>
+                        </View>
+                        <View style={styles.invActions}>
+                          <Pressable
+                            hitSlop={8}
+                            onPress={() => onRevoke(inv)}
+                            style={({ pressed }) => [styles.invAction, pressed && { opacity: 0.6 }]}
+                          >
+                            <Feather name="x-circle" size={14} color={theme.colors.danger} />
+                            <Text style={[styles.invActionText, { color: theme.colors.danger }]}>
+                              {t('team.cancel')}
+                            </Text>
+                          </Pressable>
+                          <Text style={styles.expiry}>
+                            {t('team.expiresIn', { time: formatExpiry(inv.expires_at, t) })}
+                          </Text>
+                        </View>
+                      </Card>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>
+                  {t('team.activeTitle', { count: members.length })}
+                </Text>
               </View>
             </View>
-          ) : null}
-
-          {/* Active members */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              {t('team.activeTitle', { count: members.length })}
-            </Text>
-            {loading ? (
+          }
+          ListEmptyComponent={
+            loading ? (
               <ActivityIndicator color={theme.colors.accent} style={{ marginVertical: 24 }} />
-            ) : members.length === 0 ? (
+            ) : (
               <Card style={styles.emptyCard}>
                 <Text style={styles.emptyText}>{t('team.emptyMembers')}</Text>
               </Card>
-            ) : (
-              <View style={styles.list}>
-                {members.map((m) => {
-                  const canOpenPerms =
-                    profile?.role === 'owner' && m.id !== profile?.id && m.role !== 'owner';
-                  const Wrapper = canOpenPerms ? Pressable : View;
-                  return (
-                    <Wrapper
-                      key={m.id}
-                      onPress={
-                        canOpenPerms
-                          ? () => router.push(`/(app)/permissions/${m.id}`)
-                          : undefined
-                      }
-                      style={({ pressed }: { pressed?: boolean } = {}) => [
-                        pressed && { opacity: 0.7 },
-                      ]}
-                    >
-                      <Card style={styles.memberCard}>
-                        <Avatar name={m.full_name} size={42} uri={m.avatar_url} />
-                        <View style={styles.memberBody}>
-                          <Text style={styles.memberName} numberOfLines={1}>
-                            {m.full_name}
-                            {m.id === profile?.id ? (
-                              <Text style={styles.youTag}> · {t('common.you')}</Text>
-                            ) : null}
-                          </Text>
-                          <Text style={styles.memberEmail} numberOfLines={1}>
-                            {m.email}
-                          </Text>
-                        </View>
-                        <View style={[styles.roleBadge, { backgroundColor: 'rgba(255,255,255,0.06)' }]}>
-                          <View style={[styles.roleDot, { backgroundColor: ROLE_TONE[m.role] }]} />
-                          <Text style={[styles.roleText, { color: ROLE_TONE[m.role] }]}>
-                            {t(`roles.${m.role}`)}
-                          </Text>
-                        </View>
-                        {canOpenPerms ? (
-                          <Feather
-                            name="chevron-right"
-                            size={16}
-                            color={theme.colors.textDim}
-                            style={{ marginLeft: 4 }}
-                          />
-                        ) : null}
-                      </Card>
-                    </Wrapper>
-                  );
-                })}
-              </View>
-            )}
-          </View>
-
-          <View style={styles.helpBlock}>
-            <Feather name="info" size={14} color={theme.colors.textDim} />
-            <Text style={styles.helpText}>{t('team.helpText')}</Text>
-          </View>
-        </ScrollView>
+            )
+          }
+          ListFooterComponent={
+            <View style={styles.helpBlock}>
+              <Feather name="info" size={14} color={theme.colors.textDim} />
+              <Text style={styles.helpText}>{t('team.helpText')}</Text>
+            </View>
+          }
+        />
       </SafeAreaView>
     </View>
   );
@@ -326,8 +331,10 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: theme.spacing.xl,
     paddingBottom: theme.spacing['3xl'],
-    gap: theme.spacing.xl,
   },
+
+  headerStack: { gap: theme.spacing.xl, marginBottom: theme.spacing.md },
+  itemGap: { height: 10 },
 
   inviteRow: { flexDirection: 'row', gap: 10 },
   inviteBtn: { flex: 1 },
@@ -404,6 +411,7 @@ const styles = StyleSheet.create({
   helpBlock: {
     flexDirection: 'row',
     gap: 8,
+    marginTop: theme.spacing.xl,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.md,
     borderRadius: theme.radius.md,
