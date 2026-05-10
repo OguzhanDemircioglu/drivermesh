@@ -181,7 +181,7 @@ function PoolRow({
             },
           ]}
         >
-          <MaterialCommunityIcons name={v.icon} size={iconSize} color={v.fg} />
+          <MaterialCommunityIcons name={v.icon} size={iconSize} color={fg} />
           {!isHq ? (
             <View style={{ marginLeft: isCompact ? 4 : 6 }}>
               <Text style={[styles.label, { color: fg, fontSize }]} numberOfLines={1}>
