@@ -10,8 +10,10 @@ import { Screen } from '@/components/Screen';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import { useToast } from '@/components/Toast';
+import { PhotoPicker } from '@/components/PhotoPicker';
 import { useAuth } from '@/auth/AuthProvider';
 import { createVehicle } from '@/lib/vehicles';
+import { uploadImage } from '@/lib/cloudinary';
 import { theme } from '@/theme';
 
 const currentYear = new Date().getFullYear();
@@ -42,6 +44,8 @@ export default function NewVehicleScreen() {
   const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [color, setColor] = useState<string | null>(null);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photoMime, setPhotoMime] = useState<string | undefined>(undefined);
 
   const schema = useMemo(
     () =>
@@ -87,6 +91,17 @@ export default function NewVehicleScreen() {
     }
     try {
       setSubmitting(true);
+      // Foto seçildiyse önce Cloudinary'ye yükle. Hata olursa toast gösterip
+      // çık — vehicle yaratılmasın yarım veriyle.
+      let photoUrl: string | null = null;
+      if (photoUri) {
+        const uploaded = await uploadImage(
+          photoUri,
+          `drivermesh/${profile.organization_id}/vehicles`,
+          { mimeType: photoMime, tags: ['vehicle'] },
+        );
+        photoUrl = uploaded.secureUrl;
+      }
       await createVehicle({
         organizationId: profile.organization_id,
         addedBy: session.user.id,
@@ -95,6 +110,7 @@ export default function NewVehicleScreen() {
         model: data.model,
         year: Number(data.year),
         color,
+        photoUrl,
       });
       toast.success(t('vehicles.new.successTitle'), t('vehicles.new.successText'));
       router.replace('/(app)/vehicles');
@@ -127,6 +143,21 @@ export default function NewVehicleScreen() {
       </View>
 
       <View style={styles.form}>
+        <PhotoPicker
+          uri={photoUri}
+          onPick={(uri, mime) => {
+            setPhotoUri(uri);
+            setPhotoMime(mime);
+          }}
+          onRemove={() => {
+            setPhotoUri(null);
+            setPhotoMime(undefined);
+          }}
+          aspect={[16, 10]}
+          placeholderIcon="truck"
+          disabled={submitting}
+        />
+
         <Controller
           control={control}
           name="plate"

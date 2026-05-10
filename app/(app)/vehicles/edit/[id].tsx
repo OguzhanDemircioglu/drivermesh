@@ -10,9 +10,11 @@ import { Screen } from '@/components/Screen';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import { useToast } from '@/components/Toast';
+import { PhotoPicker } from '@/components/PhotoPicker';
 import { useAuth } from '@/auth/AuthProvider';
 import { useCan } from '@/auth/useCan';
 import { getVehicle, updateVehicle } from '@/lib/vehicles';
+import { destroyImage, publicIdFromUrl, uploadImage } from '@/lib/cloudinary';
 import { theme } from '@/theme';
 
 const currentYear = new Date().getFullYear();
@@ -47,6 +49,11 @@ export default function EditVehicleScreen() {
   const [color, setColor] = useState<string | null>(null);
   // Status form'da düzenlenmez — operator kuralı: status sadece DB-side
   // (job lifecycle veya bakım toggle) ile değişir, manuel UI'dan değil.
+  // photoUri: o anki gösterim. originalPhotoUrl: yüklerken kaydedilen DB değeri
+  // (silme için Cloudinary public_id türetmek için).
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photoMime, setPhotoMime] = useState<string | undefined>(undefined);
+  const [originalPhotoUrl, setOriginalPhotoUrl] = useState<string | null>(null);
 
   const schema = useMemo(
     () =>
@@ -99,6 +106,8 @@ export default function EditVehicleScreen() {
           year: String(v.year),
         });
         setColor(v.color);
+        setPhotoUri(v.photo_url);
+        setOriginalPhotoUrl(v.photo_url);
       })
       .catch((e) => {
         console.warn('[vehicle/edit] load failed', e);
@@ -126,12 +135,37 @@ export default function EditVehicleScreen() {
     }
     try {
       setSubmitting(true);
+      // Foto durumlari:
+      //  (a) photoUri == originalPhotoUrl → degismedi, dokunma
+      //  (b) photoUri null + originalPhotoUrl var → kaldirildi, eski Cloudinary asset'ini sil
+      //  (c) photoUri yeni (originalPhotoUrl'den farkli) → upload et, eskisi varsa sil
+      let nextPhotoUrl: string | null | undefined = undefined;
+      const changed = photoUri !== originalPhotoUrl;
+      if (changed) {
+        if (photoUri) {
+          const uploaded = await uploadImage(
+            photoUri,
+            `drivermesh/${profile.organization_id}/vehicles`,
+            { mimeType: photoMime, tags: ['vehicle'] },
+          );
+          nextPhotoUrl = uploaded.secureUrl;
+        } else {
+          nextPhotoUrl = null;
+        }
+        // Eski asset'i temizle (Cloudinary'den) — best-effort, hatayi yutmazlik
+        // ama ana akisi blokla.
+        if (originalPhotoUrl) {
+          const pid = publicIdFromUrl(originalPhotoUrl);
+          if (pid) destroyImage(pid).catch((e) => console.warn('[vehicle/edit] destroy', e));
+        }
+      }
       await updateVehicle(id, {
         plate: data.plate,
         brand: data.brand,
         model: data.model,
         year: Number(data.year),
         color,
+        ...(changed ? { photoUrl: nextPhotoUrl } : {}),
       });
       toast.success(t('vehicles.edit.successTitle'), t('vehicles.edit.successText'));
       router.back();
@@ -189,6 +223,21 @@ export default function EditVehicleScreen() {
         </View>
       ) : (
         <View style={styles.form}>
+          <PhotoPicker
+            uri={photoUri}
+            onPick={(uri, mime) => {
+              setPhotoUri(uri);
+              setPhotoMime(mime);
+            }}
+            onRemove={() => {
+              setPhotoUri(null);
+              setPhotoMime(undefined);
+            }}
+            aspect={[16, 10]}
+            placeholderIcon="truck"
+            disabled={submitting}
+          />
+
           <Controller
             control={control}
             name="plate"

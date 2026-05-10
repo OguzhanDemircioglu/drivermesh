@@ -144,6 +144,16 @@ export const en: TranslationShape = {
     requestAlreadyHandled: 'This request has already been handled.',
     demoMemberRemoveDisabled: 'Removing members is disabled in demo mode.',
   },
+  photoPicker: {
+    sheetTitle: 'Photo',
+    fromCamera: 'Take a Photo',
+    fromGallery: 'Choose from Gallery',
+    addHint: 'Tap to add a photo',
+    replace: 'Replace',
+    errorTitle: 'Could not pick photo',
+    cameraPermission: 'Camera permission required.',
+    galleryPermission: 'Gallery permission required.',
+  },
   auth: {
     welcome: {
       title: 'DriverMesh',

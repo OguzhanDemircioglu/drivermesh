@@ -142,6 +142,16 @@ export const tr = {
     requestAlreadyHandled: 'Bu talep zaten işleme alınmış olabilir.',
     demoMemberRemoveDisabled: 'Demo modda üye silme devre dışı.',
   },
+  photoPicker: {
+    sheetTitle: 'Fotoğraf',
+    fromCamera: 'Kameradan Çek',
+    fromGallery: 'Galeriden Seç',
+    addHint: 'Fotoğraf eklemek için dokun',
+    replace: 'Değiştir',
+    errorTitle: 'Fotoğraf seçilemedi',
+    cameraPermission: 'Kamera izni gerekli.',
+    galleryPermission: 'Galeri izni gerekli.',
+  },
   auth: {
     welcome: {
       title: 'DriverMesh',

@@ -177,15 +177,24 @@ export async function listVehicleJobs(
   return (data ?? []) as VehicleJobLite[];
 }
 
-type VehiclePatch = Partial<Pick<Vehicle, 'plate' | 'brand' | 'model' | 'year' | 'status' | 'color'>>;
+type VehiclePatch = Partial<Pick<Vehicle, 'plate' | 'brand' | 'model' | 'year' | 'status' | 'color'>> & {
+  /** camelCase API: backend `photo_url`'e map'lenir. */
+  photoUrl?: string | null;
+};
 
 export async function updateVehicle(id: string, patch: VehiclePatch) {
-  const next: VehiclePatch = { ...patch };
-  if (typeof patch.plate === 'string') {
-    next.plate = patch.plate.toUpperCase().replace(/\s+/g, ' ').trim();
+  // photoUrl camelCase olarak gelir; backend kolonu photo_url. Diğer kolonlar
+  // zaten snake_case bekliyor (Vehicle tipinden).
+  const { photoUrl, ...rest } = patch;
+  const next: Partial<Vehicle> = { ...rest };
+  if (typeof rest.plate === 'string') {
+    next.plate = rest.plate.toUpperCase().replace(/\s+/g, ' ').trim();
+  }
+  if (photoUrl !== undefined) {
+    next.photo_url = photoUrl;
   }
   if (isDemoActive()) {
-    demo.updateVehicle(id, next as Partial<Vehicle>);
+    demo.updateVehicle(id, next);
     return;
   }
   const { error } = await supabase.from('vehicles').update(next).eq('id', id);
