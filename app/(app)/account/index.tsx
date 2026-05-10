@@ -336,6 +336,11 @@ export default function AccountScreen() {
                 label={t('account.actionJobs')}
                 onPress={() => router.push('/(app)/jobs')}
               />
+              <Action
+                icon="tool"
+                label={t('account.actionMaintenance')}
+                onPress={() => router.push('/(app)/maintenance')}
+              />
             </Card>
           ) : null}
 

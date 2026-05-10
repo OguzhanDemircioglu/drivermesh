@@ -96,14 +96,23 @@ export async function getMaintenanceRequest(
 // ----------------------------------------------------------------------------
 
 async function vehicleHasActiveJob(vehicleId: string): Promise<boolean> {
+  // assigned + in_progress birlikte "aktif is" sayilir — vehicle detay
+  // ekranindaki UI ile ayni davranis. Yetkili UI tarafindan bypass etse bile
+  // (deep-link, race) lib gardiyaninda da bloklanir.
   if (isDemoActive()) {
-    return demo.jobs().some((j) => j.vehicle_id === vehicleId && j.status === 'in_progress');
+    return demo
+      .jobs()
+      .some(
+        (j) =>
+          j.vehicle_id === vehicleId &&
+          (j.status === 'assigned' || j.status === 'in_progress'),
+      );
   }
   const { data, error } = await supabase
     .from('jobs')
     .select('id')
     .eq('vehicle_id', vehicleId)
-    .eq('status', 'in_progress')
+    .in('status', ['assigned', 'in_progress'])
     .limit(1);
   if (error) throw error;
   return (data?.length ?? 0) > 0;

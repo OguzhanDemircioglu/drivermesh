@@ -862,6 +862,7 @@ export const tr = {
     actionTeam: 'Ekibim',
     actionFleet: 'Filo',
     actionJobs: 'İşler',
+    actionMaintenance: 'Bakım Talepleri',
     help: 'Yardım',
     actionSupport: 'Destek',
     actionAbout: 'Uygulama Hakkında',

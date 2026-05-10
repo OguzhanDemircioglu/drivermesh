@@ -865,6 +865,7 @@ export const en: TranslationShape = {
     actionTeam: 'My Team',
     actionFleet: 'Fleet',
     actionJobs: 'Jobs',
+    actionMaintenance: 'Maintenance Requests',
     help: 'Help',
     actionSupport: 'Support',
     actionAbout: 'About',
