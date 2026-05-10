@@ -24,6 +24,23 @@ const BASE_ICON_SIZE = 30;
 const BASE_FONT_SIZE = 14;
 const MIN_SCALE = 0.7;
 
+/**
+ * Açık renkli pill background'larında (beyaz, sarı, gümüş gibi) varsayılan
+ * beyaz metin okunmaz hale gelir. Bu helper background'ın algılanan
+ * parlaklığına bakıp metin/ikon için kontrastlı bir foreground seçer.
+ */
+function pickContrastingFg(hex: string): string {
+  const m = /^#?([\da-f]{6})$/i.exec(hex);
+  if (!m) return '#FFFFFF';
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 0xff;
+  const g = (n >> 8) & 0xff;
+  const b = n & 0xff;
+  // Perceived luminance (Rec. 601 weights) — basit + harita ölçeğinde yeterli.
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum > 0.6 ? '#0A0E1F' : '#FFFFFF';
+}
+
 export type LabelSpec = {
   /** Stable identity for memoisation / dedup. */
   key: string;
@@ -127,6 +144,9 @@ function PoolRow({
   const isVehicle = isVehicleVariant;
   const opacity = spec.opacity ?? 1;
   const bg = spec.bgOverride ?? v.bg;
+  // bgOverride uygulanırken (vehicle pill renk override'ı), açık renk
+  // background'da yazılar siyah olsun. Diğer durumlarda variant fg.
+  const fg = spec.bgOverride ? pickContrastingFg(spec.bgOverride) : v.fg;
   const showSubline = !isVehicle && spec.subline;
   const showTimer = spec.timer;
   const showHint =
@@ -164,12 +184,12 @@ function PoolRow({
           <MaterialCommunityIcons name={v.icon} size={iconSize} color={v.fg} />
           {!isHq ? (
             <View style={{ marginLeft: isCompact ? 4 : 6 }}>
-              <Text style={[styles.label, { color: v.fg, fontSize }]} numberOfLines={1}>
+              <Text style={[styles.label, { color: fg, fontSize }]} numberOfLines={1}>
                 {spec.label}
               </Text>
               {showSubline ? (
                 <Text
-                  style={[styles.sub, { color: v.fg, fontSize: fontSize - 2 }]}
+                  style={[styles.sub, { color: fg, fontSize: fontSize - 2 }]}
                   numberOfLines={1}
                 >
                   {spec.subline}
@@ -180,7 +200,7 @@ function PoolRow({
                   style={[
                     styles.timer,
                     {
-                      color: v.fg,
+                      color: fg,
                       fontSize: isCompact ? fontSize - 1 : fontSize - 2,
                       marginTop: timerMargin,
                     },
@@ -192,7 +212,7 @@ function PoolRow({
               ) : null}
               {showHint ? (
                 <Text
-                  style={[styles.sub, { color: v.fg, fontSize: fontSize - 3 }]}
+                  style={[styles.sub, { color: fg, fontSize: fontSize - 3 }]}
                   numberOfLines={1}
                 >
                   {spec.hint}

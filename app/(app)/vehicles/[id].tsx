@@ -394,6 +394,7 @@ export default function VehicleDetailScreen() {
                 <Pressable
                   onPress={onEndMaintenance}
                   disabled={endingMaintenance}
+                  hitSlop={8}
                   style={({ pressed }) => [
                     styles.maintenanceCta,
                     endingMaintenance && { opacity: 0.55 },
