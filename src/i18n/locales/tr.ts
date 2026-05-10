@@ -739,6 +739,7 @@ export const tr = {
     revertToDefault: 'Varsayılana Dön',
     sectionVehicles: 'Araçlar',
     sectionJobs: 'İşler',
+    sectionMaintenance: 'Bakım',
     sectionMembers: 'Ekip',
     sectionReports: 'Raporlar',
     sectionSettings: 'Ayarlar',

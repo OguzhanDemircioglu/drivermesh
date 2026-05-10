@@ -212,11 +212,15 @@ export async function checkPermission(
 }
 
 export async function listNotifications(
+  userId: string,
   limit = 50,
 ): Promise<NotificationWithActor[]> {
   if (isDemoActive()) {
+    // Demo'da RLS yok — recipient filter'i lib seviyesinde yap. Aksi halde
+    // owner kendine gonderilmemis (yoneticilere olan) bildirimleri de gorur.
     return demo
       .notifications()
+      .filter((n) => n.recipient_id === userId)
       .slice(0, limit)
       .map((n) => {
         const actor = n.actor_id ? demo.profileById(n.actor_id) : null;
@@ -234,9 +238,12 @@ export async function listNotifications(
         };
       });
   }
+  // Production: RLS zaten recipient_id = auth.uid() filtreler. Yine de
+  // explicit eq ile index kullaniminda daha iyi.
   const { data, error } = await supabase
     .from('notifications')
     .select('*, actor:profiles!notifications_actor_id_fkey(id, full_name, role, avatar_url)')
+    .eq('recipient_id', userId)
     .order('created_at', { ascending: false })
     .limit(limit);
   if (error) throw new PermissionError('notifications_fetch_failed', error.message);

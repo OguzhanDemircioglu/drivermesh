@@ -40,8 +40,9 @@ export default function NotificationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
+    if (!profile?.id) return;
     try {
-      const list = await listNotifications(50);
+      const list = await listNotifications(profile.id, 50);
       setItems(list);
 
       const memberIds = Array.from(
@@ -78,7 +79,7 @@ export default function NotificationsScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [profile?.id]);
 
   useFocusEffect(
     useCallback(() => {

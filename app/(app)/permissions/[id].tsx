@@ -37,6 +37,7 @@ import { theme } from '@/theme';
 const CATEGORY_ORDER: PermissionCategory[] = [
   'vehicles',
   'jobs',
+  'maintenance',
   'members',
   'reports',
   'settings',

@@ -742,6 +742,7 @@ export const en: TranslationShape = {
     revertToDefault: 'Revert To Default',
     sectionVehicles: 'Vehicles',
     sectionJobs: 'Jobs',
+    sectionMaintenance: 'Maintenance',
     sectionMembers: 'Team',
     sectionReports: 'Reports',
     sectionSettings: 'Settings',
