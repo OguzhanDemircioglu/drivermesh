@@ -22,6 +22,7 @@ export type Database = {
           full_name: string;
           id: string;
           invited_by: string;
+          manager_id: string | null;
           organization_id: string;
           role: Database['public']['Enums']['user_role'];
           status: Database['public']['Enums']['invitation_status'];
@@ -36,6 +37,7 @@ export type Database = {
           full_name: string;
           id?: string;
           invited_by: string;
+          manager_id?: string | null;
           organization_id: string;
           role: Database['public']['Enums']['user_role'];
           status?: Database['public']['Enums']['invitation_status'];
@@ -50,6 +52,7 @@ export type Database = {
           full_name?: string;
           id?: string;
           invited_by?: string;
+          manager_id?: string | null;
           organization_id?: string;
           role?: Database['public']['Enums']['user_role'];
           status?: Database['public']['Enums']['invitation_status'];
@@ -66,6 +69,13 @@ export type Database = {
           {
             foreignKeyName: 'invitations_invited_by_fkey';
             columns: ['invited_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'invitations_manager_id_fkey';
+            columns: ['manager_id'];
             isOneToOne: false;
             referencedRelation: 'profiles';
             referencedColumns: ['id'];
@@ -385,6 +395,7 @@ export type Database = {
           email: string;
           full_name: string;
           id: string;
+          manager_id: string | null;
           organization_id: string | null;
           phone: string | null;
           role: Database['public']['Enums']['user_role'];
@@ -395,6 +406,7 @@ export type Database = {
           email: string;
           full_name: string;
           id: string;
+          manager_id?: string | null;
           organization_id?: string | null;
           phone?: string | null;
           role: Database['public']['Enums']['user_role'];
@@ -405,11 +417,19 @@ export type Database = {
           email?: string;
           full_name?: string;
           id?: string;
+          manager_id?: string | null;
           organization_id?: string | null;
           phone?: string | null;
           role?: Database['public']['Enums']['user_role'];
         };
         Relationships: [
+          {
+            foreignKeyName: 'profiles_manager_id_fkey';
+            columns: ['manager_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
           {
             foreignKeyName: 'profiles_organization_id_fkey';
             columns: ['organization_id'];

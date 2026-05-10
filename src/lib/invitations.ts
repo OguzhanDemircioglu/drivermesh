@@ -34,9 +34,13 @@ type CreateInvitationInput = {
   fullName: string;
   role: Extract<UserRole, 'manager' | 'driver'>;
   invitedBy: string;
+  managerId?: string | null;
 };
 
 export async function createInvitation(input: CreateInvitationInput): Promise<Invitation> {
+  // Driver davetinde manager_id zorunlu olmasa da uygulanır; manager rolünde
+  // null kalır (manager dogrudan owner'a bagli, ayri parent yok).
+  const managerId = input.role === 'driver' ? input.managerId ?? null : null;
   if (isDemoActive()) {
     const token = (Math.random().toString(36) + Math.random().toString(36))
       .replace(/[^a-z0-9]/g, '')
@@ -51,6 +55,7 @@ export async function createInvitation(input: CreateInvitationInput): Promise<In
       role: input.role,
       status: 'pending',
       invited_by: input.invitedBy,
+      manager_id: managerId,
       created_at: new Date().toISOString(),
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60_000).toISOString(),
       token,
@@ -68,6 +73,7 @@ export async function createInvitation(input: CreateInvitationInput): Promise<In
       full_name: input.fullName.trim(),
       role: input.role,
       invited_by: input.invitedBy,
+      manager_id: managerId,
     })
     .select('*')
     .single();

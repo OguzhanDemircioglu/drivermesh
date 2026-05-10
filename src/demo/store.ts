@@ -230,9 +230,9 @@ function reseed() {
   state.profiles = [
     mkProfile(DEMO_OWNER_ID, 'Demo Patron', 'patron@demo.drivermesh', 'owner', 30, AVATAR(12)),
     mkProfile(DEMO_MANAGER_ID, 'Selin Yöneten', 'selin@demo.drivermesh', 'manager', 28, AVATAR(47)),
-    mkProfile(DEMO_DRIVER_IDS[0], 'Ahmet Şoför', 'ahmet@demo.drivermesh', 'driver', 25, AVATAR(33)),
-    mkProfile(DEMO_DRIVER_IDS[1], 'Mehmet Yıldız', 'mehmet@demo.drivermesh', 'driver', 24, AVATAR(11)),
-    mkProfile(DEMO_DRIVER_IDS[2], 'Ayşe Demir', 'ayse@demo.drivermesh', 'driver', 20, AVATAR(44)),
+    mkProfile(DEMO_DRIVER_IDS[0], 'Ahmet Şoför', 'ahmet@demo.drivermesh', 'driver', 25, AVATAR(33), DEMO_MANAGER_ID),
+    mkProfile(DEMO_DRIVER_IDS[1], 'Mehmet Yıldız', 'mehmet@demo.drivermesh', 'driver', 24, AVATAR(11), DEMO_MANAGER_ID),
+    mkProfile(DEMO_DRIVER_IDS[2], 'Ayşe Demir', 'ayse@demo.drivermesh', 'driver', 20, AVATAR(44), DEMO_MANAGER_ID),
     // 4. driver var ama atanmamış işle çalışır — toplam 6 kişi olmasın diye sadece 5 ana kişi
     // kullanıcının istediği: 5 kişi — owner+manager+3 driver = 5 ✓
     // (DEMO_DRIVER_IDS[3] ileride invitation olarak kullanılabilir, profile değil)
@@ -371,6 +371,7 @@ function reseed() {
       role: 'driver',
       status: 'pending',
       invited_by: DEMO_OWNER_ID,
+      manager_id: DEMO_MANAGER_ID,
       created_at: hoursAgo(6),
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60_000).toISOString(),
       token: 'D3M0AB12345678901234567890123456',
@@ -444,6 +445,7 @@ function mkProfile(
   role: UserRole,
   daysAgo: number,
   avatarUrl: string | null = null,
+  managerId: string | null = null,
 ): Profile {
   return {
     id,
@@ -453,6 +455,7 @@ function mkProfile(
     phone: null,
     role,
     avatar_url: avatarUrl,
+    manager_id: managerId,
     created_at: new Date(Date.now() - daysAgo * 86_400_000).toISOString(),
   };
 }
