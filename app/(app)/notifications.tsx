@@ -111,7 +111,10 @@ export default function NotificationsScreen() {
       if (
         (n.type === 'driver_request' ||
           n.type === 'request_approved' ||
-          n.type === 'request_rejected') &&
+          n.type === 'request_rejected' ||
+          n.type === 'job_update' ||
+          n.type === 'job_assigned' ||
+          n.type === 'job_cancelled') &&
         payload.job_id
       ) {
         router.push(`/(app)/jobs/${payload.job_id}`);
@@ -263,6 +266,8 @@ function NotificationItem({
     job_id?: string;
     requester_name?: string;
     customer_name?: string;
+    // job_update payload
+    changed_fields?: string[];
   };
   const memberName =
     payload.member_id && members[payload.member_id]
@@ -305,6 +310,41 @@ function NotificationItem({
     body = t('notifications.requestRejectedBody', {
       actor: actorName,
       customer: payload.customer_name ?? '—',
+    });
+  } else if (item.type === 'job_assigned') {
+    title = t('notifications.jobAssignedTitle');
+    body = t('notifications.jobAssignedBody', {
+      actor: actorName,
+      customer: payload.customer_name ?? '—',
+    });
+  } else if (item.type === 'job_cancelled') {
+    title = t('notifications.jobCancelledTitle');
+    body = t('notifications.jobCancelledBody', {
+      actor: actorName,
+      customer: payload.customer_name ?? '—',
+    });
+  } else if (item.type === 'job_update') {
+    title = t('notifications.jobUpdateTitle');
+    const fieldKeys = payload.changed_fields ?? [];
+    const fieldMap: Record<string, string> = {
+      customer_name: t('notifications.jobUpdateFieldCustomer'),
+      pickup_address: t('notifications.jobUpdateFieldPickup'),
+      pickup_lat: t('notifications.jobUpdateFieldPickup'),
+      pickup_lng: t('notifications.jobUpdateFieldPickup'),
+      dropoff_address: t('notifications.jobUpdateFieldDropoff'),
+      dropoff_lat: t('notifications.jobUpdateFieldDropoff'),
+      dropoff_lng: t('notifications.jobUpdateFieldDropoff'),
+      distance_km: t('notifications.jobUpdateFieldDistance'),
+      eta_minutes: t('notifications.jobUpdateFieldEta'),
+      notes: t('notifications.jobUpdateFieldNotes'),
+    };
+    const fields = Array.from(
+      new Set(fieldKeys.map((k) => fieldMap[k]).filter(Boolean)),
+    ).join(', ');
+    body = t('notifications.jobUpdateBody', {
+      actor: actorName,
+      customer: payload.customer_name ?? '—',
+      fields: fields || '—',
     });
   }
 

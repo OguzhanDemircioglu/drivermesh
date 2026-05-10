@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRootNavigationState, useRouter, useSegments } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
@@ -35,18 +35,31 @@ function AuthGate() {
   const { session, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  // Root navigator'ın mount tamamlanıp tamamlanmadığının tek güvenilir
+  // sinyali. Fresh start + pm clear sonrası auth state useEffect'i navigator
+  // mount'undan önce tetiklenebilir; key set olmadan replace çağırırsak
+  // "Attempted to navigate before mounting the Root Layout" assert'i yer.
+  const rootNavReady = !!useRootNavigationState()?.key;
   const splashHiddenRef = useRef(false);
 
-  // Auth resolve olur olmaz doğru route'a yönlendir.
+  // Auth resolve olur olmaz doğru route'a yönlendir. Navigator mount tam
+  // bitmeden tetiklenirse Expo Router içeride assert atar — try/catch
+  // sessizce yutar, useEffect bir sonraki render'da rootNavReady true
+  // olduğunda tekrar denenecektir.
   useEffect(() => {
     if (loading) return;
+    if (!rootNavReady) return;
     const inAuthGroup = segments[0] === '(auth)';
-    if (!session && !inAuthGroup) {
-      router.replace('/(auth)/welcome');
-    } else if (session && inAuthGroup) {
-      router.replace('/(app)');
+    try {
+      if (!session && !inAuthGroup) {
+        router.replace('/(auth)/welcome');
+      } else if (session && inAuthGroup) {
+        router.replace('/(app)');
+      }
+    } catch {
+      /* navigator not ready yet — retry on next state update */
     }
-  }, [session, loading, segments, router]);
+  }, [session, loading, rootNavReady, segments, router]);
 
   // Splash hide'ı View ekrana yerleştikten sonra tetikle. Bu sayede native
   // splash kapanırken ekranda zaten React frame (WelcomeHero) hazır olur,

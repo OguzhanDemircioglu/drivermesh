@@ -217,7 +217,17 @@ export default function VehicleDetailScreen() {
             <Feather name="arrow-left" size={22} color={theme.colors.text} />
           </Pressable>
           <Text style={styles.title}>{t('vehicles.detail.title')}</Text>
-          <View style={styles.backBtn} />
+          {vehicle && canUpdate.allowed ? (
+            <Pressable
+              onPress={() => router.push(`/(app)/vehicles/edit/${vehicle.id}`)}
+              hitSlop={12}
+              style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+            >
+              <Feather name="edit-2" size={20} color={theme.colors.accent} />
+            </Pressable>
+          ) : (
+            <View style={styles.backBtn} />
+          )}
         </View>
 
         {loading ? (

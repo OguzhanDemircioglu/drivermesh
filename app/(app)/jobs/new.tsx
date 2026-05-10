@@ -19,8 +19,6 @@ import { theme } from '@/theme';
 
 type FormData = {
   customerName: string;
-  distanceKm?: string;
-  etaMinutes?: string;
   driverId?: string | null;
   notes?: string;
 };
@@ -41,14 +39,6 @@ export default function NewJobScreen() {
           .string()
           .min(2, t('jobs.new.errors.customerRequired'))
           .max(80, t('common.tooLong')),
-        distanceKm: z
-          .string()
-          .optional()
-          .refine((v) => !v || /^\d+([.,]\d+)?$/.test(v), t('jobs.new.errors.numeric')),
-        etaMinutes: z
-          .string()
-          .optional()
-          .refine((v) => !v || /^\d+$/.test(v), t('jobs.new.errors.integer')),
         driverId: z.string().nullable().optional(),
         notes: z.string().max(500, t('common.tooLong')).optional(),
       }),
@@ -102,8 +92,6 @@ export default function NewJobScreen() {
     resolver: zodResolver(schema),
     defaultValues: {
       customerName: '',
-      distanceKm: '',
-      etaMinutes: '',
       driverId: null,
       notes: '',
     },
@@ -146,8 +134,10 @@ export default function NewJobScreen() {
         pickupLng: pickupCoord.lng,
         dropoffLat: dropoffCoord.lat,
         dropoffLng: dropoffCoord.lng,
-        distanceKm: data.distanceKm ? Number(data.distanceKm.replace(',', '.')) : null,
-        etaMinutes: data.etaMinutes ? Number(data.etaMinutes) : null,
+        // Mesafe ve süre formdan girilmiyor — süre işin başlat-bitir
+        // farkından, mesafe (gerekirse) backend trigger'ından gelir.
+        distanceKm: null,
+        etaMinutes: null,
         driverId: data.driverId ?? null,
         notes: data.notes || null,
       });
@@ -248,47 +238,6 @@ export default function NewJobScreen() {
               meta={`${dropoffCoord.lat.toFixed(5)}, ${dropoffCoord.lng.toFixed(5)}`}
             />
           ) : null}
-        </View>
-
-        <View style={styles.row}>
-          <View style={styles.half}>
-            <Controller
-              control={control}
-              name="distanceKm"
-              render={({ field: { value, onChange, onBlur } }) => (
-                <TextField
-                  label={t('jobs.new.distance')}
-                  icon="navigation"
-                  placeholder={t('jobs.new.distancePlaceholder')}
-                  keyboardType="decimal-pad"
-                  value={value ?? ''}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  error={errors.distanceKm?.message}
-                  returnKeyType="next"
-                />
-              )}
-            />
-          </View>
-          <View style={styles.half}>
-            <Controller
-              control={control}
-              name="etaMinutes"
-              render={({ field: { value, onChange, onBlur } }) => (
-                <TextField
-                  label={t('jobs.new.eta')}
-                  icon="clock"
-                  placeholder={t('jobs.new.etaPlaceholder')}
-                  keyboardType="number-pad"
-                  value={value ?? ''}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  error={errors.etaMinutes?.message}
-                  returnKeyType="next"
-                />
-              )}
-            />
-          </View>
         </View>
 
         <Controller

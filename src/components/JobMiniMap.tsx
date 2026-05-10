@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import MapView, { PROVIDER_GOOGLE, Polyline, type Region } from 'react-native-maps';
 import { theme } from '@/theme';
+import { openInMaps } from '@/lib/openInMaps';
 import { MiniLocationPin, vehicleColorFromPlate } from './MiniLocationPin';
 
 type LatLng = { lat: number; lng: number };
@@ -126,6 +127,13 @@ export function JobMiniMap({
         style={StyleSheet.absoluteFill}
         initialRegion={region}
         onMapReady={() => setMapReady(true)}
+        onMarkerPress={(e) => {
+          // Per-marker onPress is unreliable with Custom Markers on Android,
+          // so we dispatch from MapView level via identifier.
+          const id = e.nativeEvent.id;
+          if (id === 'jm-pickup' && pickup) openInMaps(pickup.lat, pickup.lng);
+          else if (id === 'jm-dropoff' && dropoff) openInMaps(dropoff.lat, dropoff.lng);
+        }}
         toolbarEnabled={false}
         scrollEnabled={false}
         zoomEnabled={false}
@@ -148,12 +156,14 @@ export function JobMiniMap({
           <MiniLocationPin
             variant="pickup"
             coordinate={{ latitude: pickup.lat, longitude: pickup.lng }}
+            identifier="jm-pickup"
           />
         ) : null}
         {dropoff ? (
           <MiniLocationPin
             variant="dropoff"
             coordinate={{ latitude: dropoff.lat, longitude: dropoff.lng }}
+            identifier="jm-dropoff"
           />
         ) : null}
         {animating && animPos ? (

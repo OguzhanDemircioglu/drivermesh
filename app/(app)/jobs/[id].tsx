@@ -25,6 +25,7 @@ import { useConfirm } from '@/components/ConfirmDialog';
 import { useAuth } from '@/auth/AuthProvider';
 import { useCan } from '@/auth/useCan';
 import { isDemoActive } from '@/demo/store';
+import { openInMaps } from '@/lib/openInMaps';
 import {
   acceptOpenJob,
   approveDriverRequest,
@@ -166,7 +167,7 @@ export default function JobDetailScreen() {
       confirmText: t('jobs.detail.cancelConfirm'),
       kind: 'destructive',
     });
-    if (ok) guarded(() => cancelJob(job.id), t('jobs.detail.cancelError'));
+    if (ok) guarded(() => cancelJob(job.id, { actorId: profile?.id }), t('jobs.detail.cancelError'));
   };
 
   const openReassign = useCallback(async () => {
@@ -193,7 +194,10 @@ export default function JobDetailScreen() {
   const onPickDriver = (driverId: string | null) => {
     if (!job) return;
     setReassignOpen(false);
-    guarded(() => reassignJob(job.id, driverId), t('jobs.detail.reassignError'));
+    guarded(
+      () => reassignJob(job.id, driverId, { actorId: profile?.id }),
+      t('jobs.detail.reassignError'),
+    );
   };
 
   const onApproveRequest = async () => {
@@ -207,7 +211,7 @@ export default function JobDetailScreen() {
     });
     if (ok)
       guarded(
-        () => approveDriverRequest(job.id, createdBy),
+        () => approveDriverRequest(job.id, createdBy, { actorId: profile?.id }),
         t('jobs.detail.driverRequestApproveError'),
       );
   };
@@ -299,7 +303,16 @@ export default function JobDetailScreen() {
             </View>
 
             <View style={styles.routeWrap}>
-              <View style={styles.routeRow}>
+              <Pressable
+                onPress={() =>
+                  openInMaps(job.pickup_lat, job.pickup_lng, job.pickup_address)
+                }
+                disabled={job.pickup_lat == null || job.pickup_lng == null}
+                style={({ pressed }) => [
+                  styles.routeRow,
+                  pressed && { opacity: 0.65 },
+                ]}
+              >
                 <View style={[styles.markerOuter, { borderColor: theme.colors.mesh }]}>
                   <View style={[styles.markerInner, { backgroundColor: theme.colors.mesh }]} />
                 </View>
@@ -307,9 +320,19 @@ export default function JobDetailScreen() {
                   <Text style={styles.routeLabel}>{t('jobs.detail.pickup')}</Text>
                   <Text style={styles.routeText}>{job.pickup_address}</Text>
                 </View>
-              </View>
+                <Feather name="external-link" size={16} color={theme.colors.textDim} />
+              </Pressable>
               <View style={styles.routeLine} />
-              <View style={styles.routeRow}>
+              <Pressable
+                onPress={() =>
+                  openInMaps(job.dropoff_lat, job.dropoff_lng, job.dropoff_address)
+                }
+                disabled={job.dropoff_lat == null || job.dropoff_lng == null}
+                style={({ pressed }) => [
+                  styles.routeRow,
+                  pressed && { opacity: 0.65 },
+                ]}
+              >
                 <View style={[styles.markerOuter, { borderColor: theme.colors.accent }]}>
                   <View style={[styles.markerInner, { backgroundColor: theme.colors.accent }]} />
                 </View>
@@ -317,7 +340,8 @@ export default function JobDetailScreen() {
                   <Text style={styles.routeLabel}>{t('jobs.detail.dropoff')}</Text>
                   <Text style={styles.routeText}>{job.dropoff_address}</Text>
                 </View>
-              </View>
+                <Feather name="external-link" size={16} color={theme.colors.textDim} />
+              </Pressable>
             </View>
 
             <View style={styles.metaGrid}>

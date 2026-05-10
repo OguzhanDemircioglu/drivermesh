@@ -9,18 +9,18 @@ import { useTranslation } from 'react-i18next';
 import { Screen } from '@/components/Screen';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
+import { Picker, type PickerOption } from '@/components/Picker';
 import { MapPicker } from '@/components/MapPicker';
 import { useToast } from '@/components/Toast';
 import { useAuth } from '@/auth/AuthProvider';
 import { useCan } from '@/auth/useCan';
-import { getJob, updateJob } from '@/lib/jobs';
+import { getJob, listOrgDrivers, reassignJob, updateJob } from '@/lib/jobs';
 import { getHq, type Hq } from '@/lib/hq';
 import { theme } from '@/theme';
 
 type FormData = {
   customerName: string;
-  distanceKm?: string;
-  etaMinutes?: string;
+  driverId?: string | null;
   notes?: string;
 };
 type Coord = { lat: number; lng: number; address: string | null };
@@ -40,6 +40,15 @@ export default function EditJobScreen() {
   const [pickupSource, setPickupSource] = useState<'hq' | 'map' | null>(null);
   const [dropoffCoord, setDropoffCoord] = useState<Coord | null>(null);
   const [pickerKind, setPickerKind] = useState<'pickup' | 'dropoff' | null>(null);
+  const [originalDriverId, setOriginalDriverId] = useState<string | null>(null);
+  const [driverOptions, setDriverOptions] = useState<PickerOption[]>([
+    {
+      value: null,
+      label: t('jobs.new.driverAuto'),
+      hint: t('jobs.new.driverAutoHint'),
+      icon: 'inbox',
+    },
+  ]);
 
   const schema = useMemo(
     () =>
@@ -48,14 +57,7 @@ export default function EditJobScreen() {
           .string()
           .min(2, t('jobs.new.errors.customerRequired'))
           .max(80, t('common.tooLong')),
-        distanceKm: z
-          .string()
-          .optional()
-          .refine((v) => !v || /^\d+([.,]\d+)?$/.test(v), t('jobs.new.errors.numeric')),
-        etaMinutes: z
-          .string()
-          .optional()
-          .refine((v) => !v || /^\d+$/.test(v), t('jobs.new.errors.integer')),
+        driverId: z.string().nullable().optional(),
         notes: z.string().max(500, t('common.tooLong')).optional(),
       }),
     [t],
@@ -70,8 +72,7 @@ export default function EditJobScreen() {
     resolver: zodResolver(schema),
     defaultValues: {
       customerName: '',
-      distanceKm: '',
-      etaMinutes: '',
+      driverId: null,
       notes: '',
     },
     mode: 'onTouched',
@@ -84,10 +85,10 @@ export default function EditJobScreen() {
         if (!j) return;
         reset({
           customerName: j.customer_name,
-          distanceKm: j.distance_km != null ? String(j.distance_km) : '',
-          etaMinutes: j.eta_minutes != null ? String(j.eta_minutes) : '',
+          driverId: j.driver_id ?? null,
           notes: j.notes ?? '',
         });
+        setOriginalDriverId(j.driver_id ?? null);
         if (j.pickup_lat != null && j.pickup_lng != null) {
           setPickupCoord({
             lat: j.pickup_lat,
@@ -107,8 +108,26 @@ export default function EditJobScreen() {
       .finally(() => setLoading(false));
     if (profile?.organization_id) {
       getHq(profile.organization_id).then(setHq).catch(() => setHq(null));
+      listOrgDrivers(profile.organization_id)
+        .then((drivers) => {
+          setDriverOptions([
+            {
+              value: null,
+              label: t('jobs.new.driverAuto'),
+              hint: t('jobs.new.driverAutoHint'),
+              icon: 'inbox',
+            },
+            ...drivers.map((d) => ({
+              value: d.id,
+              label: d.full_name,
+              hint: d.email,
+              icon: 'user' as const,
+            })),
+          ]);
+        })
+        .catch((e) => console.warn('[edit-job] drivers fetch failed', e));
     }
-  }, [id, reset, profile?.organization_id]);
+  }, [id, reset, profile?.organization_id, t]);
 
   const usePickupFromHq = () => {
     if (!hq || hq.lat == null || hq.lng == null) {
@@ -138,20 +157,30 @@ export default function EditJobScreen() {
     }
     setSubmitting(true);
     try {
-      await updateJob(id, {
-        customer_name: data.customerName,
-        pickup_address:
-          pickupCoord.address ?? `${pickupCoord.lat.toFixed(5)}, ${pickupCoord.lng.toFixed(5)}`,
-        pickup_lat: pickupCoord.lat,
-        pickup_lng: pickupCoord.lng,
-        dropoff_address:
-          dropoffCoord.address ?? `${dropoffCoord.lat.toFixed(5)}, ${dropoffCoord.lng.toFixed(5)}`,
-        dropoff_lat: dropoffCoord.lat,
-        dropoff_lng: dropoffCoord.lng,
-        distance_km: data.distanceKm ? Number(data.distanceKm.replace(',', '.')) : null,
-        eta_minutes: data.etaMinutes ? Number(data.etaMinutes) : null,
-        notes: data.notes || null,
-      });
+      await updateJob(
+        id,
+        {
+          customer_name: data.customerName,
+          pickup_address:
+            pickupCoord.address ?? `${pickupCoord.lat.toFixed(5)}, ${pickupCoord.lng.toFixed(5)}`,
+          pickup_lat: pickupCoord.lat,
+          pickup_lng: pickupCoord.lng,
+          dropoff_address:
+            dropoffCoord.address ?? `${dropoffCoord.lat.toFixed(5)}, ${dropoffCoord.lng.toFixed(5)}`,
+          dropoff_lat: dropoffCoord.lat,
+          dropoff_lng: dropoffCoord.lng,
+          distance_km: null,
+          eta_minutes: null,
+          notes: data.notes || null,
+        },
+        { actorId: profile?.id },
+      );
+      // Driver değiştiyse reassignJob tetikle — yeni driver "İş atandı"
+      // bildirimini alır, status=assigned + assigned_at güncellenir.
+      const newDriverId = data.driverId ?? null;
+      if (newDriverId !== originalDriverId) {
+        await reassignJob(id, newDriverId, { actorId: profile?.id });
+      }
       toast.success(t('jobs.edit.successTitle'), t('jobs.edit.successText'));
       router.back();
     } catch (e) {
@@ -270,46 +299,19 @@ export default function EditJobScreen() {
             ) : null}
           </View>
 
-          <View style={styles.row}>
-            <View style={styles.half}>
-              <Controller
-                control={control}
-                name="distanceKm"
-                render={({ field: { value, onChange, onBlur } }) => (
-                  <TextField
-                    label={t('jobs.new.distance')}
-                    icon="navigation"
-                    placeholder={t('jobs.new.distancePlaceholder')}
-                    keyboardType="decimal-pad"
-                    value={value ?? ''}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={errors.distanceKm?.message}
-                    returnKeyType="next"
-                  />
-                )}
+          <Controller
+            control={control}
+            name="driverId"
+            render={({ field: { value, onChange } }) => (
+              <Picker
+                label={t('jobs.new.driver')}
+                value={value ?? null}
+                options={driverOptions}
+                onChange={onChange}
               />
-            </View>
-            <View style={styles.half}>
-              <Controller
-                control={control}
-                name="etaMinutes"
-                render={({ field: { value, onChange, onBlur } }) => (
-                  <TextField
-                    label={t('jobs.new.eta')}
-                    icon="clock"
-                    placeholder={t('jobs.new.etaPlaceholder')}
-                    keyboardType="number-pad"
-                    value={value ?? ''}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={errors.etaMinutes?.message}
-                    returnKeyType="next"
-                  />
-                )}
-              />
-            </View>
-          </View>
+            )}
+          />
+
           <Controller
             control={control}
             name="notes"

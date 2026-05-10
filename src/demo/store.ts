@@ -606,6 +606,10 @@ export const demo = {
     n.read_at = new Date().toISOString();
     emit();
   },
+  addNotification(n: Notification) {
+    state.notifications.unshift(n);
+    emit();
+  },
 
   // ---- feedback channels ----
 

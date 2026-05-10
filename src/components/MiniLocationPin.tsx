@@ -30,6 +30,17 @@ export function vehicleColorFromPlate(plate: string | null | undefined): string 
   return VEHICLE_GRADIENTS[idx][1];
 }
 
+/** Hex rengi `factor` (0..1) ile darkenı — RGB componentlerini çarpar. */
+export function darken(hex: string, factor = 0.55): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return hex;
+  const num = parseInt(m[1], 16);
+  const r = Math.round(((num >> 16) & 0xff) * factor);
+  const g = Math.round(((num >> 8) & 0xff) * factor);
+  const b = Math.round((num & 0xff) * factor);
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+}
+
 const PIN_COLOR: Record<MiniPinVariant, string> = {
   pickup: theme.colors.mesh,
   dropoff: theme.colors.accent,
@@ -37,11 +48,13 @@ const PIN_COLOR: Record<MiniPinVariant, string> = {
 };
 
 const ANCHOR: Record<MiniPinVariant, { x: number; y: number }> = {
-  // Custom teardrop tail tip is at the very bottom of the frame —
-  // anchor (0.5, 1) plants the pin point on the lat/lng coord.
-  pickup: { x: 0.5, y: 1 },
-  dropoff: { x: 0.5, y: 1 },
-  vehicle: { x: 0.5, y: 0.5 },
+  // Center anchor for teardrops; vehicle empirik daha düşük çünkü RN
+  // Maps Custom Marker'ın bitmap render bounds'u disc View'inden büyük
+  // (görsel center koord'tan yukarı kayıyor), y=0.0 ile bitmap top
+  // koord'a hizalanıp disc aşağı sarkıyor → çizgi üzerinde merkezleniyor.
+  pickup: { x: 0.5, y: 0.5 },
+  dropoff: { x: 0.5, y: 0.5 },
+  vehicle: { x: 0.5, y: 0 },
 };
 
 type Props = Omit<MapMarkerProps, 'children'> & {
@@ -65,25 +78,43 @@ export function MiniLocationPin({
   ...rest
 }: Props) {
   const fill = color ?? PIN_COLOR[variant];
+  void addressLabel;
+
+  // tracksViewChanges initial-true window: Android needs the marker
+  // bitmap to rasterize at least once with live updates, then we switch
+  // to false for a stable image — without this, the vehicle pin flickers
+  // (kaybolup geri geliyor) on every coord update during animation.
+  const [tracking, setTracking] = useState(true);
+  useEffect(() => {
+    const id = setTimeout(() => setTracking(false), 1500);
+    return () => clearTimeout(id);
+  }, []);
 
   if (variant === 'vehicle') {
+    if (!plateLabel && !captionLabel) {
+      return (
+        <Marker {...rest} anchor={ANCHOR.vehicle} tracksViewChanges={tracking}>
+          <View collapsable={false} style={[styles.disc, { backgroundColor: fill }]}>
+            <MaterialCommunityIcons name="car-side" size={14} color="#FFFFFF" />
+          </View>
+        </Marker>
+      );
+    }
     return (
-      <Marker {...rest} anchor={ANCHOR.vehicle}>
+      <Marker {...rest} anchor={ANCHOR.vehicle} tracksViewChanges={tracking}>
         <View collapsable={false} style={styles.vehicleColumn}>
-          {plateLabel || captionLabel ? (
-            <View style={[styles.vehicleCaption, { borderColor: fill }]}>
-              {plateLabel ? (
-                <Text style={styles.plateText} numberOfLines={1}>
-                  {plateLabel}
-                </Text>
-              ) : null}
-              {captionLabel ? (
-                <Text style={styles.captionText} numberOfLines={1}>
-                  {captionLabel}
-                </Text>
-              ) : null}
-            </View>
-          ) : null}
+          <View style={[styles.vehicleCaption, { borderColor: fill }]}>
+            {plateLabel ? (
+              <Text style={styles.plateText} numberOfLines={1}>
+                {plateLabel}
+              </Text>
+            ) : null}
+            {captionLabel ? (
+              <Text style={styles.captionText} numberOfLines={1}>
+                {captionLabel}
+              </Text>
+            ) : null}
+          </View>
           <View
             collapsable={false}
             style={[styles.disc, { backgroundColor: fill }]}
@@ -95,28 +126,13 @@ export function MiniLocationPin({
     );
   }
 
-  // pickup/dropoff: classic location-pin shape — solid colour teardrop
-  // with a semantic icon inside (package = pickup, flag = dropoff). The
-  // icon makes the marker readable on top of map tiles where dots get
-  // lost.
-  void addressLabel;
-  // tracksViewChanges initial-true window: Android needs the marker
-  // bitmap to rasterize at least once with live updates, then we switch
-  // to false for a stable image — kills the constant re-render flicker
-  // that otherwise plagues custom-child markers. Window stays open longer
-  // (3s) because the icon font sometimes resolves a couple frames late on
-  // first paint.
-  const [tracking, setTracking] = useState(true);
-  useEffect(() => {
-    const id = setTimeout(() => setTracking(false), 3000);
-    return () => clearTimeout(id);
-  }, []);
-  const innerIcon = variant === 'pickup' ? 'package-variant-closed' : 'flag-checkered';
+  // pickup/dropoff: classic teardrop — coloured bubble with a small white
+  // centre cutout and triangular tail sarkıyor.
   return (
     <Marker {...rest} anchor={ANCHOR[variant]} tracksViewChanges={tracking}>
       <View collapsable={false} style={styles.pinFrame}>
         <View style={[styles.pinBubble, { backgroundColor: fill }]}>
-          <MaterialCommunityIcons name={innerIcon} size={14} color="#FFFFFF" />
+          <View style={styles.pinDot} />
         </View>
         <View style={[styles.pinTail, { borderTopColor: fill }]} />
       </View>

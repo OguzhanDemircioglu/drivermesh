@@ -15,9 +15,10 @@ import { useTranslation } from 'react-i18next';
 import MapView, { PROVIDER_GOOGLE, Polyline, type Region } from 'react-native-maps';
 import { LabeledMarker } from '@/components/LabeledMarker';
 import { LabelRenderPool, useLabelRenderPool, type LabelSpec } from '@/components/LabelRenderPool';
-import { MiniLocationPin, vehicleColorFromPlate } from '@/components/MiniLocationPin';
+import { MiniLocationPin, darken, vehicleColorFromPlate } from '@/components/MiniLocationPin';
 import { useAuth } from '@/auth/AuthProvider';
 import { fetchFleetMap, type FleetMapSnapshot, type FleetMapVehicle } from '@/lib/queries';
+import { openInMaps } from '@/lib/openInMaps';
 import type { VehicleStatus } from '@/lib/database.types';
 import { theme } from '@/theme';
 
@@ -293,8 +294,30 @@ export default function FleetMapScreen() {
                 // taps on image-backed markers on Android (per-marker
                 // onPress is unreliable with the Google Maps SDK).
                 const id = e.nativeEvent.id;
-                if (id && id.startsWith('v:')) {
+                if (!id || !snap) return;
+                if (id.startsWith('v:')) {
                   router.push(`/(app)/vehicles/${id.slice(2)}`);
+                  return;
+                }
+                if (id === 'hq' && snap.hq) {
+                  openInMaps(snap.hq.lat, snap.hq.lng, snap.hq.address);
+                  return;
+                }
+                if (id.startsWith('p:') || id.startsWith('d:')) {
+                  const v = snap.vehicles.find((x) => x.id === id.slice(2));
+                  if (id.startsWith('p:') && v?.activeJob?.pickup) {
+                    openInMaps(
+                      v.activeJob.pickup.lat,
+                      v.activeJob.pickup.lng,
+                      v.activeJob.pickupAddress,
+                    );
+                  } else if (id.startsWith('d:') && v?.activeJob?.dropoff) {
+                    openInMaps(
+                      v.activeJob.dropoff.lat,
+                      v.activeJob.dropoff.lng,
+                      v.activeJob.dropoffAddress,
+                    );
+                  }
                 }
               }}
             >
@@ -381,24 +404,23 @@ function VehicleMarkerGroup({
     <>
       {showRoute && v.activeJob?.pickup && v.activeJob?.dropoff ? (
         <>
-          {/* Thin solid backing — bridges the dash-pattern gaps so the
-              pickup/dropoff pin tips always touch a coloured pixel
-              instead of landing in a transparent gap. */}
+          {/* Backing — dash-pattern gap'lerini kapatır, koyu rengin alpha
+              hali ile pin tail uçları her zaman renkli pixel'e değer. */}
           <Polyline
             coordinates={[
               { latitude: v.activeJob.pickup.lat, longitude: v.activeJob.pickup.lng },
               { latitude: v.activeJob.dropoff.lat, longitude: v.activeJob.dropoff.lng },
             ]}
-            strokeColor="rgba(248,113,113,0.55)"
-            strokeWidth={1.5}
+            strokeColor={`${darken(v.color ?? vehicleColorFromPlate(v.plate))}55`}
+            strokeWidth={3}
           />
           <Polyline
             coordinates={[
               { latitude: v.activeJob.pickup.lat, longitude: v.activeJob.pickup.lng },
               { latitude: v.activeJob.dropoff.lat, longitude: v.activeJob.dropoff.lng },
             ]}
-            strokeColor="#F87171"
-            strokeWidth={3}
+            strokeColor={darken(v.color ?? vehicleColorFromPlate(v.plate))}
+            strokeWidth={6}
             lineDashPattern={[10, 8]}
           />
         </>

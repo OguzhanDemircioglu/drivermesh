@@ -109,12 +109,8 @@ export async function transferOwnership(toMemberId: string): Promise<void> {
     ownerLive.role = targetPreviousRole;
     return;
   }
-  // TODO: backend RPC — see permissions migration.
-  const { error } = await (supabase.rpc as unknown as (
-    name: string,
-    args: Record<string, unknown>,
-  ) => Promise<{ error: { message: string } | null }>)('transfer_ownership', {
-    p_to_member_id: toMemberId,
+  const { error } = await supabase.rpc('transfer_ownership', {
+    target_user_id: toMemberId,
   });
   if (error) throw mapPgError(error.message);
 }

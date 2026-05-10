@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Job, JobStatus, Profile, Vehicle } from './database.types';
+import type { Job, JobStatus, Json, Profile, Vehicle } from './database.types';
 import { DEMO_ORG_ID, demo, isDemoActive } from '@/demo/store';
 import i18n from '@/i18n';
 
@@ -241,15 +241,31 @@ export async function acceptOpenJob(jobId: string, driverId: string): Promise<vo
 }
 
 export async function startJob(jobId: string): Promise<void> {
+  const startedAt = new Date().toISOString();
   if (isDemoActive()) {
-    demo.updateJob(jobId, { status: 'in_progress', started_at: new Date().toISOString() });
+    const j = demo.jobById(jobId);
+    demo.updateJob(jobId, { status: 'in_progress', started_at: startedAt });
+    // Şofor işe başladı → araç üsten ayrıldı sinyali
+    if (j?.vehicle_id) {
+      const v = demo.vehicleById(j.vehicle_id);
+      if (v?.is_at_hq) demo.updateVehicle(j.vehicle_id, { is_at_hq: false });
+    }
     return;
   }
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('jobs')
-    .update({ status: 'in_progress', started_at: new Date().toISOString() })
-    .eq('id', jobId);
+    .update({ status: 'in_progress', started_at: startedAt })
+    .eq('id', jobId)
+    .select('vehicle_id')
+    .single();
   if (error) throw error;
+  if (data?.vehicle_id) {
+    await supabase
+      .from('vehicles')
+      .update({ is_at_hq: false })
+      .eq('id', data.vehicle_id)
+      .eq('is_at_hq', true);
+  }
 }
 
 export async function completeJob(jobId: string): Promise<void> {
@@ -284,13 +300,47 @@ export async function failJob(jobId: string, reason: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function cancelJob(jobId: string): Promise<void> {
+export async function cancelJob(
+  jobId: string,
+  opts?: { actorId?: string | null },
+): Promise<void> {
+  const actorId = opts?.actorId ?? null;
   if (isDemoActive()) {
+    const before = demo.jobById(jobId);
     demo.updateJob(jobId, { status: 'cancelled' });
+    if (
+      before?.driver_id &&
+      (before.status === 'assigned' || before.status === 'in_progress')
+    ) {
+      notifyDriverEvent(
+        before.organization_id,
+        before.driver_id,
+        actorId,
+        'job_cancelled',
+        { job_id: jobId, customer_name: before.customer_name },
+      );
+    }
     return;
   }
+  const { data: before } = await supabase
+    .from('jobs')
+    .select('driver_id, status, organization_id, customer_name')
+    .eq('id', jobId)
+    .single();
   const { error } = await supabase.from('jobs').update({ status: 'cancelled' }).eq('id', jobId);
   if (error) throw error;
+  if (
+    before?.driver_id &&
+    (before.status === 'assigned' || before.status === 'in_progress')
+  ) {
+    await notifyDriverEvent(
+      before.organization_id,
+      before.driver_id,
+      actorId,
+      'job_cancelled',
+      { job_id: jobId, customer_name: before.customer_name },
+    );
+  }
 }
 
 type JobEditPatch = Partial<
@@ -309,19 +359,116 @@ type JobEditPatch = Partial<
   >
 >;
 
-export async function updateJob(jobId: string, patch: JobEditPatch): Promise<void> {
+export async function updateJob(
+  jobId: string,
+  patch: JobEditPatch,
+  opts?: { actorId?: string | null },
+): Promise<void> {
   const next: JobEditPatch = { ...patch };
   if (typeof patch.customer_name === 'string') next.customer_name = patch.customer_name.trim();
   if (typeof patch.pickup_address === 'string') next.pickup_address = patch.pickup_address.trim();
   if (typeof patch.dropoff_address === 'string') next.dropoff_address = patch.dropoff_address.trim();
   if (typeof patch.notes === 'string') next.notes = patch.notes.trim() || null;
 
+  // Hangi alanlar değişti — notification payload'ında driver'a gösterilir.
+  const changedFields = Object.keys(next).filter(
+    (k) => next[k as keyof JobEditPatch] !== undefined,
+  );
+
   if (isDemoActive()) {
+    const before = demo.jobById(jobId);
     demo.updateJob(jobId, next as Partial<Job>);
+    notifyDriverOnJobUpdate(before, changedFields, opts?.actorId ?? null);
     return;
   }
+  // Snapshot driver_id + status + customer_name BEFORE update so we know
+  // whether to notify (only if there's a driver currently assigned and the
+  // job is in a live state).
+  const { data: before, error: fetchErr } = await supabase
+    .from('jobs')
+    .select('driver_id, status, organization_id, customer_name')
+    .eq('id', jobId)
+    .single();
+  if (fetchErr) throw fetchErr;
+
   const { error } = await supabase.from('jobs').update(next).eq('id', jobId);
   if (error) throw error;
+
+  if (
+    before?.driver_id &&
+    (before.status === 'assigned' || before.status === 'in_progress')
+  ) {
+    const customer =
+      typeof next.customer_name === 'string' ? next.customer_name : before.customer_name;
+    await supabase
+      .from('notifications')
+      .insert({
+        organization_id: before.organization_id,
+        recipient_id: before.driver_id,
+        actor_id: opts?.actorId ?? null,
+        type: 'job_update',
+        payload: {
+          job_id: jobId,
+          customer_name: customer,
+          changed_fields: changedFields,
+        },
+      })
+      .then(({ error: nErr }) => {
+        // Notification başarısız olursa update'i geri almıyoruz; en kötü
+        // ihtimalle driver bildirim almaz, log'a düşer.
+        if (nErr) console.warn('[jobs] notify driver failed', nErr.message);
+      });
+  }
+}
+
+function notifyDriverOnJobUpdate(
+  before: Job | null | undefined,
+  changedFields: string[],
+  actorId: string | null,
+) {
+  if (!before?.driver_id) return;
+  if (before.status !== 'assigned' && before.status !== 'in_progress') return;
+  notifyDriverEvent(before.organization_id, before.driver_id, actorId, 'job_update', {
+    job_id: before.id,
+    customer_name: before.customer_name,
+    changed_fields: changedFields,
+  });
+}
+
+/**
+ * Tek noktadan driver hedefli bildirim insert. Demo'da `addNotification`,
+ * production'da Supabase `notifications` tablosuna fire-and-forget insert
+ * yapar. Insert hatası ana akışı bozmaz, sadece warn'a düşer.
+ */
+async function notifyDriverEvent(
+  organizationId: string,
+  driverId: string,
+  actorId: string | null,
+  type: string,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  const jsonPayload = payload as Json;
+  if (isDemoActive()) {
+    demo.addNotification({
+      id: `demo-n${Math.random().toString(36).slice(2, 10)}`,
+      organization_id: organizationId,
+      recipient_id: driverId,
+      actor_id: actorId,
+      type,
+      payload: jsonPayload,
+      read_at: null,
+      created_at: new Date().toISOString(),
+    });
+    return;
+  }
+  const { error } = await supabase.from('notifications').insert({
+    organization_id: organizationId,
+    recipient_id: driverId,
+    actor_id: actorId,
+    type,
+    payload: jsonPayload,
+  });
+  if (error) console.warn('[notify] driver insert failed', error.message);
 }
 
 /**
@@ -332,7 +479,9 @@ export async function updateJob(jobId: string, patch: JobEditPatch): Promise<voi
 export async function approveDriverRequest(
   jobId: string,
   requesterId: string,
+  opts?: { actorId?: string | null },
 ): Promise<void> {
+  const actorId = opts?.actorId ?? null;
   if (isDemoActive()) {
     const j = demo.jobById(jobId);
     if (!j || j.status !== 'open' || j.source !== 'driver_request') {
@@ -342,6 +491,10 @@ export async function approveDriverRequest(
       driver_id: requesterId,
       status: 'assigned',
       assigned_at: new Date().toISOString(),
+    });
+    notifyDriverEvent(j.organization_id, requesterId, actorId, 'request_approved', {
+      job_id: jobId,
+      customer_name: j.customer_name,
     });
     return;
   }
@@ -355,11 +508,18 @@ export async function approveDriverRequest(
     .eq('id', jobId)
     .eq('status', 'open')
     .eq('source', 'driver_request')
-    .select('id');
+    .select('id, organization_id, customer_name');
   if (error) throw error;
   if (!data || data.length === 0) {
     throw new Error(i18n.t('errors.requestAlreadyHandled'));
   }
+  await notifyDriverEvent(
+    data[0].organization_id,
+    requesterId,
+    actorId,
+    'request_approved',
+    { job_id: jobId, customer_name: data[0].customer_name },
+  );
 }
 
 /**
@@ -391,17 +551,36 @@ export async function rejectDriverRequest(
   if (error) throw error;
 }
 
-export async function reassignJob(jobId: string, driverId: string | null): Promise<void> {
+export async function reassignJob(
+  jobId: string,
+  driverId: string | null,
+  opts?: { actorId?: string | null },
+): Promise<void> {
   const nowIso = new Date().toISOString();
+  const actorId = opts?.actorId ?? null;
   if (isDemoActive()) {
+    const before = demo.jobById(jobId);
     demo.updateJob(jobId, {
       driver_id: driverId,
       assigned_at: driverId ? nowIso : null,
       status: driverId ? 'assigned' : 'open',
       started_at: null,
     });
+    if (before && driverId && before.driver_id !== driverId) {
+      // Yeni atanan şofor → "İş atandı" bildirim
+      notifyDriverEvent(before.organization_id, driverId, actorId, 'job_assigned', {
+        job_id: jobId,
+        customer_name: before.customer_name,
+      });
+    }
     return;
   }
+  const { data: before, error: fetchErr } = await supabase
+    .from('jobs')
+    .select('driver_id, organization_id, customer_name')
+    .eq('id', jobId)
+    .single();
+  if (fetchErr) throw fetchErr;
   const { error } = await supabase
     .from('jobs')
     .update({
@@ -412,4 +591,13 @@ export async function reassignJob(jobId: string, driverId: string | null): Promi
     })
     .eq('id', jobId);
   if (error) throw error;
+  if (before && driverId && before.driver_id !== driverId) {
+    await notifyDriverEvent(
+      before.organization_id,
+      driverId,
+      actorId,
+      'job_assigned',
+      { job_id: jobId, customer_name: before.customer_name },
+    );
+  }
 }

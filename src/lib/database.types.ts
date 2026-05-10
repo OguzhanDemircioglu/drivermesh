@@ -247,6 +247,13 @@ export type Database = {
           id: string;
           name: string;
           owner_id: string;
+          feedback_email_address: string | null;
+          feedback_email_enabled: boolean;
+          feedback_push_enabled: boolean;
+          feedback_telegram_enabled: boolean;
+          feedback_telegram_bot_username: string | null;
+          feedback_telegram_bot_token: string | null;
+          feedback_telegram_chat_id: string | null;
         };
         Insert: {
           created_at?: string;
@@ -256,6 +263,13 @@ export type Database = {
           id?: string;
           name: string;
           owner_id: string;
+          feedback_email_address?: string | null;
+          feedback_email_enabled?: boolean;
+          feedback_push_enabled?: boolean;
+          feedback_telegram_enabled?: boolean;
+          feedback_telegram_bot_username?: string | null;
+          feedback_telegram_bot_token?: string | null;
+          feedback_telegram_chat_id?: string | null;
         };
         Update: {
           created_at?: string;
@@ -265,6 +279,13 @@ export type Database = {
           id?: string;
           name?: string;
           owner_id?: string;
+          feedback_email_address?: string | null;
+          feedback_email_enabled?: boolean;
+          feedback_push_enabled?: boolean;
+          feedback_telegram_enabled?: boolean;
+          feedback_telegram_bot_username?: string | null;
+          feedback_telegram_bot_token?: string | null;
+          feedback_telegram_chat_id?: string | null;
         };
         Relationships: [];
       };
@@ -536,6 +557,14 @@ export type Database = {
       simulate_ride_job: {
         Args: Record<string, never>;
         Returns: string;
+      };
+      transfer_ownership: {
+        Args: { target_user_id: string };
+        Returns: void;
+      };
+      delete_fleet: {
+        Args: Record<string, never>;
+        Returns: void;
       };
     };
     Enums: {
