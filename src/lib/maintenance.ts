@@ -283,13 +283,21 @@ export async function approveMaintenanceRequest(
     reason: req.reason,
   });
   // notif: yoneticiler -> 'maintenance_started'
-  await notifyManagers(req.organization_id, deciderId, 'maintenance_started', {
-    vehicleId: req.vehicle_id,
-    plate,
-    reason: req.reason,
-    requesterId: req.requester_id,
-    auto: false,
-  });
+  // Requester zaten yukarida 'maintenance_approved' aldi; eger requester de
+  // bir manager ise ona 'maintenance_started' tekrar gitmesin.
+  await notifyManagers(
+    req.organization_id,
+    deciderId,
+    'maintenance_started',
+    {
+      vehicleId: req.vehicle_id,
+      plate,
+      reason: req.reason,
+      requesterId: req.requester_id,
+      auto: false,
+    },
+    [req.requester_id],
+  );
 }
 
 export async function rejectMaintenanceRequest(
@@ -577,13 +585,17 @@ async function notifyManagers(
   actorId: string,
   type: string,
   payload: Record<string, unknown>,
+  /** Actor disinda hariç tutulacak ek kullanicilar (orn. requester'a 'approved'
+   * spesifik bildirimi ayrica gonderildi diye 'started' bildiriminden hariç). */
+  extraExclude?: string[],
 ): Promise<void> {
+  const exclude = new Set<string>([actorId, ...(extraExclude ?? [])]);
   let recipients: string[] = [];
   if (isDemoActive()) {
     recipients = demo
       .profiles()
       .filter((p) => p.organization_id === DEMO_ORG_ID && (p.role === 'owner' || p.role === 'manager'))
-      .filter((p) => p.id !== actorId)
+      .filter((p) => !exclude.has(p.id))
       .map((p) => p.id);
   } else {
     const { data, error } = await supabase
@@ -595,7 +607,7 @@ async function notifyManagers(
       console.warn('[maintenance] recipients fetch', error.message);
       return;
     }
-    recipients = (data ?? []).map((p) => p.id).filter((id) => id !== actorId);
+    recipients = (data ?? []).map((p) => p.id).filter((id) => !exclude.has(id));
   }
   await Promise.all(recipients.map((rid) => notifyOne(orgId, rid, actorId, type, payload)));
 }
