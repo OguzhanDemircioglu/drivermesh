@@ -109,6 +109,16 @@ async function vehicleHasActiveJob(vehicleId: string): Promise<boolean> {
   return (data?.length ?? 0) > 0;
 }
 
+async function vehiclePlate(vehicleId: string): Promise<string> {
+  if (isDemoActive()) return demo.vehicleById(vehicleId)?.plate ?? '—';
+  const { data } = await supabase
+    .from('vehicles')
+    .select('plate')
+    .eq('id', vehicleId)
+    .maybeSingle();
+  return data?.plate ?? '—';
+}
+
 export class MaintenanceError extends Error {
   code:
     | 'active_job'
@@ -188,6 +198,7 @@ export async function createMaintenanceRequest(input: {
     row = data;
   }
 
+  const plate = await vehiclePlate(input.vehicleId);
   if (autoApprove) {
     await applyVehicleMaintenanceState({
       vehicleId: input.vehicleId,
@@ -199,6 +210,7 @@ export async function createMaintenanceRequest(input: {
     });
     await notifyManagers(input.organizationId, input.requesterId, 'maintenance_started', {
       vehicleId: input.vehicleId,
+      plate,
       reason,
       requesterId: input.requesterId,
       auto: true,
@@ -207,6 +219,7 @@ export async function createMaintenanceRequest(input: {
     await notifyManagers(input.organizationId, input.requesterId, 'maintenance_requested', {
       requestId: row.id,
       vehicleId: input.vehicleId,
+      plate,
       reason,
     });
   }
@@ -251,15 +264,18 @@ export async function approveMaintenanceRequest(
     startedAt: now,
   });
 
+  const plate = req.vehicle?.plate ?? '—';
   // notif: talep eden -> 'maintenance_approved'
   await notifyOne(req.organization_id, req.requester_id, deciderId, 'maintenance_approved', {
     requestId,
     vehicleId: req.vehicle_id,
+    plate,
     reason: req.reason,
   });
   // notif: yoneticiler -> 'maintenance_started'
   await notifyManagers(req.organization_id, deciderId, 'maintenance_started', {
     vehicleId: req.vehicle_id,
+    plate,
     reason: req.reason,
     requesterId: req.requester_id,
     auto: false,
@@ -310,6 +326,7 @@ export async function rejectMaintenanceRequest(
   await notifyOne(req.organization_id, req.requester_id, deciderId, 'maintenance_rejected', {
     requestId,
     vehicleId: req.vehicle_id,
+    plate: req.vehicle?.plate ?? '—',
     reason: req.reason,
     rejectionReason: reason,
   });
@@ -401,11 +418,12 @@ export async function endMaintenance(
   // Tum org'a 'maintenance_ended' bildirimi
   await notifyOrg(vehicle.organization_id, endedBy, 'maintenance_ended', {
     vehicleId,
+    plate: vehicle.plate,
     auto: opts?.auto ?? false,
   });
 
   // Cikan aracta hala pending bakim talebi varsa ilgili requester'lara hatirlatma
-  await remindPendingRequesters(vehicle.organization_id, vehicleId, endedBy);
+  await remindPendingRequesters(vehicle.organization_id, vehicleId, endedBy, vehicle.plate);
 }
 
 // ----------------------------------------------------------------------------
@@ -443,6 +461,7 @@ async function remindPendingRequesters(
   orgId: string,
   vehicleId: string,
   actorId: string,
+  plate: string,
 ): Promise<void> {
   let pending: { id: string; requester_id: string }[] = [];
   if (isDemoActive()) {
@@ -466,6 +485,7 @@ async function remindPendingRequesters(
     await notifyOne(orgId, r.requester_id, actorId, 'maintenance_pending_reminder', {
       requestId: r.id,
       vehicleId,
+      plate,
     });
   }
 }

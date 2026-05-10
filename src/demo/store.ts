@@ -704,6 +704,9 @@ const PERMISSION_CATALOG = [
   { key: 'members.remove', category: 'members', label_tr: 'Ekipten çıkarma', label_en: 'Remove member', is_critical: true, sort_order: 31 },
   // reports
   { key: 'reports.view', category: 'reports', label_tr: 'Raporları görüntüleme', label_en: 'View reports', is_critical: false, sort_order: 40 },
+  // maintenance
+  { key: 'vehicles.send_to_maintenance', category: 'maintenance', label_tr: 'Bakıma alma talebi', label_en: 'Send to maintenance', is_critical: false, sort_order: 50 },
+  { key: 'vehicles.approve_maintenance', category: 'maintenance', label_tr: 'Bakım onaylama', label_en: 'Approve maintenance', is_critical: true, sort_order: 51 },
 ] as const;
 
 const ROLE_DEFAULTS: Record<UserRole, Record<string, boolean>> = {
@@ -713,12 +716,14 @@ const ROLE_DEFAULTS: Record<UserRole, Record<string, boolean>> = {
     'jobs.view': true, 'jobs.create': true, 'jobs.assign': true, 'jobs.update_any': true, 'jobs.cancel': false,
     'members.invite': true, 'members.remove': false,
     'reports.view': true,
+    'vehicles.send_to_maintenance': true, 'vehicles.approve_maintenance': true,
   },
   driver: {
     'vehicles.view': true, 'vehicles.create': false, 'vehicles.update': false, 'vehicles.delete': false,
     'jobs.view': true, 'jobs.create': false, 'jobs.assign': false, 'jobs.update_any': false, 'jobs.cancel': false,
     'members.invite': false, 'members.remove': false,
     'reports.view': false,
+    'vehicles.send_to_maintenance': true, 'vehicles.approve_maintenance': false,
   },
 };
 

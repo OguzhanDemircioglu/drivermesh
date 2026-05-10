@@ -107,7 +107,12 @@ export default function NotificationsScreen() {
       }
 
       // Deep-link by event type / payload
-      const payload = n.payload as { key?: string; job_id?: string };
+      const payload = n.payload as {
+        key?: string;
+        job_id?: string;
+        requestId?: string;
+        vehicleId?: string;
+      };
       if (
         (n.type === 'driver_request' ||
           n.type === 'request_approved' ||
@@ -119,6 +124,17 @@ export default function NotificationsScreen() {
       ) {
         router.push(`/(app)/jobs/${payload.job_id}`);
         return;
+      }
+      // Maintenance: requestId varsa request detayına, yoksa vehicle detayına.
+      if (n.type.startsWith('maintenance_')) {
+        if (payload.requestId) {
+          router.push(`/(app)/maintenance/${payload.requestId}`);
+          return;
+        }
+        if (payload.vehicleId) {
+          router.push(`/(app)/vehicles/${payload.vehicleId}`);
+          return;
+        }
       }
       const key = payload.key;
       if (!key) return;
@@ -268,6 +284,13 @@ function NotificationItem({
     customer_name?: string;
     // job_update payload
     changed_fields?: string[];
+    // maintenance payload
+    plate?: string;
+    vehicleId?: string;
+    requestId?: string;
+    reason?: string;
+    rejectionReason?: string;
+    auto?: boolean;
   };
   const memberName =
     payload.member_id && members[payload.member_id]
@@ -323,6 +346,24 @@ function NotificationItem({
       actor: actorName,
       customer: payload.customer_name ?? '—',
     });
+  } else if (item.type === 'maintenance_requested') {
+    title = t('maintenance.notification.requested', { plate: payload.plate ?? '—' });
+    body = payload.reason ? String(payload.reason) : '';
+  } else if (item.type === 'maintenance_approved') {
+    title = t('maintenance.notification.approved', { plate: payload.plate ?? '—' });
+    body = actorName ? `${actorName}` : '';
+  } else if (item.type === 'maintenance_rejected') {
+    title = t('maintenance.notification.rejected', { plate: payload.plate ?? '—' });
+    body = payload.rejectionReason ? String(payload.rejectionReason) : '';
+  } else if (item.type === 'maintenance_started') {
+    title = t('maintenance.notification.started', { plate: payload.plate ?? '—' });
+    body = payload.reason ? String(payload.reason) : '';
+  } else if (item.type === 'maintenance_ended') {
+    title = t('maintenance.notification.ended', { plate: payload.plate ?? '—' });
+    body = '';
+  } else if (item.type === 'maintenance_pending_reminder') {
+    title = t('maintenance.notification.pendingReminder', { plate: payload.plate ?? '—' });
+    body = '';
   } else if (item.type === 'job_update') {
     title = t('notifications.jobUpdateTitle');
     const fieldKeys = payload.changed_fields ?? [];

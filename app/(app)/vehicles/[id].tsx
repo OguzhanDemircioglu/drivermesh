@@ -29,6 +29,7 @@ import {
   type VehicleJobLite,
   type VehicleWithAdder,
 } from '@/lib/vehicles';
+import { endMaintenance, MaintenanceError } from '@/lib/maintenance';
 import type { JobStatus, VehicleStatus } from '@/lib/database.types';
 import { theme } from '@/theme';
 
@@ -73,16 +74,18 @@ export default function VehicleDetailScreen() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const toast = useToast();
   const { confirm } = useConfirm();
   const canUpdate = useCan('vehicles.update');
   const canDelete = useCan('vehicles.delete');
+  const canSendToMaintenance = useCan('vehicles.send_to_maintenance');
   const [vehicle, setVehicle] = useState<VehicleWithAdder | null>(null);
   const [jobs, setJobs] = useState<VehicleJobLite[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingAtHq, setSavingAtHq] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [endingMaintenance, setEndingMaintenance] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -127,6 +130,46 @@ export default function VehicleDetailScreen() {
       setSavingAtHq(false);
     }
   }, [vehicle, savingAtHq, canUpdate, t, toast]);
+
+  const onSendToMaintenance = useCallback(() => {
+    if (!vehicle) return;
+    if (hasActiveJob) {
+      toast.warning(
+        t('maintenance.new.errorTitle'),
+        t('maintenance.new.errorActiveJob'),
+      );
+      return;
+    }
+    router.push(`/(app)/maintenance/new?vehicleId=${vehicle.id}`);
+    // hasActiveJob lazily resolved at the call site below; useCallback
+    // intentionally omits it from deps so the latest value is read each press.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicle, router, t, toast]);
+
+  const onEndMaintenance = useCallback(async () => {
+    if (!vehicle || !session?.user.id || endingMaintenance) return;
+    const ok = await confirm({
+      title: t('maintenance.banner.takeBackConfirmTitle'),
+      message: t('maintenance.banner.takeBackConfirmText'),
+      confirmText: t('maintenance.banner.takeBack'),
+      cancelText: t('common.cancel'),
+    });
+    if (!ok) return;
+    setEndingMaintenance(true);
+    try {
+      await endMaintenance(vehicle.id, session.user.id);
+      toast.success(t('maintenance.banner.takeBackSuccess'));
+      await load();
+    } catch (e) {
+      if (e instanceof MaintenanceError) {
+        toast.error(t('maintenance.detail.errorTitle'), e.message);
+      } else {
+        toast.error(t('maintenance.detail.errorTitle'), (e as Error).message);
+      }
+    } finally {
+      setEndingMaintenance(false);
+    }
+  }, [vehicle, session?.user.id, endingMaintenance, confirm, t, toast, load]);
 
   const onDelete = useCallback(async () => {
     if (!vehicle) return;
@@ -282,7 +325,7 @@ export default function VehicleDetailScreen() {
                 Bilgiler card below. The DB trigger flips is_at_hq to false
                 on dispatch, which is when this CTA reappears so the operator
                 can mark the vehicle as returned. */}
-            {canUpdate.allowed && !hasActiveJob && !vehicle.is_at_hq ? (
+            {canUpdate.allowed && !hasActiveJob && !vehicle.is_at_hq && vehicle.status !== 'maintenance' ? (
               <Pressable
                 onPress={onMarkAtHq}
                 disabled={savingAtHq}
@@ -299,6 +342,82 @@ export default function VehicleDetailScreen() {
                 )}
                 <Text style={styles.atHqBtnText}>
                   {t('vehicles.detail.atHqCta')}
+                </Text>
+              </Pressable>
+            ) : null}
+
+            {/* Maintenance state — banner + actions. */}
+            {vehicle.status === 'maintenance' ? (
+              <View style={styles.maintenanceBanner}>
+                <View style={styles.maintenanceHeader}>
+                  <Feather name="tool" size={18} color={theme.colors.warning} />
+                  <Text style={styles.maintenanceHeaderText}>
+                    {t('maintenance.banner.underMaintenance')}
+                  </Text>
+                </View>
+                {vehicle.maintenance_reason ? (
+                  <Text style={styles.maintenanceReason}>
+                    <Text style={styles.maintenanceReasonLabel}>
+                      {t('maintenance.banner.reasonLabel')}{' '}
+                    </Text>
+                    {vehicle.maintenance_reason}
+                  </Text>
+                ) : null}
+                {vehicle.maintenance_until ? (
+                  <Text style={styles.maintenanceMeta}>
+                    {t('maintenance.banner.returnsAt', {
+                      when: new Date(vehicle.maintenance_until).toLocaleString(
+                        i18n.language === 'tr' ? 'tr-TR' : 'en-GB',
+                        { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' },
+                      ),
+                    })}
+                  </Text>
+                ) : (
+                  <Text style={styles.maintenanceMeta}>{t('maintenance.banner.noEstimate')}</Text>
+                )}
+                {vehicle.maintenance_photo_urls && vehicle.maintenance_photo_urls.length > 0 ? (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.maintenancePhotoRow}
+                  >
+                    {vehicle.maintenance_photo_urls.map((url, i) => (
+                      <CachedImage
+                        key={i}
+                        uri={url}
+                        style={styles.maintenancePhoto}
+                        resizeMode="cover"
+                      />
+                    ))}
+                  </ScrollView>
+                ) : null}
+                <Pressable
+                  onPress={onEndMaintenance}
+                  disabled={endingMaintenance}
+                  style={({ pressed }) => [
+                    styles.maintenanceCta,
+                    endingMaintenance && { opacity: 0.55 },
+                    pressed && { opacity: 0.85 },
+                  ]}
+                >
+                  {endingMaintenance ? (
+                    <ActivityIndicator color={theme.colors.text} size="small" />
+                  ) : (
+                    <Feather name="check-circle" size={16} color={theme.colors.text} />
+                  )}
+                  <Text style={styles.maintenanceCtaText}>
+                    {t('maintenance.banner.takeBack')}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : canSendToMaintenance.allowed && !hasActiveJob ? (
+              <Pressable
+                onPress={onSendToMaintenance}
+                style={({ pressed }) => [styles.maintenanceTrigger, pressed && { opacity: 0.85 }]}
+              >
+                <Feather name="tool" size={16} color={theme.colors.warning} />
+                <Text style={styles.maintenanceTriggerText}>
+                  {t('maintenance.actions.sendToMaintenance')}
                 </Text>
               </Pressable>
             ) : null}
@@ -562,6 +681,77 @@ const styles = StyleSheet.create({
     color: theme.colors.accent,
     fontSize: theme.font.size.sm,
     fontWeight: theme.font.weight.semibold,
+  },
+
+  maintenanceTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(245,158,11,0.4)',
+    backgroundColor: 'rgba(245,158,11,0.08)',
+  },
+  maintenanceTriggerText: {
+    color: theme.colors.warning,
+    fontSize: theme.font.size.sm,
+    fontWeight: theme.font.weight.semibold,
+  },
+
+  maintenanceBanner: {
+    backgroundColor: 'rgba(245,158,11,0.12)',
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(245,158,11,0.3)',
+    padding: 14,
+    gap: 8,
+  },
+  maintenanceHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  maintenanceHeaderText: {
+    color: theme.colors.warning,
+    fontSize: theme.font.size.md,
+    fontWeight: theme.font.weight.bold,
+    letterSpacing: 0.4,
+  },
+  maintenanceReason: {
+    color: theme.colors.text,
+    fontSize: theme.font.size.sm,
+    lineHeight: 20,
+  },
+  maintenanceReasonLabel: {
+    color: theme.colors.textMuted,
+    fontSize: theme.font.size.xs,
+    fontWeight: theme.font.weight.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  maintenanceMeta: {
+    color: theme.colors.textMuted,
+    fontSize: theme.font.size.xs,
+  },
+  maintenancePhotoRow: { gap: 8, paddingVertical: 4 },
+  maintenancePhoto: {
+    width: 64,
+    height: 64,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.surface,
+  },
+  maintenanceCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.warning,
+    marginTop: 4,
+  },
+  maintenanceCtaText: {
+    color: '#0A0E1F',
+    fontSize: theme.font.size.sm,
+    fontWeight: theme.font.weight.bold,
   },
   deleteBtn: {
     flexDirection: 'row',
