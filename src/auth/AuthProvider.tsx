@@ -10,6 +10,7 @@ import {
 } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { registerForPushNotifications, clearPushToken } from '@/lib/pushNotifications';
 import type { Profile } from '@/lib/database.types';
 import {
   activateDemo,
@@ -110,6 +111,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(data.session);
       setLoading(false);
       fetchProfile(data.session?.user.id);
+      // Push token registration (Android only at the moment) — demo
+      // session'larda no-op.
+      if (data.session?.user.id) {
+        registerForPushNotifications(data.session.user.id).catch((e) =>
+          console.warn('[push] register on init failed', e),
+        );
+      }
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
@@ -118,6 +126,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (isDemoActiveStore()) return;
       setSession(next);
       fetchProfile(next?.user.id);
+      if (next?.user.id) {
+        registerForPushNotifications(next.user.id).catch((e) =>
+          console.warn('[push] register on auth change failed', e),
+        );
+      }
     });
 
     return () => {
@@ -181,6 +194,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(null);
           setIsDemo(false);
           return;
+        }
+        // Push token'i temizle ki silinen oturuma push gitmesin (best-effort).
+        const uid = session?.user.id;
+        if (uid) {
+          clearPushToken(uid).catch((e) => console.warn('[push] clear failed', e));
         }
         const { error } = await supabase.auth.signOut();
         if (error) throw error;

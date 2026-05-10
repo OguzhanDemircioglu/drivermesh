@@ -23,6 +23,7 @@ import type {
 import { destroyImage, publicIdFromUrl } from './cloudinary';
 import { checkPermission } from './permissions';
 import { demo, DEMO_ORG_ID, isDemoActive } from '@/demo/store';
+import i18n from '@/i18n';
 
 export type MaintenanceRequestWithRefs = MaintenanceRequest & {
   vehicle: Pick<Vehicle, 'id' | 'plate' | 'brand' | 'model' | 'photo_url'> | null;
@@ -499,6 +500,11 @@ async function remindPendingRequesters(
   }
 }
 
+/**
+ * Bir tek kullaniciya in-app notification + (varsa) FCM push gonderir.
+ * Demo'da Supabase'e + Edge Function'a hic gitmez. Push best-effort:
+ * profile.push_token yoksa send-push 'no_token' donerek atlar.
+ */
 async function notifyOne(
   orgId: string,
   recipientId: string,
@@ -528,6 +534,42 @@ async function notifyOne(
     payload: json,
   });
   if (error) console.warn('[maintenance] notify failed', error.message);
+
+  // FCM push — best effort. push_token yoksa edge function 'no_token' doner.
+  const push = pushPayloadFor(type, payload);
+  if (push) {
+    void supabase.functions
+      .invoke('send-push', {
+        body: { recipient_id: recipientId, type, ...push, data: json as Record<string, unknown> },
+      })
+      .catch((e) => console.warn('[maintenance] push invoke failed', e));
+  }
+}
+
+/** Notification tipini push notification baslik/govdesine cevirir. */
+function pushPayloadFor(
+  type: string,
+  payload: Record<string, unknown>,
+): { title: string; body?: string } | null {
+  const plate = String(payload.plate ?? '');
+  const reason = typeof payload.reason === 'string' ? payload.reason : undefined;
+  const rej = typeof payload.rejectionReason === 'string' ? payload.rejectionReason : undefined;
+  switch (type) {
+    case 'maintenance_requested':
+      return { title: i18n.t('maintenance.notification.requested', { plate }), body: reason };
+    case 'maintenance_approved':
+      return { title: i18n.t('maintenance.notification.approved', { plate }) };
+    case 'maintenance_rejected':
+      return { title: i18n.t('maintenance.notification.rejected', { plate }), body: rej };
+    case 'maintenance_started':
+      return { title: i18n.t('maintenance.notification.started', { plate }), body: reason };
+    case 'maintenance_ended':
+      return { title: i18n.t('maintenance.notification.ended', { plate }) };
+    case 'maintenance_pending_reminder':
+      return { title: i18n.t('maintenance.notification.pendingReminder', { plate }) };
+    default:
+      return null;
+  }
 }
 
 async function notifyManagers(

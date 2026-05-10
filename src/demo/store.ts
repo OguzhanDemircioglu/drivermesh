@@ -461,6 +461,9 @@ function mkProfile(
     role,
     avatar_url: avatarUrl,
     manager_id: managerId,
+    push_token: null,
+    push_platform: null,
+    push_token_updated_at: null,
     created_at: new Date(Date.now() - daysAgo * 86_400_000).toISOString(),
   };
 }

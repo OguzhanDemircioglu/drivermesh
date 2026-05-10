@@ -398,6 +398,9 @@ export type Database = {
           manager_id: string | null;
           organization_id: string | null;
           phone: string | null;
+          push_platform: 'ios' | 'android' | null;
+          push_token: string | null;
+          push_token_updated_at: string | null;
           role: Database['public']['Enums']['user_role'];
         };
         Insert: {
@@ -409,6 +412,9 @@ export type Database = {
           manager_id?: string | null;
           organization_id?: string | null;
           phone?: string | null;
+          push_platform?: 'ios' | 'android' | null;
+          push_token?: string | null;
+          push_token_updated_at?: string | null;
           role: Database['public']['Enums']['user_role'];
         };
         Update: {
@@ -420,6 +426,9 @@ export type Database = {
           manager_id?: string | null;
           organization_id?: string | null;
           phone?: string | null;
+          push_platform?: 'ios' | 'android' | null;
+          push_token?: string | null;
+          push_token_updated_at?: string | null;
           role?: Database['public']['Enums']['user_role'];
         };
         Relationships: [

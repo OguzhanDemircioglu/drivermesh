@@ -469,6 +469,38 @@ async function notifyDriverEvent(
     payload: jsonPayload,
   });
   if (error) console.warn('[notify] driver insert failed', error.message);
+
+  // FCM push — best effort.
+  const push = jobPushPayloadFor(type, payload);
+  if (push) {
+    void supabase.functions
+      .invoke('send-push', {
+        body: { recipient_id: driverId, type, ...push, data: jsonPayload as Record<string, unknown> },
+      })
+      .catch((e) => console.warn('[notify] push invoke failed', e));
+  }
+}
+
+/** Job notification tipini push baslik/govdesine cevirir. */
+function jobPushPayloadFor(
+  type: string,
+  payload: Record<string, unknown>,
+): { title: string; body?: string } | null {
+  const customer = typeof payload.customer_name === 'string' ? payload.customer_name : '—';
+  switch (type) {
+    case 'job_assigned':
+      return { title: i18n.t('notifications.jobAssignedTitle'), body: customer };
+    case 'job_cancelled':
+      return { title: i18n.t('notifications.jobCancelledTitle'), body: customer };
+    case 'job_update':
+      return { title: i18n.t('notifications.jobUpdateTitle'), body: customer };
+    case 'request_approved':
+      return { title: i18n.t('notifications.requestApprovedTitle'), body: customer };
+    case 'request_rejected':
+      return { title: i18n.t('notifications.requestRejectedTitle'), body: customer };
+    default:
+      return null;
+  }
 }
 
 /**
