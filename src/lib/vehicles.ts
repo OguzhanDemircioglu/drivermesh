@@ -53,6 +53,11 @@ export async function createVehicle(input: CreateVehicleInput): Promise<Vehicle>
       photo_url: input.photoUrl ?? null,
       color: input.color ?? null,
       is_at_hq: true,
+      maintenance_until: null,
+      maintenance_started_at: null,
+      maintenance_started_by: null,
+      maintenance_reason: null,
+      maintenance_photo_urls: [],
       created_at: new Date().toISOString(),
     };
     demo.addVehicle(v);

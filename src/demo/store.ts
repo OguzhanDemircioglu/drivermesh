@@ -20,6 +20,7 @@ import type {
   Job,
   JobSource,
   JobStatus,
+  MaintenanceRequest,
   Notification,
   Profile,
   UserRole,
@@ -116,6 +117,7 @@ type SerializedState = {
   jobs: Job[];
   invitations: Invitation[];
   notifications: Notification[];
+  maintenanceRequests: MaintenanceRequest[];
   // Map<string, Map<string, boolean>> → nested plain objects
   permissionOverrides: Record<string, Record<string, boolean>>;
   feedbackChannels: FeedbackChannels;
@@ -133,6 +135,7 @@ async function saveToDisk(): Promise<void> {
     jobs: state.jobs,
     invitations: state.invitations,
     notifications: state.notifications,
+    maintenanceRequests: state.maintenanceRequests,
     permissionOverrides: overridesObj,
     feedbackChannels: state.feedbackChannels,
   };
@@ -151,6 +154,7 @@ async function loadFromDisk(): Promise<boolean> {
     state.jobs = parsed.jobs ?? [];
     state.invitations = parsed.invitations ?? [];
     state.notifications = parsed.notifications ?? [];
+    state.maintenanceRequests = parsed.maintenanceRequests ?? [];
     state.permissionOverrides = new Map(
       Object.entries(parsed.permissionOverrides ?? {}).map(([memberId, perms]) => [
         memberId,
@@ -211,6 +215,7 @@ const state = {
   jobs: [] as Job[],
   invitations: [] as Invitation[],
   notifications: [] as Notification[],
+  maintenanceRequests: [] as MaintenanceRequest[],
   // permission overrides for permissions screen — keyed by member -> permission key
   permissionOverrides: new Map<string, Map<string, boolean>>(),
   feedbackChannels: { ...DEFAULT_FEEDBACK } as FeedbackChannels,
@@ -483,6 +488,11 @@ function mkVehicle(
     color,
     photo_url: photoUrl,
     is_at_hq: isAtHq,
+    maintenance_until: null,
+    maintenance_started_at: null,
+    maintenance_started_by: null,
+    maintenance_reason: null,
+    maintenance_photo_urls: [],
     created_at: new Date(Date.now() - 20 * 86_400_000).toISOString(),
   };
 }
@@ -548,6 +558,16 @@ export const demo = {
   invitations: () => [...state.invitations],
   notifications: () =>
     [...state.notifications].sort((a, b) => b.created_at.localeCompare(a.created_at)),
+  maintenanceRequests: () =>
+    [...state.maintenanceRequests].sort((a, b) =>
+      b.requested_at.localeCompare(a.requested_at),
+    ),
+  maintenanceRequestById: (id: string) =>
+    state.maintenanceRequests.find((r) => r.id === id) ?? null,
+  pendingMaintenanceForVehicle: (vehicleId: string) =>
+    state.maintenanceRequests.filter(
+      (r) => r.vehicle_id === vehicleId && r.status === 'pending',
+    ),
 
   // ---- mutations ----
 
@@ -611,6 +631,19 @@ export const demo = {
   },
   addNotification(n: Notification) {
     state.notifications.unshift(n);
+    emit();
+  },
+
+  // ---- maintenance requests ----
+
+  addMaintenanceRequest(req: MaintenanceRequest) {
+    state.maintenanceRequests.unshift(req);
+    emit();
+  },
+  updateMaintenanceRequest(id: string, patch: Partial<MaintenanceRequest>) {
+    const i = state.maintenanceRequests.findIndex((r) => r.id === id);
+    if (i < 0) return;
+    state.maintenanceRequests[i] = { ...state.maintenanceRequests[i], ...patch };
     emit();
   },
 

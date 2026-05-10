@@ -473,6 +473,11 @@ export type Database = {
           created_at: string;
           id: string;
           is_at_hq: boolean;
+          maintenance_photo_urls: string[];
+          maintenance_reason: string | null;
+          maintenance_started_at: string | null;
+          maintenance_started_by: string | null;
+          maintenance_until: string | null;
           model: string;
           organization_id: string;
           photo_url: string | null;
@@ -487,6 +492,11 @@ export type Database = {
           created_at?: string;
           id?: string;
           is_at_hq?: boolean;
+          maintenance_photo_urls?: string[];
+          maintenance_reason?: string | null;
+          maintenance_started_at?: string | null;
+          maintenance_started_by?: string | null;
+          maintenance_until?: string | null;
           model: string;
           organization_id: string;
           photo_url?: string | null;
@@ -501,6 +511,11 @@ export type Database = {
           created_at?: string;
           id?: string;
           is_at_hq?: boolean;
+          maintenance_photo_urls?: string[];
+          maintenance_reason?: string | null;
+          maintenance_started_at?: string | null;
+          maintenance_started_by?: string | null;
+          maintenance_until?: string | null;
           model?: string;
           organization_id?: string;
           photo_url?: string | null;
@@ -517,10 +532,91 @@ export type Database = {
             referencedColumns: ['id'];
           },
           {
+            foreignKeyName: 'vehicles_maintenance_started_by_fkey';
+            columns: ['maintenance_started_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
             foreignKeyName: 'vehicles_organization_id_fkey';
             columns: ['organization_id'];
             isOneToOne: false;
             referencedRelation: 'organizations';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      maintenance_requests: {
+        Row: {
+          decided_at: string | null;
+          decided_by: string | null;
+          estimated_minutes: number | null;
+          id: string;
+          organization_id: string;
+          photo_urls: string[];
+          reason: string;
+          rejection_reason: string | null;
+          requested_at: string;
+          requester_id: string;
+          status: 'pending' | 'approved' | 'rejected' | 'expired' | 'cancelled';
+          vehicle_id: string;
+        };
+        Insert: {
+          decided_at?: string | null;
+          decided_by?: string | null;
+          estimated_minutes?: number | null;
+          id?: string;
+          organization_id: string;
+          photo_urls?: string[];
+          reason: string;
+          rejection_reason?: string | null;
+          requested_at?: string;
+          requester_id: string;
+          status?: 'pending' | 'approved' | 'rejected' | 'expired' | 'cancelled';
+          vehicle_id: string;
+        };
+        Update: {
+          decided_at?: string | null;
+          decided_by?: string | null;
+          estimated_minutes?: number | null;
+          id?: string;
+          organization_id?: string;
+          photo_urls?: string[];
+          reason?: string;
+          rejection_reason?: string | null;
+          requested_at?: string;
+          requester_id?: string;
+          status?: 'pending' | 'approved' | 'rejected' | 'expired' | 'cancelled';
+          vehicle_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'maintenance_requests_decided_by_fkey';
+            columns: ['decided_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'maintenance_requests_organization_id_fkey';
+            columns: ['organization_id'];
+            isOneToOne: false;
+            referencedRelation: 'organizations';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'maintenance_requests_requester_id_fkey';
+            columns: ['requester_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'maintenance_requests_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'vehicles';
             referencedColumns: ['id'];
           },
         ];
@@ -617,6 +713,8 @@ export type Notification = Database['public']['Tables']['notifications']['Row'];
 export type PermissionKey = Database['public']['Tables']['permission_keys']['Row'];
 export type PermissionOverride = Database['public']['Tables']['permission_overrides']['Row'];
 export type RoleDefaultPermission = Database['public']['Tables']['role_default_permissions']['Row'];
+export type MaintenanceRequest = Database['public']['Tables']['maintenance_requests']['Row'];
+export type MaintenanceRequestStatus = MaintenanceRequest['status'];
 export type UserRole = Database['public']['Enums']['user_role'];
 export type JobStatus = Database['public']['Enums']['job_status'];
 export type JobSource = Database['public']['Enums']['job_source'];

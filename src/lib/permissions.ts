@@ -8,7 +8,8 @@ export type PermissionCategory =
   | 'jobs'
   | 'members'
   | 'reports'
-  | 'settings';
+  | 'settings'
+  | 'maintenance';
 
 export type MemberPermission = {
   key: string;
