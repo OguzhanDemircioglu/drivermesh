@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "DriverMesh",
-    "slug": "drivermesh2",
+    "slug": "drivermesh",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
@@ -10,10 +10,11 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.drivermesh2.ios"
+      "bundleIdentifier": "com.drivermesh.ios"
     },
     "android": {
-      "package": "com.drivermesh2.android",
+      "package": "com.drivermesh.android",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#0A0E1F"

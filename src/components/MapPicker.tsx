@@ -69,7 +69,7 @@ async function googleReverseGeocode(
 // Nominatim (OpenStreetMap) — free fallback when Google Geocoding API
 // is not enabled for the project's API key. Lighter coverage but no key required.
 const NOMINATIM_HEADERS = {
-  'User-Agent': 'DriverMesh/0.1 (drivermesh2 fleet ops)',
+  'User-Agent': 'DriverMesh/0.1 (drivermesh fleet ops)',
   'Accept-Language': 'tr,en;q=0.8',
 };
 

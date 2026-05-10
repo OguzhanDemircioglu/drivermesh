@@ -38,7 +38,7 @@
 ## 3. Klasör Yapısı
 
 ```
-drivermesh2/
+drivermesh/
 ├── app/                          # Expo Router rotaları
 │   ├── _layout.tsx               # Root layout: AuthProvider + AuthGate + fontlar
 │   ├── index.tsx                 # Initial redirect

@@ -48,3 +48,6 @@ screenshots/
 # generated native folders
 /ios
 /android
+
+# Firebase / FCM client config — committed at root for EAS prebuild
+!/google-services.json
