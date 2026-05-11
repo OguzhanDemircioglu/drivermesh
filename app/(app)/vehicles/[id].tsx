@@ -459,8 +459,14 @@ export default function VehicleDetailScreen() {
               </Pressable>
             ) : null}
 
-            {/* Vehicle claim / release CTA. Bakimdaki arac claim edilemez. */}
-            {vehicle.status !== 'maintenance' && session?.user.id ? (
+            {/* Vehicle claim / release CTA.
+              * - Bakimdaki arac claim edilemez (filter)
+              * - Aktif is (assigned/in_progress) baginda olan arac da claim
+              *   edilemez (memory karar #2). Kendinde olan kullanici hala
+              *   "Aracı Bırak" gorebilir (release zaten serbest).
+              */}
+            {vehicle.status !== 'maintenance' && session?.user.id &&
+              (vehicle.current_user_id === session.user.id || !hasActiveJob) ? (
               vehicle.current_user_id === session.user.id ? (
                 <Pressable
                   onPress={onRelease}
