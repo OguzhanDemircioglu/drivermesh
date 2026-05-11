@@ -480,6 +480,7 @@ export type Database = {
           brand: string;
           color: string | null;
           created_at: string;
+          current_user_id: string | null;
           id: string;
           is_at_hq: boolean;
           maintenance_photo_urls: string[];
@@ -499,6 +500,7 @@ export type Database = {
           brand: string;
           color?: string | null;
           created_at?: string;
+          current_user_id?: string | null;
           id?: string;
           is_at_hq?: boolean;
           maintenance_photo_urls?: string[];
@@ -518,6 +520,7 @@ export type Database = {
           brand?: string;
           color?: string | null;
           created_at?: string;
+          current_user_id?: string | null;
           id?: string;
           is_at_hq?: boolean;
           maintenance_photo_urls?: string[];
@@ -552,6 +555,58 @@ export type Database = {
             columns: ['organization_id'];
             isOneToOne: false;
             referencedRelation: 'organizations';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      vehicle_assignments: {
+        Row: {
+          claimed_at: string;
+          id: string;
+          organization_id: string;
+          reason: 'manual' | 'job_start' | 'transfer' | 'released_by_other';
+          released_at: string | null;
+          user_id: string;
+          vehicle_id: string;
+        };
+        Insert: {
+          claimed_at?: string;
+          id?: string;
+          organization_id: string;
+          reason?: 'manual' | 'job_start' | 'transfer' | 'released_by_other';
+          released_at?: string | null;
+          user_id: string;
+          vehicle_id: string;
+        };
+        Update: {
+          claimed_at?: string;
+          id?: string;
+          organization_id?: string;
+          reason?: 'manual' | 'job_start' | 'transfer' | 'released_by_other';
+          released_at?: string | null;
+          user_id?: string;
+          vehicle_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'vehicle_assignments_organization_id_fkey';
+            columns: ['organization_id'];
+            isOneToOne: false;
+            referencedRelation: 'organizations';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicle_assignments_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicle_assignments_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'vehicles';
             referencedColumns: ['id'];
           },
         ];
@@ -691,6 +746,14 @@ export type Database = {
         Args: Record<string, never>;
         Returns: void;
       };
+      claim_vehicle: {
+        Args: { p_vehicle_id: string; p_reason?: string };
+        Returns: void;
+      };
+      release_vehicle: {
+        Args: { p_vehicle_id: string };
+        Returns: void;
+      };
     };
     Enums: {
       invitation_status: 'pending' | 'accepted' | 'expired' | 'revoked';
@@ -724,6 +787,8 @@ export type PermissionOverride = Database['public']['Tables']['permission_overri
 export type RoleDefaultPermission = Database['public']['Tables']['role_default_permissions']['Row'];
 export type MaintenanceRequest = Database['public']['Tables']['maintenance_requests']['Row'];
 export type MaintenanceRequestStatus = MaintenanceRequest['status'];
+export type VehicleAssignment = Database['public']['Tables']['vehicle_assignments']['Row'];
+export type VehicleAssignmentReason = VehicleAssignment['reason'];
 export type UserRole = Database['public']['Enums']['user_role'];
 export type JobStatus = Database['public']['Enums']['job_status'];
 export type JobSource = Database['public']['Enums']['job_source'];

@@ -58,6 +58,7 @@ export async function createVehicle(input: CreateVehicleInput): Promise<Vehicle>
       maintenance_started_by: null,
       maintenance_reason: null,
       maintenance_photo_urls: [],
+      current_user_id: null,
       created_at: new Date().toISOString(),
     };
     demo.addVehicle(v);

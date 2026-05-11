@@ -26,6 +26,8 @@ import { useAuth } from '@/auth/AuthProvider';
 import { useCan } from '@/auth/useCan';
 import { isDemoActive } from '@/demo/store';
 import { openInMaps } from '@/lib/openInMaps';
+import { claimVehicle, getMyVehicle } from '@/lib/vehicleClaim';
+import { VehiclePickerModal } from '@/components/VehiclePickerModal';
 import {
   acceptOpenJob,
   approveDriverRequest,
@@ -68,18 +70,24 @@ export default function JobDetailScreen() {
   const [reassignOpen, setReassignOpen] = useState(false);
   const [drivers, setDrivers] = useState<Profile[]>([]);
   const [driversLoading, setDriversLoading] = useState(false);
+  const [myVehiclePlate, setMyVehiclePlate] = useState<string | null>(null);
+  const [vehiclePickerOpen, setVehiclePickerOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
     try {
       const data = await getJob(id);
       setJob(data);
+      if (session?.user.id) {
+        const my = await getMyVehicle(session.user.id);
+        setMyVehiclePlate(my?.plate ?? null);
+      }
     } catch (e) {
       console.warn('[job] load failed', e);
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, session?.user.id]);
 
   useFocusEffect(
     useCallback(() => {
@@ -118,12 +126,29 @@ export default function JobDetailScreen() {
 
   const onStart = async () => {
     if (!job) return;
+    if (!myVehiclePlate) {
+      // Aracin yoksa once arac sec — picker'i ac.
+      setVehiclePickerOpen(true);
+      return;
+    }
     const ok = await confirm({
       title: t('jobs.detail.startTitle'),
       message: t('jobs.detail.startMessage'),
       confirmText: t('jobs.detail.startConfirm'),
     });
     if (ok) guarded(() => startJob(job.id), t('jobs.detail.startError'));
+  };
+
+  const onPickVehicle = async (vehicle: { id: string; plate: string }) => {
+    if (!session?.user.id) return;
+    setVehiclePickerOpen(false);
+    try {
+      await claimVehicle(vehicle.id, session.user.id, 'job_start');
+      setMyVehiclePlate(vehicle.plate);
+      toast.success(t('jobs.detail.vehicleClaimedToast', { plate: vehicle.plate }));
+    } catch (e) {
+      toast.error(t('vehicleClaim.errorTitle'), (e as Error).message);
+    }
   };
 
   const onComplete = async () => {
@@ -512,11 +537,23 @@ export default function JobDetailScreen() {
 
           {job.status === 'assigned' && isMyJob ? (
             <View style={styles.actions}>
-              <Button
-                title={t('jobs.detail.startCta')}
-                onPress={onStart}
-                loading={busy}
-              />
+              {!myVehiclePlate ? (
+                <>
+                  <Text style={styles.pickHint}>{t('jobs.detail.pickVehicleHint')}</Text>
+                  <Button
+                    title={t('jobs.detail.pickVehicleCta')}
+                    onPress={() => setVehiclePickerOpen(true)}
+                    loading={busy}
+                    leftIcon={<Feather name="truck" size={16} color="#0A0E1F" />}
+                  />
+                </>
+              ) : (
+                <Button
+                  title={t('jobs.detail.startCta')}
+                  onPress={onStart}
+                  loading={busy}
+                />
+              )}
             </View>
           ) : null}
 
@@ -647,6 +684,18 @@ export default function JobDetailScreen() {
             </View>
           ) : null}
         </ScrollView>
+
+        {/* Vehicle picker modal — claim before starting */}
+        {profile?.organization_id && session?.user.id ? (
+          <VehiclePickerModal
+            visible={vehiclePickerOpen}
+            orgId={profile.organization_id}
+            currentUserId={session.user.id}
+            excludeMine
+            onClose={() => setVehiclePickerOpen(false)}
+            onPick={onPickVehicle}
+          />
+        ) : null}
 
         {/* Reassign modal */}
         <Modal
@@ -959,6 +1008,12 @@ const styles = StyleSheet.create({
   timelineDate: { color: theme.colors.textDim, fontSize: theme.font.size.xs },
 
   actions: { gap: 10, marginTop: theme.spacing.sm },
+  pickHint: {
+    color: theme.colors.textMuted,
+    fontSize: theme.font.size.sm,
+    textAlign: 'center',
+    lineHeight: 19,
+  },
 
   simBadge: {
     flexDirection: 'row',

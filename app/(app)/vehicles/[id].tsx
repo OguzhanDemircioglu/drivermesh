@@ -30,6 +30,7 @@ import {
   type VehicleWithAdder,
 } from '@/lib/vehicles';
 import { endMaintenance, MaintenanceError } from '@/lib/maintenance';
+import { claimVehicle, releaseVehicle } from '@/lib/vehicleClaim';
 import type { JobStatus, VehicleStatus } from '@/lib/database.types';
 import { theme } from '@/theme';
 
@@ -86,6 +87,7 @@ export default function VehicleDetailScreen() {
   const [savingAtHq, setSavingAtHq] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [endingMaintenance, setEndingMaintenance] = useState(false);
+  const [claiming, setClaiming] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -130,6 +132,40 @@ export default function VehicleDetailScreen() {
       setSavingAtHq(false);
     }
   }, [vehicle, savingAtHq, canUpdate, t, toast]);
+
+  const onClaim = useCallback(async () => {
+    if (!vehicle || !session?.user.id || claiming) return;
+    setClaiming(true);
+    try {
+      await claimVehicle(vehicle.id, session.user.id, 'manual');
+      toast.success(t('vehicleClaim.successClaim'));
+      await load();
+    } catch (e) {
+      toast.error(t('vehicleClaim.errorTitle'), (e as Error).message);
+    } finally {
+      setClaiming(false);
+    }
+  }, [vehicle, session?.user.id, claiming, t, toast, load]);
+
+  const onRelease = useCallback(async () => {
+    if (!vehicle || !session?.user.id || claiming) return;
+    const ok = await confirm({
+      title: t('vehicleClaim.releaseConfirmTitle'),
+      message: t('vehicleClaim.releaseConfirmText'),
+      confirmText: t('vehicleClaim.releaseConfirmBtn'),
+    });
+    if (!ok) return;
+    setClaiming(true);
+    try {
+      await releaseVehicle(vehicle.id, session.user.id);
+      toast.success(t('vehicleClaim.successRelease'));
+      await load();
+    } catch (e) {
+      toast.error(t('vehicleClaim.errorTitle'), (e as Error).message);
+    } finally {
+      setClaiming(false);
+    }
+  }, [vehicle, session?.user.id, claiming, confirm, t, toast, load]);
 
   const onSendToMaintenance = useCallback(() => {
     if (!vehicle) return;
@@ -423,6 +459,45 @@ export default function VehicleDetailScreen() {
               </Pressable>
             ) : null}
 
+            {/* Vehicle claim / release CTA. Bakimdaki arac claim edilemez. */}
+            {vehicle.status !== 'maintenance' && session?.user.id ? (
+              vehicle.current_user_id === session.user.id ? (
+                <Pressable
+                  onPress={onRelease}
+                  disabled={claiming}
+                  style={({ pressed }) => [
+                    styles.releaseBtn,
+                    claiming && { opacity: 0.55 },
+                    pressed && { opacity: 0.85 },
+                  ]}
+                >
+                  {claiming ? (
+                    <ActivityIndicator size="small" color={theme.colors.text} />
+                  ) : (
+                    <Feather name="user-x" size={16} color={theme.colors.text} />
+                  )}
+                  <Text style={styles.releaseBtnText}>{t('vehicleClaim.release')}</Text>
+                </Pressable>
+              ) : (
+                <Pressable
+                  onPress={onClaim}
+                  disabled={claiming}
+                  style={({ pressed }) => [
+                    styles.claimBtn,
+                    claiming && { opacity: 0.55 },
+                    pressed && { opacity: 0.85 },
+                  ]}
+                >
+                  {claiming ? (
+                    <ActivityIndicator size="small" color="#0A0E1F" />
+                  ) : (
+                    <Feather name="user-check" size={16} color="#0A0E1F" />
+                  )}
+                  <Text style={styles.claimBtnText}>{t('vehicleClaim.takeOwn')}</Text>
+                </Pressable>
+              )
+            ) : null}
+
             {/* Info */}
             <Card>
               <Text style={styles.sectionTitle}>{t('vehicles.detail.sectionInfo')}</Text>
@@ -697,6 +772,37 @@ const styles = StyleSheet.create({
   },
   maintenanceTriggerText: {
     color: theme.colors.warning,
+    fontSize: theme.font.size.sm,
+    fontWeight: theme.font.weight.semibold,
+  },
+
+  claimBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.accent,
+  },
+  claimBtnText: {
+    color: '#0A0E1F',
+    fontSize: theme.font.size.sm,
+    fontWeight: theme.font.weight.bold,
+  },
+  releaseBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  releaseBtnText: {
+    color: theme.colors.text,
     fontSize: theme.font.size.sm,
     fontWeight: theme.font.weight.semibold,
   },

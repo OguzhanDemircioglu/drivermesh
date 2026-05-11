@@ -496,6 +496,7 @@ function mkVehicle(
     maintenance_started_by: null,
     maintenance_reason: null,
     maintenance_photo_urls: [],
+    current_user_id: null,
     created_at: new Date(Date.now() - 20 * 86_400_000).toISOString(),
   };
 }
@@ -647,6 +648,34 @@ export const demo = {
     const i = state.maintenanceRequests.findIndex((r) => r.id === id);
     if (i < 0) return;
     state.maintenanceRequests[i] = { ...state.maintenanceRequests[i], ...patch };
+    emit();
+  },
+
+  // ---- vehicle claim / release ----
+  //
+  // Iki yan etki:
+  //   (1) Kullanicinin uzerindeki onceki arac (varsa) -> current_user_id = null
+  //   (2) Yeni arac'in eski current_user_id'si -> null (released_by_other)
+  //   (3) Yeni arac.current_user_id = userId
+  // Idempotent: ayni kullanici ayni araci tekrar claim ederse no-op.
+  claimVehicle(vehicleId: string, userId: string, _reason: 'manual' | 'job_start' | 'transfer') {
+    const target = state.vehicles.find((v) => v.id === vehicleId);
+    if (!target) return;
+    if (target.current_user_id === userId) return; // idempotent
+    // (1) kullanicinin onceki araci varsa serbest birak
+    state.vehicles = state.vehicles.map((v) =>
+      v.current_user_id === userId && v.id !== vehicleId ? { ...v, current_user_id: null } : v,
+    );
+    // (2)+(3) target arac yeni sahibe gecsin (eski sahip varsa otomatik gider)
+    state.vehicles = state.vehicles.map((v) =>
+      v.id === vehicleId ? { ...v, current_user_id: userId } : v,
+    );
+    emit();
+  },
+  releaseVehicle(vehicleId: string, userId: string) {
+    state.vehicles = state.vehicles.map((v) =>
+      v.id === vehicleId && v.current_user_id === userId ? { ...v, current_user_id: null } : v,
+    );
     emit();
   },
 
