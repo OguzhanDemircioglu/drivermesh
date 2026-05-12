@@ -2,7 +2,7 @@
   "expo": {
     "name": "DriverMesh",
     "slug": "drivermesh",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "scheme": "drivermesh",
@@ -43,6 +43,14 @@
         {
           "color": "#FF7A1A",
           "defaultChannel": "default"
+        }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "drivermesh",
+          "project": "react-native",
+          "url": "https://de.sentry.io/"
         }
       ]
     ],

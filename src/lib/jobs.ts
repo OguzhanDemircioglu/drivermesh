@@ -470,12 +470,19 @@ async function notifyDriverEvent(
   });
   if (error) console.warn('[notify] driver insert failed', error.message);
 
-  // FCM push — best effort.
+  // FCM push — best effort. persist:false: notifications tablosuna insert
+  // yukarida zaten yapildi, send-push duplicate atmasin.
   const push = jobPushPayloadFor(type, payload);
   if (push) {
     void supabase.functions
       .invoke('send-push', {
-        body: { recipient_id: driverId, type, ...push, data: jsonPayload as Record<string, unknown> },
+        body: {
+          recipient_id: driverId,
+          type,
+          ...push,
+          data: jsonPayload as Record<string, unknown>,
+          persist: false,
+        },
       })
       .catch((e) => console.warn('[notify] push invoke failed', e));
   }

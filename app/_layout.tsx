@@ -16,7 +16,12 @@ import { ConfirmProvider } from '@/components/ConfirmDialog';
 import { ToastProvider } from '@/components/Toast';
 import { WelcomeHero } from '@/components/WelcomeHero';
 import { setupI18n } from '@/i18n';
+import { initSentry } from '@/lib/sentry';
 import { theme } from '@/theme';
+
+// Module load — Sentry init mumkun olan en erken anda. DSN .env'de yoksa
+// silent skip (dev). Native crashlar bile yakalanir bu sekilde.
+initSentry();
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 

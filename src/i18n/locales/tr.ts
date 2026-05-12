@@ -890,7 +890,7 @@ export const tr = {
     help: 'Yardım',
     actionSupport: 'Destek',
     actionAbout: 'Uygulama Hakkında',
-    aboutHint: 'DriverMesh · V0.1.0 · Drivermesh Ride Entegrasyonu Yakında',
+    aboutHint: 'DriverMesh · V1.0.0 · Drivermesh Ride Entegrasyonu Yakında',
     aboutText: 'Filo operasyon uygulaması. Müşteri/yolcu uygulaması olan drivermesh ride entegrasyonu sonraki aşamada geliyor.',
     language: 'Dil',
     languageTr: 'Türkçe',

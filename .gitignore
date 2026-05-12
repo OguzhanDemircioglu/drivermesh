@@ -13,6 +13,7 @@ expo-env.d.ts
 .kotlin/
 *.orig.*
 *.jks
+*.keystore
 *.p8
 *.p12
 *.key
@@ -41,6 +42,7 @@ yarn-error.*
 screenshots/
 .scratch/
 .claude/
+.tmp/
 
 # typescript
 *.tsbuildinfo
@@ -49,5 +51,12 @@ screenshots/
 /ios
 /android
 
+# Sentry — source map upload auth token (defansif; /android zaten ignored)
+android/sentry.properties
+ios/sentry.properties
+
 # Firebase / FCM client config — committed at root for EAS prebuild
 !/google-services.json
+
+# Claude Code MCP server config (contains API keys)
+.mcp.json

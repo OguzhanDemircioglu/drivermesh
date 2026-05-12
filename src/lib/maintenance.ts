@@ -544,11 +544,19 @@ async function notifyOne(
   if (error) console.warn('[maintenance] notify failed', error.message);
 
   // FCM push — best effort. push_token yoksa edge function 'no_token' doner.
+  // persist:false: notifications insert yukarida lib tarafindan yapildi,
+  // send-push duplicate atmasin.
   const push = pushPayloadFor(type, payload);
   if (push) {
     void supabase.functions
       .invoke('send-push', {
-        body: { recipient_id: recipientId, type, ...push, data: json as Record<string, unknown> },
+        body: {
+          recipient_id: recipientId,
+          type,
+          ...push,
+          data: json as Record<string, unknown>,
+          persist: false,
+        },
       })
       .catch((e) => console.warn('[maintenance] push invoke failed', e));
   }

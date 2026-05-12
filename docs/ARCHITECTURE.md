@@ -543,8 +543,9 @@ Vehicle pill tap'i hep router push (detay daha çok bilgi). Pickup/dropoff/HQ pi
 **Renderer:** her tip için title/body i18n string + payload (job_id, customer_name, plate, vehicleId, requestId, rejectionReason, ...). Tap → `router.push` deep-link.
 
 **Yan etki tetikleyicileri:**
-- `src/lib/jobs.ts:notifyDriverEvent` — single recipient + push
-- `src/lib/maintenance.ts:notifyOne / notifyManagers / notifyOrg` — single/çoklu recipient + push
+- `src/lib/jobs.ts:notifyDriverEvent` — single recipient + push (insert lib'de, send-push `persist:false`)
+- `src/lib/maintenance.ts:notifyOne / notifyManagers / notifyOrg` — single/çoklu recipient + push (aynı pattern)
+- **Cron path** (`maintenance_auto_checkout` RPC): send-push'u **`persist` belirtmeden** çağırır → v3 hem DB'ye insert hem push atar (tek atımda)
 
 ---
 
@@ -572,35 +573,56 @@ Vehicle pill tap'i hep router push (detay daha çok bilgi). Pickup/dropoff/HQ pi
 
 **AuthProvider entegrasyonu:** `useEffect` initial session resolve + `onAuthStateChange` ile her session geçişinde register tetiklenir.
 
-### 14.3 Server tarafı (`send-push` Edge Function)
+### 14.3 Server tarafı (`send-push` Edge Function v3)
 
 İmza: `POST /functions/v1/send-push` (verify_jwt: true)
 ```json
-{ "recipient_id": "uuid", "type": "string", "title": "string", "body?": "string", "data?": {...} }
+{
+  "recipient_id": "uuid",
+  "type": "string",
+  "title": "string",
+  "body?": "string",
+  "data?": {...},
+  "persist?": "boolean (default: true)"
+}
 ```
 
 Logic:
 1. JWT auth check (Supabase verify_jwt:true)
-2. Service role ile `profiles.push_token` fetch — yoksa `{ ok:true, sent:0, skipped:1, reason:'no_token' }`
-3. `FCM_SERVICE_ACCOUNT_JSON` env (Edge Function Secret)
-4. JWT-bearer OAuth2 → FCM access token (1h cache)
-5. POST `https://fcm.googleapis.com/v1/projects/{project_id}/messages:send` body:
+2. `FCM_SERVICE_ACCOUNT_JSON` kaynak sırası:
+   - `Deno.env.get('FCM_SERVICE_ACCOUNT_JSON')`
+   - fallback `public.get_vault_secret('fcm_service_account_json')`
+3. Service role ile profile fetch — `id, organization_id, push_token, push_platform`
+4. **In-app persistence (yeni — v3):** `body.persist !== false` ise `public.notifications` tablosuna satır insert eder:
+   - `organization_id` profiles'tan otomatik
+   - `actor_id` = `body.data.actor_id` (string ise) veya `null`
+   - `type`, `payload = body.data ?? {}`
+   - Insert id'si yanıta `notification_id` olarak konur ve FCM data payload'una eklenir (deep-link için)
+5. `push_token` yoksa erken dönüş: `{ ok:true, sent:0, skipped:1, reason:'no_token', notification_id }` (insert yapıldıysa ID döner)
+6. JWT-bearer OAuth2 → FCM access token (1h cache)
+7. POST `https://fcm.googleapis.com/v1/projects/{project_id}/messages:send` body:
 ```json
 {
   "message": {
     "token": "...",
     "notification": { "title": "...", "body": "..." },
-    "data": { "type": "...", ... },
+    "data": { "type": "...", "notification_id": "<insert-id-eger-persist-edildiyse>", ... },
     "android": { "priority": "HIGH", "notification": { "channel_id": "default" } }
   }
 }
 ```
-6. UNREGISTERED 404 → `UPDATE profiles SET push_token=NULL` (sileride çağrılmasın)
+8. UNREGISTERED 404 → `UPDATE profiles SET push_token=NULL` (sileride çağrılmasın)
 
-### 14.4 Çağrı noktaları
+### 14.4 Çağrı noktaları ve `persist` kuralı
 
-- Client: `notifyOne` / `notifyDriverEvent` `supabase.functions.invoke('send-push', { body })` (best-effort, çağrılmadan in-app notif yazılır)
-- Cron: `maintenance_auto_checkout` RPC `extensions.http_post(...)` ile pg_net üzerinden (anon_key vault'tan)
+| Tetikleyici | `persist` | Sebep |
+|---|---|---|
+| `src/lib/jobs.ts:notifyDriverEvent` | **`false`** | Lib zaten `notifications` insert ediyor; send-push'tan ikinci kayıt istenmiyor |
+| `src/lib/maintenance.ts:notifyOne` | **`false`** | Aynı sebep |
+| `maintenance_auto_checkout` cron (pg_net) | default (`true`) | Cron yolu insert yapmıyor, send-push tek noktada hem persist hem push |
+| Doğrudan curl/PowerShell test | default (`true`) | Manual test'lerde app içi listede de görünmesi için |
+
+**Bu mantık neden gerekli?** Önceki v2'de send-push sadece FCM'e push atıyordu; cron yolundan gönderilen `maintenance_overdue` benzeri push'lar uygulama içi bildirim listesinde **görünmüyordu** (banner gelip kayboluyor, geçmiş kalmıyordu). v3 ile her push aynı zamanda DB'ye kayıt düşüyor; lib path'ler `persist:false` ile duplicate'ı engelliyor.
 
 ### 14.5 Setup gereksinimleri
 
@@ -964,9 +986,12 @@ npm run typecheck
 1. **iOS push** — APNs Authentication Key Apple Developer Console'dan oluşturulup Firebase iOS app'ine yüklenecek + Firebase iOS app + GoogleService-Info.plist
 2. **Hierarchy Phase 2** — RLS scope filter (manager kendi şoforlerinin verisini görür); manager-view UI filter
 3. **Driver invite manager picker UI** — team/invite ekranında manager dropdown
-4. **send-push org-match auth** — Edge Function caller'ın org'unu doğrulasın (recipient aynı org'da mı)
-5. **DriverMesh Ride alt yapı** — müşteri-side app + ride source job entegrasyonu
-6. **Customer email** — sonraki konu (Ride app'e bağlanacak muhtemelen)
+4. **send-push org-match auth** ⚠ release blocker — Edge Function caller'ın org'unu doğrulasın (recipient aynı org'da mı, başka org'a push atılamasın)
+5. **send-push deep-link tıklama** — FCM data payload'a `notification_id` konuyor (v3); app'in deep-link handler'ı bunu yakalayıp ilgili ekrana gitmeli
+6. **Cron auto-checkout canlı test** — `maintenance_until` past vehicle ile 1 dakikalık cron'un push + insert akışını doğrula
+7. **DriverMesh Ride alt yapı** — müşteri-side app + ride source job entegrasyonu
+8. **Customer email** — sonraki konu (Ride app'e bağlanacak muhtemelen)
+9. **App Store / Play Store yayını** — `docs/RELEASE_CHECKLIST.md` faz 1–6 kontrol
 
 ---
 
@@ -1002,4 +1027,4 @@ npm run typecheck
 
 ---
 
-*Doküman versiyonu: 2.0 — Maintenance flow, Cloudinary upload, FCM push, pg_cron auto-checkout, hierarchy Phase 1 dahil.*
+*Doküman versiyonu: 2.1 — Maintenance flow, Cloudinary upload, FCM push (v3 = persist + notifications insert), pg_cron auto-checkout, hierarchy Phase 1 dahil. v3 ile cron yolundan gelen push'lar da app içi bildirim listesinde görünüyor.*

@@ -32,7 +32,10 @@ import type { MemberPermission } from '@/lib/permissions';
 // kalıntıları devre dışı bırakıldığı için kullanıcı uygulamayı bir
 // kere açtığında yeni seed otomatik gelir; eski saved state diskte
 // orphan kalır, GC'lenmez ama okunmaz.
-const DEMO_STATE_KEY = 'drivermesh.demo.state.v2';
+// v3: vehicle seed gucleristirildi (maintenance state dolu, current_user_id
+// claim ornekleri) + maintenanceRequests history seed (5 status). Eski v2
+// AsyncStorage key'i otomatik invalidate olur, demo yeniden reseed yapar.
+const DEMO_STATE_KEY = 'drivermesh.demo.state.v3';
 
 // ---------- IDs ----------
 
@@ -253,12 +256,124 @@ function reseed() {
   const photo3 = `${PHOTO_BASE}/v1778166033/drivermesh/cars/Screenshot_2026-05-07_174351.png`;
   const photo4 = `${PHOTO_BASE}/v1778166035/drivermesh/cars/Screenshot_2026-05-07_174405.png`;
 
+  // Vehicle case coverage: tum onemli durumlari demo'da gosterilebilmesi icin
+  // - active + claimed + foto (3 tane, her driver'in uzerinde)
+  // - maintenance + foto + sebep + bitis suresi + foto'lar (banner full data)
+  // - idle + photo-less + claimable (kimsenin ustunde degil, claim'lenebilir)
+  // - acik renkli (sari) — harita kontrast test'i icin
+  const maintenancePhoto1 = `${PHOTO_BASE}/v1778166035/drivermesh/cars/Screenshot_2026-05-07_174405.png`;
   state.vehicles = [
-    mkVehicle('demo-v1', '34 ABC 123', 'Ford', 'Transit', 2022, 'active', '#5B7FFF', false, photo1),
-    mkVehicle('demo-v2', '34 DEF 456', 'Mercedes', 'Sprinter', 2023, 'active', '#FF7A1A', false, photo2),
-    mkVehicle('demo-v3', '06 GHI 789', 'Volkswagen', 'Crafter', 2021, 'active', '#22C55E', false, photo3),
-    mkVehicle('demo-v4', '34 JKL 234', 'Iveco', 'Daily', 2020, 'maintenance', '#A855F7', true, photo4),
-    mkVehicle('demo-v5', '35 MNO 567', 'Renault', 'Master', 2024, 'idle', '#F59E0B', true, null),
+    mkVehicle({
+      id: 'demo-v1', plate: '34 ABC 123', brand: 'Ford', model: 'Transit',
+      year: 2022, status: 'active', color: '#5B7FFF', isAtHq: false,
+      photoUrl: photo1, currentUserId: DEMO_DRIVER_IDS[0], // Ahmet uzerinde
+    }),
+    mkVehicle({
+      id: 'demo-v2', plate: '34 DEF 456', brand: 'Mercedes', model: 'Sprinter',
+      year: 2023, status: 'active', color: '#FF7A1A', isAtHq: false,
+      photoUrl: photo2, currentUserId: DEMO_DRIVER_IDS[1], // Mehmet uzerinde
+    }),
+    mkVehicle({
+      id: 'demo-v3', plate: '06 GHI 789', brand: 'Volkswagen', model: 'Crafter',
+      year: 2021, status: 'active', color: '#22C55E', isAtHq: false,
+      photoUrl: photo3, currentUserId: DEMO_DRIVER_IDS[2], // Ayse uzerinde
+    }),
+    // Bakimda araç — banner full data: sebep + foto + suresi
+    mkVehicle({
+      id: 'demo-v4', plate: '34 JKL 234', brand: 'Iveco', model: 'Daily',
+      year: 2020, status: 'maintenance', color: '#A855F7', isAtHq: true,
+      photoUrl: photo4, currentUserId: null,
+      maintenanceReason: 'Sol on lastik degisimi + balans ayari',
+      maintenanceStartedAt: hoursAgo(3),
+      maintenanceStartedBy: DEMO_MANAGER_ID,
+      maintenanceUntil: hoursAgo(-2), // 2 saat sonra biter
+      maintenancePhotoUrls: [maintenancePhoto1],
+    }),
+    // Claimable arac — fotosuz (empty-state branch) + acik sarı renk (kontrast test)
+    mkVehicle({
+      id: 'demo-v5', plate: '35 MNO 567', brand: 'Renault', model: 'Master',
+      year: 2024, status: 'idle', color: '#F59E0B', isAtHq: true,
+      photoUrl: null, currentUserId: null,
+    }),
+  ];
+
+  // Bakim talebi history — her status icin bir kayit:
+  // pending (demo-v5 icin Ahmet acti, yonetici onayi bekliyor)
+  // approved (demo-v4 icin gecmis kabul edilmis talep — su anki bakim)
+  // rejected (eskisinde reddedilmis bir talep)
+  // cancelled (talep eden vazgecmis)
+  // expired (auto-checkout sonrasi otomatik)
+  state.maintenanceRequests = [
+    {
+      id: 'demo-mr-pending',
+      organization_id: DEMO_ORG_ID,
+      vehicle_id: 'demo-v5',
+      requester_id: DEMO_DRIVER_IDS[0],
+      reason: 'Motor uyari isigi yandi, kontrol gerekiyor',
+      photo_urls: [maintenancePhoto1],
+      estimated_minutes: 120,
+      status: 'pending',
+      decided_by: null,
+      decided_at: null,
+      rejection_reason: null,
+      requested_at: minutesAgo(45),
+    },
+    {
+      id: 'demo-mr-approved',
+      organization_id: DEMO_ORG_ID,
+      vehicle_id: 'demo-v4',
+      requester_id: DEMO_DRIVER_IDS[1],
+      reason: 'Sol on lastik degisimi + balans ayari',
+      photo_urls: [maintenancePhoto1],
+      estimated_minutes: 300,
+      status: 'approved',
+      decided_by: DEMO_MANAGER_ID,
+      decided_at: hoursAgo(3),
+      rejection_reason: null,
+      requested_at: hoursAgo(4),
+    },
+    {
+      id: 'demo-mr-rejected',
+      organization_id: DEMO_ORG_ID,
+      vehicle_id: 'demo-v2',
+      requester_id: DEMO_DRIVER_IDS[2],
+      reason: 'Klima ariza yapmis gibi',
+      photo_urls: [],
+      estimated_minutes: null,
+      status: 'rejected',
+      decided_by: DEMO_OWNER_ID,
+      decided_at: hoursAgo(20),
+      rejection_reason: 'Klima zaten gecen ay servise gitti, yeniden kontrol gerekmiyor. Sicaklik fanı ayarini kontrol et.',
+      requested_at: hoursAgo(22),
+    },
+    {
+      id: 'demo-mr-cancelled',
+      organization_id: DEMO_ORG_ID,
+      vehicle_id: 'demo-v1',
+      requester_id: DEMO_DRIVER_IDS[0],
+      reason: 'Sag farin parlakligi azaldi',
+      photo_urls: [],
+      estimated_minutes: 60,
+      status: 'cancelled',
+      decided_by: null,
+      decided_at: null,
+      rejection_reason: null,
+      requested_at: hoursAgo(48),
+    },
+    {
+      id: 'demo-mr-expired',
+      organization_id: DEMO_ORG_ID,
+      vehicle_id: 'demo-v3',
+      requester_id: DEMO_DRIVER_IDS[2],
+      reason: 'Aki performans testi (planli bakim)',
+      photo_urls: [],
+      estimated_minutes: 90,
+      status: 'expired',
+      decided_by: DEMO_OWNER_ID,
+      decided_at: hoursAgo(74),
+      rejection_reason: null,
+      requested_at: hoursAgo(76),
+    },
   ];
 
   // Jobs — full coverage of statuses so the demo audience sees every state:
@@ -468,35 +583,43 @@ function mkProfile(
   };
 }
 
-function mkVehicle(
-  id: string,
-  plate: string,
-  brand: string,
-  model: string,
-  year: number,
-  status: 'active' | 'maintenance' | 'idle',
-  color: string,
-  isAtHq: boolean,
-  photoUrl: string | null = null,
-): Vehicle {
+type VehicleSpec = {
+  id: string;
+  plate: string;
+  brand: string;
+  model: string;
+  year: number;
+  status: 'active' | 'maintenance' | 'idle';
+  color: string;
+  isAtHq: boolean;
+  photoUrl?: string | null;
+  currentUserId?: string | null;
+  maintenanceReason?: string | null;
+  maintenanceUntil?: string | null;
+  maintenanceStartedAt?: string | null;
+  maintenanceStartedBy?: string | null;
+  maintenancePhotoUrls?: string[];
+};
+
+function mkVehicle(spec: VehicleSpec): Vehicle {
   return {
-    id,
+    id: spec.id,
     organization_id: DEMO_ORG_ID,
     added_by: DEMO_OWNER_ID,
-    plate,
-    brand,
-    model,
-    year,
-    status,
-    color,
-    photo_url: photoUrl,
-    is_at_hq: isAtHq,
-    maintenance_until: null,
-    maintenance_started_at: null,
-    maintenance_started_by: null,
-    maintenance_reason: null,
-    maintenance_photo_urls: [],
-    current_user_id: null,
+    plate: spec.plate,
+    brand: spec.brand,
+    model: spec.model,
+    year: spec.year,
+    status: spec.status,
+    color: spec.color,
+    photo_url: spec.photoUrl ?? null,
+    is_at_hq: spec.isAtHq,
+    maintenance_until: spec.maintenanceUntil ?? null,
+    maintenance_started_at: spec.maintenanceStartedAt ?? null,
+    maintenance_started_by: spec.maintenanceStartedBy ?? null,
+    maintenance_reason: spec.maintenanceReason ?? null,
+    maintenance_photo_urls: spec.maintenancePhotoUrls ?? [],
+    current_user_id: spec.currentUserId ?? null,
     created_at: new Date(Date.now() - 20 * 86_400_000).toISOString(),
   };
 }

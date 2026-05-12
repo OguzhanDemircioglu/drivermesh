@@ -893,7 +893,7 @@ export const en: TranslationShape = {
     help: 'Help',
     actionSupport: 'Support',
     actionAbout: 'About',
-    aboutHint: 'DriverMesh · V0.1.0 · Drivermesh Ride Integration Coming Soon',
+    aboutHint: 'DriverMesh · V1.0.0 · Drivermesh Ride Integration Coming Soon',
     aboutText: 'Fleet operations app. The customer/passenger app drivermesh ride is integrated in the next phase.',
     language: 'Language',
     languageTr: 'Türkçe',

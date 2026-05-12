@@ -19,8 +19,9 @@ import {
   getFeedbackChannels,
   type FeedbackChannels,
 } from '@/lib/feedback';
-import { deleteFleet } from '@/lib/fleet';
+import { deleteFleet, deleteOwnAccount } from '@/lib/fleet';
 import { demo, isDemoActive } from '@/demo/store';
+import { captureException } from '@/lib/sentry';
 import { theme } from '@/theme';
 import type { UserRole } from '@/lib/database.types';
 
@@ -155,9 +156,10 @@ export default function AccountScreen() {
     });
     if (!finalOk) return;
     try {
-      // TODO(backend): self-delete RPC (delete profile + cascade
-      // notifications/permission_overrides). Şu an demo'da sadece signOut
-      // yapıyoruz; gerçek mod için backend RPC eklenmeli.
+      // Backend: request_account_deletion RPC siler (profiles + notifications +
+      // permission_overrides + vehicles.current_user_id NULL + auth.users).
+      // Demo'da clearDemoStorage yapilir (in-memory state).
+      await deleteOwnAccount();
       toast.success(
         t('account.deleteAccountSuccessTitle'),
         t('account.deleteAccountSuccessText'),
@@ -397,6 +399,18 @@ export default function AccountScreen() {
               label={t('account.actionAbout')}
               hint={t('account.aboutHint')}
               onPress={() => toast.info(t('common.appName'), t('account.aboutText'))}
+              onLongPress={() => {
+                // Sentry pipeline dogrulama easter egg — gizli, 3s basili tut.
+                // captureException uncaught throw degil; app crash etmez.
+                // Stack trace bu satira kadar inecek, source map symbolication
+                // dashboard'ta `app/(app)/account/index.tsx` olarak gorunmeli.
+                captureException(
+                  new Error('DriverMesh Sentry sourcemap test (account longpress)'),
+                  { trigger: 'account_about_longpress', appVersion: '1.0.0' },
+                );
+                toast.info('Sentry', 'Test event gonderildi.');
+              }}
+              delayLongPress={3000}
             />
           </Card>
 
@@ -454,18 +468,24 @@ function Action({
   label,
   hint,
   onPress,
+  onLongPress,
+  delayLongPress,
   danger,
 }: {
   icon: keyof typeof Feather.glyphMap;
   label: string;
   hint?: string;
   onPress: () => void;
+  onLongPress?: () => void;
+  delayLongPress?: number;
   danger?: boolean;
 }) {
   const accent = danger ? theme.colors.danger : theme.colors.accent;
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={delayLongPress}
       style={({ pressed }) => [styles.action, pressed && { opacity: 0.7 }]}
     >
       <View

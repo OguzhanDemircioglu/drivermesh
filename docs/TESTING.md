@@ -303,22 +303,49 @@ ORDER BY start_time DESC LIMIT 5;
 - Tap → deep-link (job, vehicle, maintenance request)
 - "Tümünü okundu işaretle" header buton
 
-### 7.2 Push (Android)
+### 7.2 Push (Android) — send-push v3
+
 **Setup gerekli:**
 - `npx expo run:android` (yeni APK)
-- `FCM_SERVICE_ACCOUNT_JSON` Edge Function secret
+- `FCM_SERVICE_ACCOUNT_JSON` Edge Function secret VEYA Vault'ta `fcm_service_account_json` (fallback)
 - `anon_key` vault secret (cron'dan push için)
 - App ilk açılışta permission pop-up → İzin Ver
 
-**Test:**
-1. Owner cihazıyla pending bir maintenance request oluştur (driver'dan)
+**v3 davranışı (önemli):**
+- Lib path'leri (`jobs.ts`, `maintenance.ts`) send-push'u `persist:false` ile çağırır → notifications insert lib'de, push send-push'ta (duplicate yok).
+- Doğrudan curl / cron / PowerShell çağrıları default `persist:true` → send-push hem DB'ye insert eder hem push gönderir. Her iki yolda da push **VE** app içi bildirim listesinde kayıt görünür.
+
+**Lib path (gerçek prod akış) testi:**
+1. Owner cihazıyla pending bir maintenance request oluştur (driver hesabıyla)
 2. Driver cihazını arka plana al
 3. Owner approve eder
 4. Driver cihazda banner notification (uygulama kapalıyken bile)
+5. Driver uygulamayı açıp Bildirimler ekranını çek (pull-to-refresh) → `maintenance_approved` kayıt listede
+
+**Doğrudan send-push testi (PowerShell):**
+```powershell
+$payload = @{
+  recipient_id = "<profile_uuid>"
+  type = "maintenance_requested"
+  title = "Bakım talebi"
+  body = "34 ABC 123"
+  data = @{ plate = "34 ABC 123"; reason = "Test" }
+} | ConvertTo-Json -Compress
+
+Invoke-RestMethod `
+  -Uri "$env:SUPABASE_URL/functions/v1/send-push" `
+  -Method POST `
+  -Headers @{ "Authorization" = "Bearer $env:ANON"; "Content-Type" = "application/json" } `
+  -Body $payload
+```
+
+Yanıtta `notification_id` döner (v3 insert sonucu); cihazda hem banner gelir hem uygulamadaki bildirim listesinde aynı kayıt görünür.
 
 **Doğrulama:**
 - `SELECT push_token FROM profiles WHERE id='<recipient>'` — token doldu mu?
-- Edge Function logs (`send-push`): "ok: true, sent: 1"
+- Edge Function logs (`send-push`): `{ ok:true, sent:1, notification_id:"..." }`
+- `SELECT * FROM notifications WHERE id='<notification_id>'` — DB'de satır var mı?
+- Telefonda Bildirimler ekranı → pull-to-refresh → kayıt listede
 
 ---
 
@@ -474,8 +501,10 @@ $crop.Save("zoomed.png")
 | Tap çalışmıyor | UI dump ile gerçek bounds al; status bar / nav bar offset'ini hesapla |
 | Maintenance "active_job" hata | Vehicle assigned/in_progress job'u var; UI bunu zaten gizler |
 | Cloudinary "Upload preset must be specified" | Multipart form yanlış encoding (PowerShell test); curl ile multipart düzgün gönder |
-| "FCM_SERVICE_ACCOUNT_JSON missing" | Supabase Edge Function Secret olarak set et |
+| "FCM_SERVICE_ACCOUNT_JSON missing" | Supabase Edge Function Secret olarak set et veya Vault'a `fcm_service_account_json` adıyla ekle (v3 fallback) |
 | Cron'dan push gitmiyor | `vault.create_secret('<anon_key>', 'anon_key')` çalıştırılmalı |
+| Push geldi ama app içi Bildirimler listesi boş | Pull-to-refresh çek; `notifications` tablosunda kayıt var mı SQL ile bak. Lib path → notifications insert lib'de. Cron / doğrudan path → send-push v3 `persist:true` (default) ile insert eder; v2'de bu davranış yoktu. |
+| send-push duplicate notification yaratıyor | Lib path send-push'u `persist:false` ile çağırmalı (jobs.ts, maintenance.ts). v3 default `true` olduğu için unutulursa duplicate olur. |
 
 ---
 
@@ -484,7 +513,8 @@ $crop.Save("zoomed.png")
 - **iOS push:** APNs Authentication Key + Firebase iOS app + GoogleService-Info.plist eklenmedi
 - **Hierarchy Phase 2:** RLS scope filter (manager kendi şoforlerinin verisini görür) henüz uygulanmadı
 - **Driver invite manager picker:** UI'da manager dropdown yok (manager_id NULL kalır)
-- **send-push org-match:** Edge Function caller-recipient org match doğrulamıyor
+- **send-push org-match:** Edge Function caller-recipient org match doğrulamıyor ⚠ release blocker
+- **send-push deep-link tıklama:** v3 FCM data payload'a `notification_id` koyuyor ama app'in deep-link handler'ı henüz bunu yakalayıp ekrana götürmüyor
 - **Multi-device push token:** son login'in device'ı kazanır; çoklu cihaz gönderim yok
 - **Demo'da rol switch:** demo hep owner perspektifinden — driver/manager senaryoları prod'da test
 - **DriverMesh Ride:** müşteri-side app entegrasyonu sonra
@@ -502,7 +532,9 @@ $crop.Save("zoomed.png")
 [ ] Job: create + assign + driver start/complete/fail + cancel + reassign + update
 [ ] Job: driver_request + approve/reject
 [ ] Notifications: tüm tipler render + deep-link
-[ ] Push (prod): permission + token DB'de + send-push end-to-end
+[ ] Push (prod): permission + token DB'de + send-push v3 end-to-end (banner + app içi liste senkron)
+[ ] Push: lib path (jobs/maintenance) tek kayıt yazıyor (duplicate yok)
+[ ] Push: doğrudan send-push çağrısı `notification_id` döndürüyor + DB'de satır var
 [ ] Cron: pg_cron logs status='succeeded'
 [ ] Auto-checkout: maintenance_until past → idle + overdue notif
 [ ] Maps: 5 marker + tap dispatch (vehicle/HQ/pickup/dropoff)
@@ -517,4 +549,4 @@ $crop.Save("zoomed.png")
 
 ---
 
-*Doküman versiyonu: 1.0 — kapsamlı test rehberi.*
+*Doküman versiyonu: 1.1 — send-push v3 (persist + notification_id) ve app içi bildirim listesi entegrasyonu eklendi.*
