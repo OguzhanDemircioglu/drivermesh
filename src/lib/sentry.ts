@@ -15,8 +15,17 @@ const DSN =
   (Constants.expoConfig?.extra?.sentryDsn as string | undefined);
 
 const APP_VERSION = (Constants.expoConfig?.version as string | undefined) ?? '1.0.0';
+// APP_ENV oncelik sirasi:
+//   1. process.env.EXPO_PUBLIC_APP_ENV (Metro build-time inline; .env'de
+//      EXPO_PUBLIC_APP_ENV=production set edilmeli — degisikten sonra
+//      Metro bundle cache invalidate icin source file touch gerekiyor.)
+//   2. Constants.expoConfig.extra.appEnv (app.json `extra.appEnv` field —
+//      runtime fallback, bazen Hermes bundle'da expoConfig undefined olabilir)
+//   3. __DEV__ fallback (Hermes release'de bazen yine true; iki katmanli
+//      bypass icin yukaridaki ikiden biri set edilmeli)
 const APP_ENV =
   process.env.EXPO_PUBLIC_APP_ENV ??
+  (Constants.expoConfig?.extra?.appEnv as string | undefined) ??
   (__DEV__ ? 'development' : 'production');
 
 let _initialized = false;
@@ -31,16 +40,23 @@ export function initSentry(): void {
     dsn: DSN,
     enableAutoSessionTracking: true,
     sessionTrackingIntervalMillis: 30_000,
-    // Performans: production'da %20, dev'de %100
-    tracesSampleRate: __DEV__ ? 1.0 : 0.2,
-    // Replay (UI session recording) — tum kullanicilar icin pahali, %10
+    // Performans trace: production'da %5 (free plan 10K transactions/month
+    // limitini ~600 daily active user'a kadar tasir). Dev'de %100.
+    tracesSampleRate: __DEV__ ? 1.0 : 0.05,
+    // Replay (UI session recording) — sadece error oldugunda, %50.
+    // Free plan 50 replay/month; %50 sample rate ~100 crash/month'a kadar
+    // tasir. Crash rate dusukse %100'e cikarilabilir.
     replaysSessionSampleRate: 0,
-    replaysOnErrorSampleRate: __DEV__ ? 0 : 1.0,
+    replaysOnErrorSampleRate: __DEV__ ? 0 : 0.5,
     enableNativeCrashHandling: true,
     enableNativeNagger: false, // dev'de annoying Sentry uyarisi kapat
     debug: __DEV__,
     release: `drivermesh@${APP_VERSION}`,
     environment: APP_ENV,
+    // KVKK PII minimization — Sentry default'unu kapat. Biz setSentryUser
+    // ile id+email manuel set ediyoruz (privacy policy'de belirtildi);
+    // ekstra IP / user-agent / device-fingerprint toplama yok.
+    sendDefaultPii: false,
     beforeSend(event) {
       // Demo modda gonderilen event'leri tag'le
       try {
