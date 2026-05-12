@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0A0E1F" />
+<title>DriverMesh — Patron, Yönetici ve Şoför tek ekranda</title>
+<meta name="description" content="DriverMesh — küçük-orta ölçekli filo operasyonları için. Patron, yönetici ve şoförler tek mobil uygulamada: araç envanteri, iş atama, bakım yönetimi, canlı filo haritası." />
+
+<meta property="og:title" content="DriverMesh" />
+<meta property="og:description" content="Patron, Yönetici ve Şoför tek ekranda buluşur." />
+<meta property="og:image" content="/assets/hero-tr.jpg" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://drivermesh.com" />
+
+<link rel="icon" type="image/png" href="/assets/logo.png" />
+<link rel="apple-touch-icon" href="/assets/logo.png" />
+
+<style>
+  :root {
+    --bg: #0A0E1F;
+    --bg-elev: #131732;
+    --surface: #1A1E40;
+    --border: rgba(255, 255, 255, 0.08);
+    --text: #F4F5FA;
+    --text-muted: #A6A9C2;
+    --text-dim: #6B6F8E;
+    --accent: #FF7A1A;
+    --accent-glow: #FF7A1A66;
+    --mesh: #7C3AED;
+    --success: #22C55E;
+    --radius-sm: 10px;
+    --radius-md: 16px;
+    --radius-lg: 24px;
+    --shadow-glow: 0 8px 32px rgba(255, 122, 26, 0.25);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Noto Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+    min-height: 100vh;
+    position: relative;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% -10%, rgba(124, 58, 237, 0.25), transparent 50%),
+      radial-gradient(ellipse at 90% 30%, rgba(255, 122, 26, 0.12), transparent 50%),
+      radial-gradient(ellipse at 50% 110%, rgba(124, 58, 237, 0.18), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* mesh net deseni — background SVG pattern */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 25% 25%, rgba(124, 58, 237, 0.4) 1px, transparent 2px),
+      radial-gradient(circle at 75% 75%, rgba(124, 58, 237, 0.3) 1px, transparent 2px),
+      radial-gradient(circle at 50% 50%, rgba(255, 122, 26, 0.2) 1px, transparent 2px);
+    background-size: 80px 80px, 100px 100px, 60px 60px;
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Layout container */
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* ===== HEADER ===== */
+  header {
+    padding: 20px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: rgba(10, 14, 31, 0.7);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+  .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 18px; }
+  .brand img { width: 36px; height: 36px; border-radius: 8px; }
+  .brand-name b { background: linear-gradient(135deg, #FF7A1A, #C084FC); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .nav-links { display: flex; gap: 28px; }
+  .nav-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .lang-pill {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px;
+    gap: 2px;
+  }
+  .lang-pill button {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .lang-pill button.active {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    padding: 80px 0 120px;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 60px;
+    align-items: center;
+  }
+  .hero-text h1 {
+    font-size: clamp(40px, 6vw, 64px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 24px;
+  }
+  .hero-text h1 .gradient {
+    background: linear-gradient(135deg, #FF7A1A 0%, #C084FC 50%, #7C3AED 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero-text p {
+    font-size: 18px;
+    color: var(--text-muted);
+    margin-bottom: 36px;
+    max-width: 540px;
+  }
+  .cta-row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 15px;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: var(--shadow-glow);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(255, 122, 26, 0.4); }
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    border-color: var(--border);
+  }
+  .btn-secondary:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); }
+  .btn-disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .hero-image {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .phone-frame {
+    width: 280px;
+    height: 580px;
+    background: #000;
+    border-radius: 38px;
+    padding: 8px;
+    box-shadow:
+      0 24px 80px rgba(124, 58, 237, 0.4),
+      0 0 0 2px rgba(255, 255, 255, 0.08),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    position: relative;
+  }
+  .phone-frame::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 22px;
+    background: #000;
+    border-radius: 0 0 14px 14px;
+    z-index: 2;
+  }
+  .phone-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 32px;
+    display: block;
+  }
+
+  /* ===== SECTION COMMON ===== */
+  section { padding: 80px 0; position: relative; z-index: 1; }
+  .section-title {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+  .section-title small {
+    display: inline-block;
+    color: var(--accent);
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  .section-title h2 {
+    font-size: clamp(32px, 4vw, 44px);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .section-title p {
+    color: var(--text-muted);
+    font-size: 17px;
+    margin-top: 12px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ===== FEATURES ===== */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+  }
+  .feature-card {
+    background: linear-gradient(180deg, var(--bg-elev), rgba(19, 23, 50, 0.6));
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 28px;
+    transition: all 0.3s;
+  }
+  .feature-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(255, 122, 26, 0.3);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+  }
+  .feature-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(255, 122, 26, 0.12);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 18px;
+  }
+  .feature-card h3 { font-size: 19px; font-weight: 700; margin-bottom: 10px; }
+  .feature-card p { color: var(--text-muted); font-size: 14.5px; line-height: 1.6; }
+
+  /* ===== HOW IT WORKS ===== */
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 32px;
+    margin-top: 56px;
+  }
+  .step {
+    text-align: center;
+    position: relative;
+  }
+  .step-num {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FF7A1A, #7C3AED);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 18px;
+    box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
+  }
+  .step h3 { font-size: 20px; margin-bottom: 8px; }
+  .step p { color: var(--text-muted); font-size: 15px; }
+
+  /* ===== CTA FINAL ===== */
+  .cta-final {
+    background: linear-gradient(135deg, rgba(255, 122, 26, 0.08), rgba(124, 58, 237, 0.12));
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 64px 32px;
+    text-align: center;
+    margin: 80px 0;
+  }
+  .cta-final h2 {
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 16px;
+  }
+  .cta-final p {
+    color: var(--text-muted);
+    font-size: 17px;
+    margin-bottom: 32px;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .store-row {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .store-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 22px;
+    background: #000;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    text-decoration: none;
+    color: #fff;
+    transition: all 0.2s;
+  }
+  .store-badge:hover { border-color: rgba(255, 255, 255, 0.3); transform: translateY(-2px); }
+  .store-badge.coming-soon { opacity: 0.55; cursor: not-allowed; }
+  .store-badge svg { width: 28px; height: 28px; }
+  .store-badge .meta { display: flex; flex-direction: column; align-items: flex-start; }
+  .store-badge .meta-small { font-size: 11px; color: #999; line-height: 1; }
+  .store-badge .meta-big { font-size: 17px; font-weight: 600; line-height: 1.2; }
+
+  /* ===== LIVE MAP SHOWCASE (Phone mockup + video) ===== */
+  .map-showcase {
+    display: grid;
+    grid-template-columns: minmax(280px, 360px) 1fr;
+    gap: 64px;
+    align-items: center;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  .map-phone { display: flex; justify-content: center; }
+  .phone-frame-lg {
+    width: 320px;
+    height: 700px;
+    box-shadow:
+      0 32px 96px rgba(124, 58, 237, 0.35),
+      0 0 0 2px rgba(255, 255, 255, 0.08),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+  .map-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 32px;
+    display: block;
+    background: #0D1228;
+  }
+
+  /* Map bullets — sag tarafta feature aciklamalari */
+  .map-bullets {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .map-bullets li {
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .bullet-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-top: 7px;
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.04);
+  }
+  .map-bullets strong {
+    display: block;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .map-bullets span {
+    display: block;
+    font-size: 14.5px;
+    color: var(--text-muted);
+    line-height: 1.55;
+  }
+
+  @media (max-width: 860px) {
+    .map-showcase {
+      grid-template-columns: 1fr;
+      gap: 40px;
+      max-width: 480px;
+    }
+    .phone-frame-lg { width: 260px; height: 560px; }
+    .map-bullets { gap: 18px; }
+  }
+
+  /* ===== CONTACT FORM ===== */
+  .contact-form {
+    max-width: 640px;
+    margin: 0 auto;
+    background: linear-gradient(180deg, var(--bg-elev), rgba(19, 23, 50, 0.6));
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .field label {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+    letter-spacing: 0.2px;
+  }
+  .field input,
+  .field textarea {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 12px 14px;
+    font-size: 15px;
+    font-family: inherit;
+    transition: border-color 0.2s, background 0.2s;
+    width: 100%;
+    resize: vertical;
+  }
+  .field input:focus,
+  .field textarea:focus {
+    outline: none;
+    border-color: rgba(255, 122, 26, 0.6);
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .field input::placeholder,
+  .field textarea::placeholder { color: var(--text-dim); }
+  .field input.error,
+  .field textarea.error {
+    border-color: #EF4444;
+    background: rgba(239, 68, 68, 0.05);
+  }
+  /* Honeypot — gozden gizle ama display:none yapma (bazi bot'lar bunu detect eder) */
+  .hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  .form-submit-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .form-status {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin: 0;
+  }
+  .form-status.success { color: var(--success); }
+  .form-status.error { color: #EF4444; }
+  .cf-spinner svg { animation: spin 0.9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  button#cf-submit:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  @media (max-width: 600px) {
+    .form-row { grid-template-columns: 1fr; }
+    .contact-form { padding: 24px 20px; }
+  }
+
+  /* ===== FOOTER ===== */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 40px 0 32px;
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+  .footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--accent); }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; padding: 56px 0 80px; gap: 48px; text-align: center; }
+    .hero-text p { margin-left: auto; margin-right: auto; }
+    .cta-row { justify-content: center; }
+    .nav-links { display: none; }
+    .phone-frame { width: 240px; height: 500px; }
+    section { padding: 56px 0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container nav">
+    <a href="#" class="brand">
+      <img src="/assets/logo.png" alt="DriverMesh" />
+      <span class="brand-name">Driver<b>Mesh</b></span>
+    </a>
+    <nav class="nav-links">
+      <a href="#features" data-tr="Özellikler" data-en="Features">Özellikler</a>
+      <a href="#how" data-tr="Nasıl çalışır" data-en="How it works">Nasıl çalışır</a>
+      <a href="#contact" data-tr="İletişim" data-en="Contact">İletişim</a>
+    </nav>
+    <div class="lang-pill" role="group" aria-label="Dil seçimi">
+      <button data-lang="tr" class="active">TR</button>
+      <button data-lang="en">EN</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- HERO -->
+  <section class="hero container" style="padding-top: 56px;">
+    <div class="hero-text">
+      <h1>
+        <span data-tr="Patron, Yönetici ve Şoför" data-en="Boss, Manager, and Driver">Patron, Yönetici ve Şoför</span><br>
+        <span class="gradient" data-tr="tek ekranda buluşur." data-en="all on one screen.">tek ekranda buluşur.</span>
+      </h1>
+      <p data-tr="DriverMesh, küçük-orta ölçekli filolar için tek mobil uygulamada araç envanteri, iş atama, bakım yönetimi ve canlı filo haritası sağlar. Türkiye'de şehir-içi lojistik, kurye ve nakliye operasyonları için tasarlandı." data-en="DriverMesh gives small-to-medium fleets a single mobile app for vehicle inventory, job dispatch, maintenance management and live fleet map. Designed for urban logistics, courier and freight operations.">
+        DriverMesh, küçük-orta ölçekli filolar için tek mobil uygulamada araç envanteri, iş atama, bakım yönetimi ve canlı filo haritası sağlar. Türkiye'de şehir-içi lojistik, kurye ve nakliye operasyonları için tasarlandı.
+      </p>
+      <div class="cta-row">
+        <a href="#download" class="btn btn-primary">
+          <span data-tr="Erken Erişim" data-en="Early Access">Erken Erişim</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </a>
+        <a href="#features" class="btn btn-secondary">
+          <span data-tr="Özellikleri Gör" data-en="See Features">Özellikleri Gör</span>
+        </a>
+      </div>
+    </div>
+    <div class="hero-image">
+      <div class="phone-frame">
+        <img id="hero-img" src="/assets/hero-tr.jpg" alt="DriverMesh app screenshot" />
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="container">
+      <div class="section-title">
+        <small data-tr="Özellikler" data-en="Features">Özellikler</small>
+        <h2 data-tr="Filonu yönetmek için gereken her şey" data-en="Everything you need to run a fleet">Filonu yönetmek için gereken her şey</h2>
+        <p data-tr="Operasyonu basitleştirir, görünürlüğü artırır." data-en="Simplifies operations, increases visibility.">Operasyonu basitleştirir, görünürlüğü artırır.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🚐</div>
+          <h3 data-tr="Filo Envanteri" data-en="Fleet Inventory">Filo Envanteri</h3>
+          <p data-tr="Plakalı araç kartları, foto, durum (aktif/boşta/bakımda) ve şu an kullanan kişi tek bakışta." data-en="Plate-tagged vehicle cards with photo, status (active/idle/maintenance) and current user — all at a glance.">Plakalı araç kartları, foto, durum (aktif/boşta/bakımda) ve şu an kullanan kişi tek bakışta.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🗺️</div>
+          <h3 data-tr="Canlı Filo Haritası" data-en="Live Fleet Map">Canlı Filo Haritası</h3>
+          <p data-tr="Tüm araçlar haritada plakalı pill'lerle görünür. Pickup-dropoff rotaları, HQ pini, vehicle renk kodlu polyline'lar." data-en="All vehicles on a map with plate pills. Pickup-dropoff routes, HQ pin, color-coded vehicle polylines.">Tüm araçlar haritada plakalı pill'lerle görünür. Pickup-dropoff rotaları, HQ pini, vehicle renk kodlu polyline'lar.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔧</div>
+          <h3 data-tr="Bakım Yönetimi" data-en="Maintenance Management">Bakım Yönetimi</h3>
+          <p data-tr="Şoför bakım talebi açar, yönetici onaylar veya reddeder. Otomatik süre dolma + foto kanıtlama + 5 farklı durum." data-en="Drivers raise maintenance requests, managers approve or reject. Auto-checkout + photo evidence + 5 distinct statuses.">Şoför bakım talebi açar, yönetici onaylar veya reddeder. Otomatik süre dolma + foto kanıtlama + 5 farklı durum.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📨</div>
+          <h3 data-tr="Akıllı Bildirimler" data-en="Smart Notifications">Akıllı Bildirimler</h3>
+          <p data-tr="İş ataması, bakım onayı, müşteri geri bildirimi — uygulama açık değilken bile push olarak. Email ve Telegram entegrasyonu." data-en="Job assignments, maintenance approvals, customer feedback — push notifications even when app is closed. Email and Telegram integrations.">İş ataması, bakım onayı, müşteri geri bildirimi — uygulama açık değilken bile push olarak. Email ve Telegram entegrasyonu.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">👥</div>
+          <h3 data-tr="Hiyerarşi" data-en="Hierarchy">Hiyerarşi</h3>
+          <p data-tr="Patron → Yönetici → Şoför yapısı. Owner yetkileri verir, manager kendi takımını yönetir, driver işleri kabul eder." data-en="Owner → Manager → Driver hierarchy. Owner grants permissions, manager runs their team, driver accepts jobs.">Patron → Yönetici → Şoför yapısı. Owner yetkileri verir, manager kendi takımını yönetir, driver işleri kabul eder.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <h3 data-tr="İş Lifecycle'i" data-en="Job Lifecycle">İş Lifecycle'i</h3>
+          <p data-tr="Open → Assigned → In-progress → Completed/Failed. Şoför self-request açabilir, owner approve/reject ile yönlendirir." data-en="Open → Assigned → In-progress → Completed/Failed. Drivers can self-request, owners approve/reject and dispatch.">Open → Assigned → In-progress → Completed/Failed. Şoför self-request açabilir, owner approve/reject ile yönlendirir.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIVE MAP SHOWCASE -->
+  <section id="live-map">
+    <div class="container">
+      <div class="section-title">
+        <small data-tr="Canlı Harita" data-en="Live Map">Canlı Harita</small>
+        <h2 data-tr="Filonu haritada gerçek zamanlı izle" data-en="Track your fleet on the map in real time">Filonu haritada gerçek zamanlı izle</h2>
+        <p data-tr="Plakalı pill'ler, pickup→dropoff rotaları, üs pini. Tek bakışta hangi araç nerede." data-en="Plate pills, pickup→dropoff routes, HQ pin. See every vehicle at a glance.">Plakalı pill'ler, pickup→dropoff rotaları, üs pini. Tek bakışta hangi araç nerede.</p>
+      </div>
+
+      <div class="map-showcase">
+        <!-- Uygulamadaki gercek fleet-map ekrani — telefondan ekran kaydi, autoplay loop.
+             Yan tarafa kısa bir feature aciklamasi. -->
+        <div class="map-phone">
+          <div class="phone-frame phone-frame-lg">
+            <video class="map-video" autoplay muted loop playsinline preload="metadata"
+                   poster="/assets/fleet-map-static.png" aria-label="DriverMesh fleet map demo">
+              <source src="/assets/fleet-map.mp4" type="video/mp4" />
+              <img src="/assets/fleet-map-static.png" alt="DriverMesh Fleet Map" />
+            </video>
+          </div>
+        </div>
+        <div class="map-copy">
+          <ul class="map-bullets">
+            <li>
+              <span class="bullet-dot" style="background:#FF7A1A"></span>
+              <div>
+                <strong data-tr="Plakalı pill'ler" data-en="Plate pills">Plakalı pill'ler</strong>
+                <span data-tr="Her araç haritada plaka ve atanma durumu ile" data-en="Each vehicle on the map with plate and assignment status">Her araç haritada plaka ve atanma durumu ile</span>
+              </div>
+            </li>
+            <li>
+              <span class="bullet-dot" style="background:#5B7FFF"></span>
+              <div>
+                <strong data-tr="Pickup → Dropoff rotaları" data-en="Pickup → Dropoff routes">Pickup → Dropoff rotaları</strong>
+                <span data-tr="Aktif işin başlangıç-bitiş noktaları, vehicle renginde polyline" data-en="Active job start-end points, polyline in vehicle color">Aktif işin başlangıç-bitiş noktaları, vehicle renginde polyline</span>
+              </div>
+            </li>
+            <li>
+              <span class="bullet-dot" style="background:#C4B5FD"></span>
+              <div>
+                <strong data-tr="HQ pini" data-en="HQ pin">HQ pini</strong>
+                <span data-tr="Filo üssünün sabit konumu, ekranın en üst öncelikli odağı" data-en="Fleet HQ location, top-priority anchor on the map">Filo üssünün sabit konumu, ekranın en üst öncelikli odağı</span>
+              </div>
+            </li>
+            <li>
+              <span class="bullet-dot" style="background:#22C55E"></span>
+              <div>
+                <strong data-tr="Tek dokunuş erişim" data-en="One-tap access">Tek dokunuş erişim</strong>
+                <span data-tr="Pill'e dokun → araç detayı, pin'e dokun → sistem haritasına yön tarifi" data-en="Tap pill → vehicle detail, tap pin → system maps directions">Pill'e dokun → araç detayı, pin'e dokun → sistem haritasına yön tarifi</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how">
+    <div class="container">
+      <div class="section-title">
+        <small data-tr="Nasıl Çalışır" data-en="How It Works">Nasıl Çalışır</small>
+        <h2 data-tr="3 adımda filonu kur" data-en="Set up your fleet in 3 steps">3 adımda filonu kur</h2>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h3 data-tr="Filo Başlat" data-en="Start Fleet">Filo Başlat</h3>
+          <p data-tr="Şirket adınla bir hesap aç, HQ konumunu seç. Owner olarak filonun sahibisin." data-en="Open an account with your company name, pick HQ location. You're the owner.">Şirket adınla bir hesap aç, HQ konumunu seç. Owner olarak filonun sahibisin.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h3 data-tr="Ekibini Davet Et" data-en="Invite Your Team">Ekibini Davet Et</h3>
+          <p data-tr="Yöneticiler ve şoförlere davet kodu gönder. Hiyerarşi otomatik kurulur — manager altında driver." data-en="Send invite codes to managers and drivers. Hierarchy is set up automatically — drivers under their manager.">Yöneticiler ve şoförlere davet kodu gönder. Hiyerarşi otomatik kurulur — manager altında driver.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <h3 data-tr="Operasyona Başla" data-en="Start Operating">Operasyona Başla</h3>
+          <p data-tr="Araçları ekle, işleri ata, haritada izle. Bakım, bildirim ve raporlar otomatik akışa girer." data-en="Add vehicles, dispatch jobs, watch the map. Maintenance, notifications and reports flow automatically.">Araçları ekle, işleri ata, haritada izle. Bakım, bildirim ve raporlar otomatik akışa girer.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA FINAL -->
+  <section id="download">
+    <div class="container">
+      <div class="cta-final">
+        <h2 data-tr="Yakında mağazalarda." data-en="Coming soon to stores.">Yakında mağazalarda.</h2>
+        <p data-tr="Lansman gününde haberin olması için bizimle iletişime geç." data-en="Get in touch with us to be notified on launch day.">Lansman gününde haberin olması için bizimle iletişime geç.</p>
+        <div class="store-row" style="margin-top: 24px;">
+          <span class="store-badge coming-soon" aria-disabled="true" title="Coming soon">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            <div class="meta">
+              <span class="meta-small" data-tr="Yakında" data-en="Coming Soon">Yakında</span>
+              <span class="meta-big">App Store</span>
+            </div>
+          </span>
+          <span class="store-badge coming-soon" aria-disabled="true" title="Coming soon">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.609 22.186a.996.996 0 0 1-.609-.92V2.734a1 1 0 0 1 .609-.92zM14.499 12.706l2.706-1.561 1.974 1.139c1.165.673 1.165 2.36 0 3.033l-1.974 1.139-2.706-1.561zM5.864 2.658L15.499 8.21l-2.706 1.561L5.864 2.658zM5.864 21.342l6.929-7.114 2.706 1.561-9.635 5.553z"/></svg>
+            <div class="meta">
+              <span class="meta-small" data-tr="Yakında" data-en="Coming Soon">Yakında</span>
+              <span class="meta-big">Google Play</span>
+            </div>
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT FORM -->
+  <section id="contact">
+    <div class="container">
+      <div class="section-title">
+        <small data-tr="İletişim" data-en="Contact">İletişim</small>
+        <h2 data-tr="Bizimle iletişime geç" data-en="Get in touch">Bizimle iletişime geç</h2>
+        <p data-tr="Sorularını, talep ve geri bildirimini yaz, en kısa zamanda dönelim." data-en="Send us your questions, requests or feedback — we'll get back to you shortly.">Sorularını, talep ve geri bildirimini yaz, en kısa zamanda dönelim.</p>
+      </div>
+      <form id="contact-form" class="contact-form" novalidate>
+        <div class="form-row">
+          <div class="field">
+            <label for="cf-name" data-tr="Ad Soyad" data-en="Full Name">Ad Soyad</label>
+            <input id="cf-name" name="name" type="text" required autocomplete="name" maxlength="120" />
+          </div>
+          <div class="field">
+            <label for="cf-email" data-tr="E-posta" data-en="Email">E-posta</label>
+            <input id="cf-email" name="email" type="email" required autocomplete="email" maxlength="120" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="cf-subject" data-tr="Konu (opsiyonel)" data-en="Subject (optional)">Konu (opsiyonel)</label>
+          <input id="cf-subject" name="subject" type="text" autocomplete="off" maxlength="160" />
+        </div>
+        <div class="field">
+          <label for="cf-message" data-tr="Mesaj" data-en="Message">Mesaj</label>
+          <textarea id="cf-message" name="message" rows="5" required maxlength="2000"></textarea>
+        </div>
+        <!-- Honeypot — botlar genelde gizli "website" alanini doldurur, biz reject ederiz -->
+        <div class="hp" aria-hidden="true">
+          <label>Website (do not fill)</label>
+          <input type="text" name="website" tabindex="-1" autocomplete="off" />
+        </div>
+        <div class="form-submit-row">
+          <button id="cf-submit" type="submit" class="btn btn-primary">
+            <span class="cf-label" data-tr="Gönder" data-en="Send">Gönder</span>
+            <span class="cf-spinner" hidden>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
+                <path d="M22 12a10 10 0 0 1-10 10" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <svg class="cf-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+          </button>
+          <p id="cf-status" class="form-status" role="status" aria-live="polite"></p>
+        </div>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container footer-row">
+    <span>© 2026 DriverMesh — <span data-tr="Tüm hakları saklıdır." data-en="All rights reserved.">Tüm hakları saklıdır.</span></span>
+    <div class="footer-links">
+      <a href="/privacy.html" data-tr="Gizlilik" data-en="Privacy">Gizlilik</a>
+      <a href="/terms.html" data-tr="Kullanım" data-en="Terms">Kullanım</a>
+      <a href="mailto:hello@drivermesh.com">hello@drivermesh.com</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    const STORAGE_KEY = 'drivermesh.web.lang';
+    const heroImg = document.getElementById('hero-img');
+    const buttons = document.querySelectorAll('.lang-pill button');
+    const html = document.documentElement;
+
+    function applyLang(lang) {
+      const isEN = lang === 'en';
+      html.lang = isEN ? 'en' : 'tr';
+      heroImg.src = isEN ? '/assets/hero-en.jpg' : '/assets/hero-tr.jpg';
+      document.querySelectorAll('[data-tr]').forEach((el) => {
+        const text = isEN ? el.getAttribute('data-en') : el.getAttribute('data-tr');
+        if (text != null) el.textContent = text;
+      });
+      buttons.forEach((b) => b.classList.toggle('active', b.dataset.lang === lang));
+      try { localStorage.setItem(STORAGE_KEY, lang); } catch {}
+    }
+
+    // Initial: localStorage > browser language > tr
+    const stored = (() => { try { return localStorage.getItem(STORAGE_KEY); } catch { return null; } })();
+    const initial = stored || (navigator.language && navigator.language.startsWith('en') ? 'en' : 'tr');
+    applyLang(initial);
+
+    buttons.forEach((b) => b.addEventListener('click', () => applyLang(b.dataset.lang)));
+  })();
+
+
+  // ===== Contact form: POST to /api/contact (Cloudflare Pages Function → Telegram) =====
+  (function () {
+    const form = document.getElementById('contact-form');
+    if (!form) return;
+    const submitBtn = document.getElementById('cf-submit');
+    const status = document.getElementById('cf-status');
+    const spinner = submitBtn.querySelector('.cf-spinner');
+    const label = submitBtn.querySelector('.cf-label');
+    const arrow = submitBtn.querySelector('.cf-arrow');
+
+    const STR = {
+      tr: {
+        sending: 'Gönderiliyor…',
+        success: 'Teşekkürler! Mesajın bize ulaştı, en kısa zamanda dönüş yapacağız.',
+        errorGeneric: 'Bir sorun oluştu, lütfen tekrar dene.',
+        errorRequired: 'Lütfen zorunlu alanları doldur.',
+        errorEmail: 'Geçerli bir e-posta adresi gir.',
+        errorRate: 'Çok sık deneme — biraz sonra tekrar dene.',
+      },
+      en: {
+        sending: 'Sending…',
+        success: "Thanks! Your message has been received, we'll get back to you shortly.",
+        errorGeneric: 'Something went wrong, please try again.',
+        errorRequired: 'Please fill in the required fields.',
+        errorEmail: 'Please enter a valid email address.',
+        errorRate: 'Too many attempts — try again shortly.',
+      },
+    };
+    const t = (key) => (STR[document.documentElement.lang === 'en' ? 'en' : 'tr'] || STR.tr)[key];
+
+    function setStatus(text, kind) {
+      status.textContent = text;
+      status.classList.remove('success', 'error');
+      if (kind) status.classList.add(kind);
+    }
+    function setBusy(busy) {
+      submitBtn.disabled = busy;
+      spinner.hidden = !busy;
+      arrow.style.display = busy ? 'none' : '';
+      label.textContent = busy ? t('sending') : (document.documentElement.lang === 'en' ? 'Send' : 'Gönder');
+    }
+    function clearErrors() {
+      form.querySelectorAll('.error').forEach((el) => el.classList.remove('error'));
+    }
+    function markError(name) {
+      const el = form.querySelector(`[name="${name}"]`);
+      if (el) el.classList.add('error');
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearErrors();
+      setStatus('', null);
+
+      const fd = new FormData(form);
+      const name = String(fd.get('name') || '').trim();
+      const email = String(fd.get('email') || '').trim();
+      const subject = String(fd.get('subject') || '').trim();
+      const message = String(fd.get('message') || '').trim();
+      const website = String(fd.get('website') || '').trim(); // honeypot
+
+      // Honeypot fired: pretend success (don't tell bot)
+      if (website) {
+        form.reset();
+        setStatus(t('success'), 'success');
+        return;
+      }
+
+      const missing = [];
+      if (!name) missing.push('name');
+      if (!email) missing.push('email');
+      if (!message) missing.push('message');
+      if (missing.length) {
+        missing.forEach(markError);
+        setStatus(t('errorRequired'), 'error');
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        markError('email');
+        setStatus(t('errorEmail'), 'error');
+        return;
+      }
+
+      setBusy(true);
+      try {
+        const res = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name, email, subject, message,
+            lang: document.documentElement.lang,
+            page: location.href,
+            ua: navigator.userAgent,
+          }),
+        });
+        if (res.status === 429) {
+          setStatus(t('errorRate'), 'error');
+          return;
+        }
+        if (!res.ok) throw new Error('http_' + res.status);
+        form.reset();
+        setStatus(t('success'), 'success');
+      } catch (err) {
+        console.warn('[contact] submit failed', err);
+        setStatus(t('errorGeneric'), 'error');
+      } finally {
+        setBusy(false);
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>

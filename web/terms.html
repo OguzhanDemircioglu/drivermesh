@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0A0E1F" />
+<title>Kullanım Koşulları — DriverMesh</title>
+<meta name="description" content="DriverMesh — Kullanım Koşulları (Terms of Service)" />
+<link rel="icon" type="image/png" href="/assets/logo.png" />
+
+<style>
+  :root { --bg:#0A0E1F; --bg-elev:#131732; --text:#F4F5FA; --text-muted:#A6A9C2; --text-dim:#6B6F8E; --accent:#FF7A1A; --border:rgba(255,255,255,0.08); }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Noto Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% -10%, rgba(124,58,237,0.18), transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .container { max-width: 760px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  header {
+    padding: 18px 0;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,14,31,0.7);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .nav { max-width: 1180px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; text-decoration: none; color: var(--text); }
+  .brand img { width: 32px; height: 32px; border-radius: 7px; }
+  .brand-name b { background: linear-gradient(135deg, #FF7A1A, #C084FC); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .nav-right { display: flex; align-items: center; gap: 16px; }
+  .back-link { color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color .2s; }
+  .back-link:hover { color: var(--text); }
+  .lang-pill { display: flex; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 999px; padding: 3px; gap: 2px; }
+  .lang-pill button { background: transparent; border: none; color: var(--text-muted); padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .lang-pill button.active { background: var(--accent); color: #fff; }
+
+  main { padding: 56px 0 96px; }
+  h1 { font-size: clamp(32px, 4vw, 44px); font-weight: 800; letter-spacing: -0.5px; margin-bottom: 10px; line-height: 1.15; }
+  .meta { color: var(--text-dim); font-size: 14px; margin-bottom: 40px; }
+  .lead { color: var(--text-muted); font-size: 17px; margin-bottom: 36px; padding: 18px 20px; background: var(--bg-elev); border-left: 3px solid var(--accent); border-radius: 8px; }
+  h2 { font-size: 22px; font-weight: 700; margin: 40px 0 16px; color: var(--text); letter-spacing: -0.2px; }
+  h3 { font-size: 17px; font-weight: 600; margin: 24px 0 10px; color: var(--text); }
+  p { color: var(--text-muted); margin-bottom: 14px; font-size: 15.5px; }
+  ul { margin: 8px 0 18px 20px; }
+  li { color: var(--text-muted); margin-bottom: 8px; font-size: 15.5px; }
+  strong { color: var(--text); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  footer { border-top: 1px solid var(--border); padding: 28px 0; color: var(--text-dim); font-size: 14px; }
+  footer .container { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+  footer a { color: var(--text-muted); text-decoration: none; margin-right: 24px; }
+  footer a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <a href="/" class="brand">
+      <img src="/assets/logo.png" alt="DriverMesh" />
+      <span class="brand-name">Driver<b>Mesh</b></span>
+    </a>
+    <div class="nav-right">
+      <a href="/" class="back-link" data-tr="← Ana sayfa" data-en="← Home">← Ana sayfa</a>
+      <div class="lang-pill" role="group">
+        <button data-lang="tr" class="active">TR</button>
+        <button data-lang="en">EN</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <h1 data-tr="Kullanım Koşulları" data-en="Terms of Service">Kullanım Koşulları</h1>
+  <p class="meta">
+    <span data-tr="Son güncelleme:" data-en="Last updated:">Son güncelleme:</span>
+    12.05.2026
+  </p>
+  <div class="lead" data-tr="DriverMesh hizmetini kullanarak bu Kullanım Koşullarını kabul etmiş olursunuz. Lütfen dikkatle okuyun." data-en="By using DriverMesh you agree to these Terms of Service. Please read carefully.">
+    DriverMesh hizmetini kullanarak bu Kullanım Koşullarını kabul etmiş olursunuz. Lütfen dikkatle okuyun.
+  </div>
+
+  <!-- TR İçerik -->
+  <section data-lang-content="tr">
+    <h2>1. Hizmet Tanımı</h2>
+    <p>DriverMesh ("Hizmet"), küçük-orta ölçekli filo operasyonları için mobil uygulama ve ilgili web sitesidir. Filo sahipleri (Patron), yöneticiler ve şoförler için araç envanteri, iş atama, bakım takibi ve canlı filo haritası sunar.</p>
+
+    <h2>2. Hesap Oluşturma</h2>
+    <ul>
+      <li>Hesap oluşturmak için 16 yaşında veya üzerinde olmanız gerekir.</li>
+      <li>Sağladığınız bilgilerin doğru, güncel ve eksiksiz olduğunu beyan edersiniz.</li>
+      <li>Hesabınızın güvenliğinden (şifre, cihaz erişimi) siz sorumlusunuz.</li>
+      <li>Hesabınız aracılığıyla yapılan tüm işlemlerden siz sorumlusunuz.</li>
+    </ul>
+
+    <h2>3. Kullanıcı Yükümlülükleri</h2>
+    <p>DriverMesh'i kullanırken aşağıdaki kurallara uymayı kabul edersiniz:</p>
+    <ul>
+      <li>Yasalara, yönetmeliklere ve genel ahlak kurallarına uymak</li>
+      <li>3. tarafların haklarına (telif, gizlilik, ticari marka vb.) saygı duymak</li>
+      <li>Hizmeti spam, dolandırıcılık, kötü amaçlı yazılım, taciz veya yasadışı eylem için kullanmamak</li>
+      <li>Otomatik bot, scraper veya benzeri araçlarla Hizmete erişmemek (resmi API'ler hariç)</li>
+      <li>Diğer kullanıcıların verilerine yetkisiz erişim girişiminde bulunmamak</li>
+      <li>Şirket ve müşteri verilerinizin gizliliğinden, paylaştığınız şoför ve yönetici hesaplarının kullanımından siz sorumlusunuz</li>
+    </ul>
+
+    <h2>4. Ücretler ve Ödeme</h2>
+    <p>DriverMesh şu aşamada erken erişim/beta dönemindedir. Hizmet ücretlendirme modeli ileride duyurulacaktır. Erken erişim kullanıcıları için özel koşullar uygulanabilir.</p>
+
+    <h2>5. Hizmet Düzeyi ve Kesintiler</h2>
+    <ul>
+      <li>Hizmetin sürekli kullanılabilir olması için makul çaba gösteririz, ancak %100 uptime garanti edemeyiz.</li>
+      <li>Bakım, güncelleme veya beklenmedik kesintiler olabilir.</li>
+      <li>Önemli planlı kesintilerde uygulama içi bildirim gönderiririz.</li>
+      <li>Üçüncü taraf hizmet sağlayıcılarındaki (Supabase, Google Maps, Cloudinary, Telegram) kesintiler nedeniyle oluşan aksamalardan sorumlu değiliz.</li>
+    </ul>
+
+    <h2>6. Fikri Mülkiyet</h2>
+    <ul>
+      <li>DriverMesh uygulaması, logo, marka, tasarım ve içerikler DriverMesh'e aittir.</li>
+      <li>Size sınırlı, kişisel, devredilemez, münhasır olmayan bir kullanım lisansı verilir.</li>
+      <li>Tersine mühendislik, decompile, kaynak kodu çıkarma yasaktır.</li>
+      <li>Uygulamada oluşturduğunuz veriler (araç, iş, müşteri kayıtları) size aittir.</li>
+    </ul>
+
+    <h2>7. İçerik Sorumluluğu</h2>
+    <p>Uygulamaya yüklediğiniz fotoğraf, metin ve diğer içeriklerden siz sorumlusunuz. Telif hakkı ihlal eden, yasadışı veya başkalarının haklarına zarar veren içerik yüklemeyeceğinizi taahhüt edersiniz. DriverMesh, bu tür içerikleri haber verme zorunluluğu olmadan kaldırma hakkını saklı tutar.</p>
+
+    <h2>8. Sorumluluğun Sınırlandırılması</h2>
+    <p>Yürürlükteki yasaların izin verdiği azami ölçüde:</p>
+    <ul>
+      <li>DriverMesh "olduğu gibi" ("as is") ve "kullanılabilir olduğu kadarıyla" sunulur.</li>
+      <li>Açık veya örtülü hiçbir garanti vermeyiz (satılabilirlik, belirli amaca uygunluk dahil).</li>
+      <li>Dolaylı, arızi, özel, sonuç olarak ortaya çıkan zararlardan (kar kaybı, veri kaybı, iş kesintisi) sorumlu değiliz.</li>
+      <li>Toplam sorumluluğumuz, son 12 ayda Hizmet için ödediğiniz ücrete (varsa) sınırlıdır.</li>
+    </ul>
+
+    <h2>9. Hesabınızı Sonlandırma</h2>
+    <ul>
+      <li>Hesabınızı uygulama içinden istediğiniz zaman silebilirsiniz.</li>
+      <li>Bu Koşulları ihlal etmeniz halinde hesabınızı askıya alma veya kapatma hakkımız saklıdır.</li>
+      <li>Hesap silindiğinde verileriniz 30 gün içinde kalıcı olarak silinir (Gizlilik Politikası madde 5).</li>
+    </ul>
+
+    <h2>10. Değişiklikler</h2>
+    <p>Bu Koşulları zaman zaman güncelleyebiliriz. Önemli değişikliklerde uygulama içi veya e-posta ile bildirim göndereceğiz. Güncellemeden sonra Hizmeti kullanmaya devam etmeniz değişiklikleri kabul ettiğiniz anlamına gelir.</p>
+
+    <h2>11. Geçerli Hukuk ve Yetkili Mahkeme</h2>
+    <p>Bu Koşullar Türkiye Cumhuriyeti yasalarına tabidir. Bu Koşullardan kaynaklanan uyuşmazlıklarda İstanbul mahkemeleri ve icra daireleri yetkilidir.</p>
+
+    <h2>12. İletişim</h2>
+    <p>Bu Koşullarla ilgili sorularınız için: <a href="mailto:hello@drivermesh.com">hello@drivermesh.com</a></p>
+  </section>
+
+  <!-- EN İçerik -->
+  <section data-lang-content="en" style="display:none">
+    <h2>1. Service Description</h2>
+    <p>DriverMesh ("Service") is a mobile application and related website for small-to-medium fleet operations. It provides vehicle inventory, job dispatch, maintenance tracking and live fleet map for fleet owners, managers and drivers.</p>
+
+    <h2>2. Account Creation</h2>
+    <ul>
+      <li>You must be at least 16 years old to create an account.</li>
+      <li>You confirm that the information you provide is accurate, current and complete.</li>
+      <li>You are responsible for the security of your account (password, device access).</li>
+      <li>You are responsible for all actions taken via your account.</li>
+    </ul>
+
+    <h2>3. User Obligations</h2>
+    <p>By using DriverMesh you agree to:</p>
+    <ul>
+      <li>Comply with applicable laws, regulations and standards of decency</li>
+      <li>Respect third-party rights (copyright, privacy, trademarks, etc.)</li>
+      <li>Not use the Service for spam, fraud, malware, harassment or illegal activity</li>
+      <li>Not access the Service via automated bots, scrapers or similar tools (except official APIs)</li>
+      <li>Not attempt unauthorized access to other users' data</li>
+      <li>Be responsible for the confidentiality of your company/customer data and for the use of driver and manager accounts you share</li>
+    </ul>
+
+    <h2>4. Fees and Payment</h2>
+    <p>DriverMesh is currently in early access / beta. Pricing models will be announced later. Special terms may apply to early access users.</p>
+
+    <h2>5. Service Level and Outages</h2>
+    <ul>
+      <li>We make reasonable efforts to keep the Service available, but we cannot guarantee 100% uptime.</li>
+      <li>Maintenance, updates or unexpected outages may occur.</li>
+      <li>For significant planned outages we provide in-app notice.</li>
+      <li>We are not liable for disruptions caused by third-party providers (Supabase, Google Maps, Cloudinary, Telegram).</li>
+    </ul>
+
+    <h2>6. Intellectual Property</h2>
+    <ul>
+      <li>The DriverMesh application, logo, brand, design and content belong to DriverMesh.</li>
+      <li>You are granted a limited, personal, non-transferable, non-exclusive license to use.</li>
+      <li>Reverse engineering, decompiling, source code extraction is prohibited.</li>
+      <li>Data you create in the app (vehicles, jobs, customers) belongs to you.</li>
+    </ul>
+
+    <h2>7. Content Responsibility</h2>
+    <p>You are responsible for the photos, text and other content you upload. You undertake not to upload content that infringes copyright, is illegal or harms others' rights. DriverMesh reserves the right to remove such content without notice.</p>
+
+    <h2>8. Limitation of Liability</h2>
+    <p>To the maximum extent permitted by applicable law:</p>
+    <ul>
+      <li>DriverMesh is provided "as is" and "as available".</li>
+      <li>We make no warranties, express or implied (including merchantability, fitness for a particular purpose).</li>
+      <li>We are not liable for indirect, incidental, special, consequential damages (lost profits, lost data, business interruption).</li>
+      <li>Our total liability is limited to the fees you paid for the Service in the last 12 months (if any).</li>
+    </ul>
+
+    <h2>9. Termination</h2>
+    <ul>
+      <li>You may delete your account in-app at any time.</li>
+      <li>We reserve the right to suspend or terminate your account if you breach these Terms.</li>
+      <li>On account deletion your data is permanently erased within 30 days (Privacy Policy section 5).</li>
+    </ul>
+
+    <h2>10. Changes</h2>
+    <p>We may update these Terms from time to time. We will notify in-app or via email for significant changes. Continued use of the Service after updates constitutes acceptance.</p>
+
+    <h2>11. Governing Law and Jurisdiction</h2>
+    <p>These Terms are governed by the laws of the Republic of Türkiye. Disputes arising from these Terms are subject to the jurisdiction of the courts and enforcement offices of Istanbul.</p>
+
+    <h2>12. Contact</h2>
+    <p>For questions about these Terms: <a href="mailto:hello@drivermesh.com">hello@drivermesh.com</a></p>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <span>© 2026 DriverMesh — <span data-tr="Tüm hakları saklıdır." data-en="All rights reserved.">Tüm hakları saklıdır.</span></span>
+    <div>
+      <a href="/privacy.html" data-tr="Gizlilik" data-en="Privacy">Gizlilik</a>
+      <a href="/terms.html" data-tr="Kullanım" data-en="Terms">Kullanım</a>
+      <a href="/#contact" data-tr="İletişim" data-en="Contact">İletişim</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    const STORAGE_KEY = 'drivermesh.web.lang';
+    const buttons = document.querySelectorAll('.lang-pill button');
+    const html = document.documentElement;
+    function applyLang(lang) {
+      const isEN = lang === 'en';
+      html.lang = isEN ? 'en' : 'tr';
+      document.querySelectorAll('[data-tr]').forEach((el) => {
+        const text = isEN ? el.getAttribute('data-en') : el.getAttribute('data-tr');
+        if (text != null) el.textContent = text;
+      });
+      document.querySelectorAll('[data-lang-content]').forEach((el) => {
+        el.style.display = el.getAttribute('data-lang-content') === lang ? '' : 'none';
+      });
+      buttons.forEach((b) => b.classList.toggle('active', b.dataset.lang === lang));
+      try { localStorage.setItem(STORAGE_KEY, lang); } catch {}
+    }
+    const stored = (() => { try { return localStorage.getItem(STORAGE_KEY); } catch { return null; } })();
+    const initial = stored || (navigator.language && navigator.language.startsWith('en') ? 'en' : 'tr');
+    applyLang(initial);
+    buttons.forEach((b) => b.addEventListener('click', () => applyLang(b.dataset.lang)));
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0A0E1F" />
+<title>Gizlilik Politikası — DriverMesh</title>
+<meta name="description" content="DriverMesh — Gizlilik Politikası (KVKK + GDPR uyumlu)" />
+<link rel="icon" type="image/png" href="/assets/logo.png" />
+
+<style>
+  :root { --bg:#0A0E1F; --bg-elev:#131732; --text:#F4F5FA; --text-muted:#A6A9C2; --text-dim:#6B6F8E; --accent:#FF7A1A; --border:rgba(255,255,255,0.08); }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Noto Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% -10%, rgba(124,58,237,0.18), transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .container { max-width: 760px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  header {
+    padding: 18px 0;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,14,31,0.7);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .nav { max-width: 1180px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; text-decoration: none; color: var(--text); }
+  .brand img { width: 32px; height: 32px; border-radius: 7px; }
+  .brand-name b { background: linear-gradient(135deg, #FF7A1A, #C084FC); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .nav-right { display: flex; align-items: center; gap: 16px; }
+  .back-link { color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color .2s; }
+  .back-link:hover { color: var(--text); }
+  .lang-pill { display: flex; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 999px; padding: 3px; gap: 2px; }
+  .lang-pill button { background: transparent; border: none; color: var(--text-muted); padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .lang-pill button.active { background: var(--accent); color: #fff; }
+
+  main { padding: 56px 0 96px; }
+  h1 { font-size: clamp(32px, 4vw, 44px); font-weight: 800; letter-spacing: -0.5px; margin-bottom: 10px; line-height: 1.15; }
+  .meta { color: var(--text-dim); font-size: 14px; margin-bottom: 40px; }
+  .lead { color: var(--text-muted); font-size: 17px; margin-bottom: 36px; padding: 18px 20px; background: var(--bg-elev); border-left: 3px solid var(--accent); border-radius: 8px; }
+
+  h2 { font-size: 22px; font-weight: 700; margin: 40px 0 16px; color: var(--text); letter-spacing: -0.2px; }
+  h3 { font-size: 17px; font-weight: 600; margin: 24px 0 10px; color: var(--text); }
+  p { color: var(--text-muted); margin-bottom: 14px; font-size: 15.5px; }
+  ul { margin: 8px 0 18px 20px; }
+  li { color: var(--text-muted); margin-bottom: 8px; font-size: 15.5px; }
+  strong { color: var(--text); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; background: var(--bg-elev); border-radius: 10px; overflow: hidden; font-size: 14.5px; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { background: rgba(255,255,255,0.04); color: var(--text); font-weight: 600; font-size: 13px; }
+  td { color: var(--text-muted); }
+
+  footer { border-top: 1px solid var(--border); padding: 28px 0; color: var(--text-dim); font-size: 14px; }
+  footer .container { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+  footer a { color: var(--text-muted); text-decoration: none; margin-right: 24px; }
+  footer a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <a href="/" class="brand">
+      <img src="/assets/logo.png" alt="DriverMesh" />
+      <span class="brand-name">Driver<b>Mesh</b></span>
+    </a>
+    <div class="nav-right">
+      <a href="/" class="back-link" data-tr="← Ana sayfa" data-en="← Home">← Ana sayfa</a>
+      <div class="lang-pill" role="group">
+        <button data-lang="tr" class="active">TR</button>
+        <button data-lang="en">EN</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <h1 data-tr="Gizlilik Politikası" data-en="Privacy Policy">Gizlilik Politikası</h1>
+  <p class="meta">
+    <span data-tr="Son güncelleme:" data-en="Last updated:">Son güncelleme:</span>
+    12.05.2026
+  </p>
+  <div class="lead" data-tr="Bu Gizlilik Politikası, DriverMesh mobil uygulamasında kişisel verilerinizin nasıl toplandığını, kullanıldığını ve korunduğunu açıklar. 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) ve General Data Protection Regulation (GDPR) ile uyumludur." data-en="This Privacy Policy describes how DriverMesh mobile application collects, uses and protects your personal data. It complies with Turkey's Personal Data Protection Law (KVKK, Law No. 6698) and the EU General Data Protection Regulation (GDPR).">
+    Bu Gizlilik Politikası, DriverMesh mobil uygulamasında kişisel verilerinizin nasıl toplandığını, kullanıldığını ve korunduğunu açıklar. 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) ve General Data Protection Regulation (GDPR) ile uyumludur.
+  </div>
+
+  <!-- TR İçerik -->
+  <section data-lang-content="tr">
+    <h2>1. Veri Sorumlusu</h2>
+    <p>DriverMesh uygulamasını işleten <strong>Demo Lojistik AŞ</strong> KVKK kapsamında veri sorumlusudur. İletişim: <a href="mailto:hello@drivermesh.com">hello@drivermesh.com</a></p>
+
+    <h2>2. Topladığımız Kişisel Veriler</h2>
+    <h3>2.1 Hesap bilgileri</h3>
+    <ul>
+      <li>Ad-soyad, e-posta, telefon (opsiyonel)</li>
+      <li>Şirket adı / organizasyon (filo sahipleri için)</li>
+      <li>Profil fotoğrafı (kullanıcı isteğe bağlı yükler)</li>
+      <li>Rol bilgisi (Patron / Yönetici / Şoför)</li>
+    </ul>
+
+    <h3>2.2 İş ve filo verileri</h3>
+    <ul>
+      <li>Araç bilgileri: plaka, marka, model, yıl, fotoğraflar</li>
+      <li>İş kayıtları: müşteri adı, pickup/dropoff adresleri ve koordinatları</li>
+      <li>Bakım talepleri: sebep, açıklama, fotoğraflar</li>
+    </ul>
+
+    <h3>2.3 Cihaz ve konum</h3>
+    <ul>
+      <li>Cihazın konum bilgisi (uygulama açıkken — şoför rotalama ve filo haritası için)</li>
+      <li>Push notification token (FCM)</li>
+      <li>İşletim sistemi ve cihaz modeli (hata teşhisi için)</li>
+    </ul>
+
+    <h3>2.4 Çerezler ve benzeri teknolojiler</h3>
+    <p>Web sitemiz (drivermesh.com) yalnızca dil tercihinizi <strong>localStorage</strong>'da saklar. Tracking çerezi veya 3. taraf analytics çerezi kullanmıyoruz.</p>
+
+    <h2>3. İşleme Amaçları ve Hukuki Dayanak</h2>
+    <table>
+      <thead>
+        <tr><th>Amaç</th><th>Hukuki dayanak (KVKK / GDPR)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Hesap oluşturma ve kimlik doğrulama</td><td>Sözleşmenin ifası</td></tr>
+        <tr><td>Filo yönetimi, iş atama, bakım takibi</td><td>Sözleşmenin ifası</td></tr>
+        <tr><td>Push notification (iş ataması, bakım onayı vb.)</td><td>Sözleşmenin ifası, açık rıza</td></tr>
+        <tr><td>Konum verisi (canlı filo haritası)</td><td>Sözleşmenin ifası, açık rıza</td></tr>
+        <tr><td>Müşteri geri bildirimi e-posta / Telegram entegrasyonu</td><td>Filo sahibinin açık rızası</td></tr>
+        <tr><td>Hata teşhisi ve uygulama iyileştirme</td><td>Meşru menfaat</td></tr>
+      </tbody>
+    </table>
+
+    <h2>4. Üçüncü Taraf Paylaşımları</h2>
+    <p>Verileriniz aşağıdaki hizmet sağlayıcılarla işlenir:</p>
+    <ul>
+      <li><strong>Supabase (Almanya / EU)</strong> — kullanıcı kimlik doğrulama, veritabanı, dosya depolama, push relay. <a href="https://supabase.com/privacy" target="_blank">Privacy</a></li>
+      <li><strong>Google Cloud (Maps + FCM)</strong> — harita karoları, push notification gönderimi. <a href="https://policies.google.com/privacy" target="_blank">Privacy</a></li>
+      <li><strong>Cloudinary</strong> — araç ve bakım fotoğrafları. <a href="https://cloudinary.com/privacy" target="_blank">Privacy</a></li>
+      <li><strong>Telegram</strong> (opsiyonel) — filo sahibinin kendi Telegram bot'una müşteri geri bildirim mesajları. Sadece filo sahibinin etkinleştirmesi durumunda. <a href="https://telegram.org/privacy" target="_blank">Privacy</a></li>
+    </ul>
+    <p>Verilerinizi pazarlama amacıyla 3. taraflarla paylaşmıyoruz, satmıyoruz.</p>
+
+    <h2>5. Veri Saklama Süresi</h2>
+    <ul>
+      <li>Aktif hesap süresince saklanır.</li>
+      <li>Hesabınızı silmeniz halinde 30 günlük "soft delete" süresi sonunda kalıcı olarak silinir.</li>
+      <li>Yasal yükümlülük nedeniyle saklanması gereken kayıtlar (örn. iş kayıtları, fatura ilişkili veriler) ilgili yasal süre boyunca arşivlenir.</li>
+      <li>Bakım talebi fotoğrafları: bakım reddedildiğinde veya iş tamamlandığında otomatik silinir (Cloudinary destroy).</li>
+    </ul>
+
+    <h2>6. Haklarınız (KVKK Madde 11 / GDPR Articles 15–22)</h2>
+    <p>Aşağıdaki haklara sahipsiniz:</p>
+    <ul>
+      <li><strong>Erişim</strong> — Hangi verileriniz işleniyor öğrenme</li>
+      <li><strong>Düzeltme</strong> — Yanlış veriyi düzelttirme</li>
+      <li><strong>Silme</strong> — "Hesabımı sil" işlemi uygulama içinden mevcut</li>
+      <li><strong>Taşınabilirlik</strong> — Verilerinizin makine-okunabilir bir formatta size verilmesi</li>
+      <li><strong>İşlemeye itiraz</strong> — Belirli işleme faaliyetlerine itiraz</li>
+      <li><strong>Açık rıza geri çekme</strong> — Push, konum, Telegram gibi rızaya dayalı işlemleri durdurma</li>
+      <li><strong>Şikayet</strong> — KVKK Kurumu'na (Türkiye) veya yerel veri koruma otoritesine (AB)</li>
+    </ul>
+    <p>Bu haklarınızı kullanmak için: <a href="mailto:hello@drivermesh.com">hello@drivermesh.com</a></p>
+
+    <h2>7. Çocuklar</h2>
+    <p>DriverMesh 16 yaş altı bireyler için tasarlanmamıştır. Bilerek 16 yaş altından veri toplamayız.</p>
+
+    <h2>8. Veri Güvenliği</h2>
+    <p>Uygulama içi verileriniz TLS 1.2+ ile şifreli iletilir. Sunucu tarafı Supabase Row Level Security (RLS) politikaları ile her kullanıcı yalnızca kendi organizasyonunun verilerine erişir. Şifreler hash'lenir, push token'lar yalnızca son cihaz için saklanır.</p>
+
+    <h2>9. Politika Değişiklikleri</h2>
+    <p>Bu politika güncellendiğinde, "Son güncelleme" tarihi değişir. Önemli değişikliklerde uygulama içi bildirim göndeririz.</p>
+
+    <h2>10. İletişim</h2>
+    <p>Gizlilikle ilgili sorularınız için: <a href="mailto:hello@drivermesh.com">hello@drivermesh.com</a></p>
+  </section>
+
+  <!-- EN İçerik -->
+  <section data-lang-content="en" style="display:none">
+    <h2>1. Data Controller</h2>
+    <p><strong>Demo Lojistik AŞ</strong>, operating DriverMesh, is the data controller under KVKK. Contact: <a href="mailto:hello@drivermesh.com">hello@drivermesh.com</a></p>
+
+    <h2>2. Personal Data We Collect</h2>
+    <h3>2.1 Account info</h3>
+    <ul>
+      <li>Full name, email, phone (optional)</li>
+      <li>Company / organization name (for fleet owners)</li>
+      <li>Profile photo (user uploads optionally)</li>
+      <li>Role (Owner / Manager / Driver)</li>
+    </ul>
+
+    <h3>2.2 Job and fleet data</h3>
+    <ul>
+      <li>Vehicle info: plate, brand, model, year, photos</li>
+      <li>Job records: customer name, pickup/dropoff addresses and coordinates</li>
+      <li>Maintenance requests: reason, description, photos</li>
+    </ul>
+
+    <h3>2.3 Device and location</h3>
+    <ul>
+      <li>Device location (while app is open — for driver routing and live fleet map)</li>
+      <li>Push notification token (FCM)</li>
+      <li>OS and device model (for diagnostics)</li>
+    </ul>
+
+    <h3>2.4 Cookies and similar</h3>
+    <p>Our website (drivermesh.com) only stores your language preference in <strong>localStorage</strong>. We do not use tracking cookies or 3rd-party analytics cookies.</p>
+
+    <h2>3. Processing Purposes and Legal Basis</h2>
+    <table>
+      <thead>
+        <tr><th>Purpose</th><th>Legal basis (KVKK / GDPR)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Account creation, authentication</td><td>Contract performance</td></tr>
+        <tr><td>Fleet management, job dispatch, maintenance tracking</td><td>Contract performance</td></tr>
+        <tr><td>Push notifications (job assignment, maintenance approval, etc.)</td><td>Contract performance, consent</td></tr>
+        <tr><td>Location data (live fleet map)</td><td>Contract performance, consent</td></tr>
+        <tr><td>Customer feedback email / Telegram integration</td><td>Fleet owner's explicit consent</td></tr>
+        <tr><td>Diagnostics and app improvement</td><td>Legitimate interest</td></tr>
+      </tbody>
+    </table>
+
+    <h2>4. Third-Party Sharing</h2>
+    <p>Your data is processed by the following providers:</p>
+    <ul>
+      <li><strong>Supabase (Germany / EU)</strong> — authentication, database, file storage, push relay. <a href="https://supabase.com/privacy" target="_blank">Privacy</a></li>
+      <li><strong>Google Cloud (Maps + FCM)</strong> — map tiles, push delivery. <a href="https://policies.google.com/privacy" target="_blank">Privacy</a></li>
+      <li><strong>Cloudinary</strong> — vehicle and maintenance photos. <a href="https://cloudinary.com/privacy" target="_blank">Privacy</a></li>
+      <li><strong>Telegram</strong> (optional) — customer feedback messages to fleet owner's own Telegram bot, only when the owner enables this. <a href="https://telegram.org/privacy" target="_blank">Privacy</a></li>
+    </ul>
+    <p>We do not share or sell your data for marketing to third parties.</p>
+
+    <h2>5. Data Retention</h2>
+    <ul>
+      <li>Retained for the duration of your active account.</li>
+      <li>If you delete your account, a 30-day soft-delete period applies, after which data is permanently erased.</li>
+      <li>Records required by law (e.g. job records, invoice-related data) are archived for the relevant legal period.</li>
+      <li>Maintenance request photos: auto-deleted on rejection or completion (Cloudinary destroy).</li>
+    </ul>
+
+    <h2>6. Your Rights (KVKK Art. 11 / GDPR Articles 15–22)</h2>
+    <p>You have the following rights:</p>
+    <ul>
+      <li><strong>Access</strong> — see what data we process about you</li>
+      <li><strong>Rectification</strong> — correct inaccurate data</li>
+      <li><strong>Erasure</strong> — "Delete my account" available in-app</li>
+      <li><strong>Portability</strong> — receive your data in machine-readable format</li>
+      <li><strong>Objection</strong> — object to certain processing</li>
+      <li><strong>Withdraw consent</strong> — for push, location, Telegram (consent-based)</li>
+      <li><strong>Complain</strong> — to the KVKK Authority (Turkey) or your local DPA (EU)</li>
+    </ul>
+    <p>To exercise these rights: <a href="mailto:hello@drivermesh.com">hello@drivermesh.com</a></p>
+
+    <h2>7. Children</h2>
+    <p>DriverMesh is not designed for individuals under 16. We do not knowingly collect data from anyone under 16.</p>
+
+    <h2>8. Security</h2>
+    <p>In-app data is transmitted over TLS 1.2+. Server-side, Supabase Row Level Security (RLS) policies ensure each user accesses only their organization's data. Passwords are hashed; push tokens are stored only for the most recent device.</p>
+
+    <h2>9. Changes</h2>
+    <p>When this policy is updated, the "Last updated" date will change. We notify in-app for significant changes.</p>
+
+    <h2>10. Contact</h2>
+    <p>For privacy questions: <a href="mailto:hello@drivermesh.com">hello@drivermesh.com</a></p>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <span>© 2026 DriverMesh — <span data-tr="Tüm hakları saklıdır." data-en="All rights reserved.">Tüm hakları saklıdır.</span></span>
+    <div>
+      <a href="/privacy.html" data-tr="Gizlilik" data-en="Privacy">Gizlilik</a>
+      <a href="/terms.html" data-tr="Kullanım" data-en="Terms">Kullanım</a>
+      <a href="/#contact" data-tr="İletişim" data-en="Contact">İletişim</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    const STORAGE_KEY = 'drivermesh.web.lang';
+    const buttons = document.querySelectorAll('.lang-pill button');
+    const html = document.documentElement;
+    function applyLang(lang) {
+      const isEN = lang === 'en';
+      html.lang = isEN ? 'en' : 'tr';
+      document.querySelectorAll('[data-tr]').forEach((el) => {
+        const text = isEN ? el.getAttribute('data-en') : el.getAttribute('data-tr');
+        if (text != null) el.textContent = text;
+      });
+      document.querySelectorAll('[data-lang-content]').forEach((el) => {
+        el.style.display = el.getAttribute('data-lang-content') === lang ? '' : 'none';
+      });
+      buttons.forEach((b) => b.classList.toggle('active', b.dataset.lang === lang));
+      try { localStorage.setItem(STORAGE_KEY, lang); } catch {}
+    }
+    const stored = (() => { try { return localStorage.getItem(STORAGE_KEY); } catch { return null; } })();
+    const initial = stored || (navigator.language && navigator.language.startsWith('en') ? 'en' : 'tr');
+    applyLang(initial);
+    buttons.forEach((b) => b.addEventListener('click', () => applyLang(b.dataset.lang)));
+  })();
+</script>
+
+</body>
+</html>
