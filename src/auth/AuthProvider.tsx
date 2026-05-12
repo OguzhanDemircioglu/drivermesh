@@ -18,6 +18,7 @@ import {
   demo,
   isDemoActive as isDemoActiveStore,
 } from '@/demo/store';
+import { setSentryUser } from '@/lib/sentry';
 
 type SignUpResult = { requiresConfirmation: boolean };
 
@@ -111,6 +112,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(data.session);
       setLoading(false);
       fetchProfile(data.session?.user.id);
+      // Sentry user context — crash'lerde anonymous yerine gercek user id.
+      setSentryUser(data.session?.user.id ?? null, data.session?.user.email);
       // Push token registration (Android only at the moment) — demo
       // session'larda no-op.
       if (data.session?.user.id) {
@@ -126,6 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (isDemoActiveStore()) return;
       setSession(next);
       fetchProfile(next?.user.id);
+      setSentryUser(next?.user.id ?? null, next?.user.email);
       if (next?.user.id) {
         registerForPushNotifications(next.user.id).catch((e) =>
           console.warn('[push] register on auth change failed', e),
@@ -171,6 +175,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(fakeDemoSession(owner));
         setIsDemo(true);
         setLoading(false);
+        // Sentry user context — demo session'da bile crash'i kime ait
+        // soyleyebilelim. beforeSend hook'u demo:true tag'i ekleyebilir
+        // ileride; simdilik en azindan id+email var.
+        setSentryUser(owner.id, owner.email);
       },
       signUpFleet: async ({ email, password, fullName, companyName }) => {
         const { data, error } = await supabase.auth.signUp({
@@ -193,6 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(null);
           setSession(null);
           setIsDemo(false);
+          setSentryUser(null);
           return;
         }
         // Push token'i temizle ki silinen oturuma push gitmesin (best-effort).
@@ -202,6 +211,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
+        // Sentry user context'ini temizle — onAuthStateChange yine cagrilir
+        // ama signOut hatasinda erken donduk, oraya guvenmeyelim.
+        setSentryUser(null);
       },
     }),
     [session, profile, loading, isDemo, fetchProfile],
