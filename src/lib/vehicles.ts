@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import type { Vehicle, VehicleStatus } from './database.types';
 import { checkPhotoAuthenticity } from './photoAuthenticity';
+import { destroyImage, publicIdFromUrl } from './cloudinary';
 import { DEMO_ORG_ID, demo, isDemoActive } from '@/demo/store';
 
 export type VehicleWithAdder = Vehicle & {
@@ -126,6 +127,32 @@ export async function deleteVehicle(id: string) {
   if (isDemoActive()) {
     demo.deleteVehicle(id);
     return;
+  }
+  // CASCADE ile maintenance_requests da silinir → onlardaki Cloudinary
+  // asset'leri orphan kalmasın diye DB delete'inden önce topla ve destroy
+  // et. Best-effort: hata olursa main flow'u bloklamayız.
+  const [vehicleRes, reqsRes] = await Promise.all([
+    supabase
+      .from('vehicles')
+      .select('photo_url, maintenance_photo_urls')
+      .eq('id', id)
+      .maybeSingle(),
+    supabase
+      .from('maintenance_requests')
+      .select('photo_urls')
+      .eq('vehicle_id', id),
+  ]);
+  const urls: string[] = [];
+  if (vehicleRes.data) {
+    if (vehicleRes.data.photo_url) urls.push(vehicleRes.data.photo_url);
+    for (const u of vehicleRes.data.maintenance_photo_urls ?? []) urls.push(u);
+  }
+  for (const row of reqsRes.data ?? []) {
+    for (const u of row.photo_urls ?? []) urls.push(u);
+  }
+  for (const url of urls) {
+    const pid = publicIdFromUrl(url);
+    if (pid) destroyImage(pid).catch((e) => console.warn('[vehicle/delete] destroy', e));
   }
   const { error } = await supabase.from('vehicles').delete().eq('id', id);
   if (error) throw error;

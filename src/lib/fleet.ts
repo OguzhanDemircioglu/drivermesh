@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { destroyImage, publicIdFromUrl } from './cloudinary';
 import { clearDemoStorage, isDemoActive } from '@/demo/store';
 
 /**
@@ -10,16 +11,42 @@ import { clearDemoStorage, isDemoActive } from '@/demo/store';
  * the caller invokes immediately after — running deactivateDemo here
  * would race with signOut and leave `isDemo` flag stuck true.
  *
- * Production: `delete_fleet()` RPC kullanılır. Caller'ın oturumundaki
- * organization_id'yi backend security definer fonksiyonu çıkarır;
- * `orgId` parametresi bu yüzden kullanılmaz ama API uyumluluğu için
- * imzada kalır.
+ * Production akış:
+ *   1. Org'daki tüm Cloudinary asset URL'lerini client'tan topla ve
+ *      destroy et (RPC server-side Postgres function HTTP atamaz).
+ *   2. `delete_fleet()` RPC çağrılır — security definer caller'ın
+ *      organization_id'sini kendi çıkarır, RLS'e takılmadan org-scoped
+ *      cascade siler.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function deleteFleet(_orgId: string): Promise<void> {
+export async function deleteFleet(orgId: string): Promise<void> {
   if (isDemoActive()) {
     await clearDemoStorage();
     return;
+  }
+  // delete_fleet RPC server-side; Postgres function Cloudinary'ye HTTP
+  // atamaz. Onun yerine RPC'den ÖNCE org'daki tüm asset URL'lerini topla
+  // ve client'tan destroy et. Best-effort: hata olursa RPC yine de çalışır.
+  const [vehiclesRes, reqsRes] = await Promise.all([
+    supabase
+      .from('vehicles')
+      .select('photo_url, maintenance_photo_urls')
+      .eq('organization_id', orgId),
+    supabase
+      .from('maintenance_requests')
+      .select('photo_urls')
+      .eq('organization_id', orgId),
+  ]);
+  const urls: string[] = [];
+  for (const v of vehiclesRes.data ?? []) {
+    if (v.photo_url) urls.push(v.photo_url);
+    for (const u of v.maintenance_photo_urls ?? []) urls.push(u);
+  }
+  for (const r of reqsRes.data ?? []) {
+    for (const u of r.photo_urls ?? []) urls.push(u);
+  }
+  for (const url of urls) {
+    const pid = publicIdFromUrl(url);
+    if (pid) destroyImage(pid).catch((e) => console.warn('[fleet/delete] destroy', e));
   }
   const { error } = await supabase.rpc('delete_fleet');
   if (error) throw new Error(error.message);
