@@ -184,6 +184,16 @@ export async function createMaintenanceRequest(input: {
     decided_at: autoApprove ? now : null,
     rejection_reason: null,
     requested_at: now,
+    // Authenticity sutunlari: edge fn `photo-authenticity-check` async olarak
+    // DB row'una yazar; baseRow client-side ilk hali, null'lar default.
+    suspected_ai: null,
+    ai_score: null,
+    exif_status: null,
+    content_class: null,
+    content_top_label: null,
+    content_score: null,
+    authenticity_checked_at: null,
+    authenticity_metadata: null,
   };
 
   let row: MaintenanceRequest;

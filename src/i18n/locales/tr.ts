@@ -376,6 +376,7 @@ export const tr = {
     heroLive: 'Canlı',
     heroSetup: 'Kurulum',
     liveStripActive: '{{count}} aktif sürüş',
+    liveStripActive_other: '{{count}} aktif sürüş',
     liveStripIdle: 'Filon hazır, bekliyor',
     liveStripCta: 'Haritada gör',
     heroSetupTitle: 'Filonu Kurmaya Başla',

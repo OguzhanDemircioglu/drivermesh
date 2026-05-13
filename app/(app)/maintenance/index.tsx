@@ -178,7 +178,7 @@ export default function MaintenanceListScreen() {
 // olusturulduktan ~5-15 sn sonra goruntulenir (Pull-to-refresh ile guncel).
 function AuthenticityBadgeRow({ item }: { item: MaintenanceRequestWithRefs }) {
   const badge: AuthenticityBadge = badgeFromSummary({
-    suspected_ai: item.suspected_ai,
+    suspected_ai: item.suspected_ai ?? undefined,
     ai_score: item.ai_score ?? 0,
     exif_status: item.exif_status as never,
     content_class: item.content_class as never,
@@ -207,7 +207,14 @@ function AuthenticityBadgeRow({ item }: { item: MaintenanceRequestWithRefs }) {
       bg: 'rgba(148,163,184,0.12)',
       label: 'EXIF metadata yok',
     },
+    exif_stale: {
+      icon: 'clock' as const,
+      color: theme.colors.textMuted,
+      bg: 'rgba(148,163,184,0.12)',
+      label: 'EXIF tarihi eski',
+    },
   }[badge];
+  if (!config) return null;
   return (
     <View
       style={{

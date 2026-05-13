@@ -96,7 +96,7 @@ export default function VehiclesScreen() {
               photoUrl={v.photo_url}
               color={v.color}
               authenticityBadge={badgeFromSummary({
-                suspected_ai: v.suspected_ai,
+                suspected_ai: v.suspected_ai ?? undefined,
                 ai_score: v.ai_score ?? 0,
                 exif_status: v.exif_status as never,
                 content_class: v.content_class as never,

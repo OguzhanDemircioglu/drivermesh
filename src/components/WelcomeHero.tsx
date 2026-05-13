@@ -26,7 +26,6 @@ export function WelcomeHero({ topRight, bottom }: Props) {
         source={heroSource}
         style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]}
         resizeMode="cover"
-        pointerEvents="none"
       />
 
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>

@@ -62,6 +62,15 @@ export async function createVehicle(input: CreateVehicleInput): Promise<Vehicle>
       maintenance_photo_urls: [],
       current_user_id: null,
       created_at: new Date().toISOString(),
+      // Authenticity sutunlari: photo-authenticity-check edge fn async yazar.
+      suspected_ai: null,
+      ai_score: null,
+      exif_status: null,
+      content_class: null,
+      content_top_label: null,
+      content_score: null,
+      authenticity_checked_at: null,
+      authenticity_metadata: null,
     };
     demo.addVehicle(v);
     return v;

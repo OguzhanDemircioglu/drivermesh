@@ -416,6 +416,14 @@ function reseed() {
       decided_at: hoursAgo(74),
       rejection_reason: null,
       requested_at: hoursAgo(76),
+      suspected_ai: null,
+      ai_score: null,
+      exif_status: null,
+      content_class: null,
+      content_top_label: null,
+      content_score: null,
+      authenticity_checked_at: null,
+      authenticity_metadata: null,
     },
   ];
 
@@ -664,6 +672,14 @@ function mkVehicle(spec: VehicleSpec): Vehicle {
     maintenance_photo_urls: spec.maintenancePhotoUrls ?? [],
     current_user_id: spec.currentUserId ?? null,
     created_at: new Date(Date.now() - 20 * 86_400_000).toISOString(),
+    suspected_ai: null,
+    ai_score: null,
+    exif_status: null,
+    content_class: null,
+    content_top_label: null,
+    content_score: null,
+    authenticity_checked_at: null,
+    authenticity_metadata: null,
   };
 }
 

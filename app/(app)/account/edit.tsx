@@ -97,7 +97,7 @@ export default function AccountEditScreen() {
         return;
       }
       const opts = {
-        mediaTypes: ['images'] as const,
+        mediaTypes: ['images'] as ImagePicker.MediaType[],
         allowsEditing: true,
         aspect: [1, 1] as [number, number],
         quality: 0.6,
