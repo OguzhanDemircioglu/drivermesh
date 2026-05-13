@@ -865,11 +865,176 @@ pg_cron RPC'leri vault'tan okur.
 | `cloudinary-sign` | true | Signed upload params üretir; folder `drivermesh/` enforce |
 | `cloudinary-destroy` | true | Public_id ile asset siler; aynı folder kuralı |
 | `send-push` | true | FCM v1 API ile push — service account JWT-bearer OAuth2 |
+| `send-support-message` | true | In-app destek formu → Telegram admin chat |
 | `telegram-dispatch` | true | Müşteri feedback Telegram bot |
-| `photo-authenticity-check` | true | (legacy) foto doğrulama |
-| `directions` | true | (legacy) eski rota cache — silinmesi planlandı |
+| `photo-authenticity-check` | true | **3-katmanli foto dogrulama** — EXIF DateTimeOriginal kontrolu + Hugging Face AI-detector + content classifier (vehicle vs non-vehicle). DB'ye suspected_ai/ai_score/exif_status/content_class yazar (bkz. §22a) |
+| `maintenance-cron` | false | pg_cron tarafindan dakikalik tetiklenir; maintenance_until past olan araclari idle'a aldirir + push gonderir |
+| `bootstrap-vault` | true | Vault'ta saklanan anon_key'i SECURITY DEFINER ile servisleyen tek seferlik bootstrap fn |
+| `directions` | true | (legacy) eski rota cache — silinmesi planlandi |
 
 Tümü `import 'jsr:@supabase/functions-js/edge-runtime.d.ts';` ile Deno runtime.
+
+---
+
+## 22a. Photo Authenticity (3-katmanli foto dogrulama)
+
+**Sorun:** Filo bakim ve arac fotolarinda sahte foto (AI-uretilmis, internetten indirilmis, eski/yeniden kullanilmis) riski. Patron'in onay surecini guvenli kilmak gerekiyor.
+
+**Cozum:** `photo-authenticity-check` edge function (v7) bir foto URL'i geldiginde 3 paralel kontrol calistirir, sonuclari `vehicles` veya `maintenance_requests` row'una yazar. Client tarafi bayrakli bir Patron-only badge gosterir.
+
+### 3 katman
+
+1. **EXIF DateTimeOriginal** — Cloudinary'den indirilen JPEG'in EXIF metadatasini parse et:
+   - `exif_status='valid'` — DateTimeOriginal var ve son 30 gun icinde
+   - `exif_status='missing'` — EXIF yok (screenshot/internet indirme/format dönüsturme)
+   - `exif_status='stale'` — DateTimeOriginal var ama 30+ gun eski (yeniden kullanim sinyali)
+2. **Hugging Face AI-detector** — `umm-maybe/AI-image-detector` model'i ile inference (`HF_TOKEN` env'inde, free tier). Sonuc: `suspected_ai: boolean`, `ai_score: 0..1`.
+3. **Content classifier** — `google/vit-base-patch16-224` veya esitleri ile generic image classification:
+   - `content_class='vehicle'` — top-1 label arac kategorisi (sedan, suv, truck, minivan, sports_car, vs.)
+   - `content_class='non_vehicle'` — yanlis icerik (selfie, kedi, jersey, dokuman)
+   - `content_top_label`, `content_score` debug ve UI label gostermek icin
+
+### Badge sirasi (oncelik)
+
+`badgeFromSummary()` (src/lib/photoAuthenticity.ts) priority:
+
+```
+wrong_content     (content_class='non_vehicle')  →  KIRMIZI banner — onerme kabul etme
+ai_generated      (suspected_ai=true)             →  SARI banner — sorgulayarak onayla
+exif_missing      (exif_status='missing')         →  GRI banner — bilgi
+exif_stale        (exif_status='stale')           →  GRI banner — bilgi
+null              hepsi temiz                     →  badge yok
+```
+
+### Akis
+
+```mermaid
+sequenceDiagram
+  participant App as Mobile App
+  participant CF as cloudinary-sign
+  participant CDN as Cloudinary
+  participant DB as vehicles/maintenance_requests
+  participant EF as photo-authenticity-check
+  participant HF as Hugging Face Inference
+  App->>CF: imzali upload params iste
+  CF-->>App: sign + cloud_name
+  App->>CDN: multipart upload (foto)
+  CDN-->>App: secure_url + public_id
+  App->>DB: row INSERT/UPDATE (photo_url)
+  App-)EF: fire-and-forget (rowId, url)
+  EF->>CDN: GET foto (EXIF parse)
+  EF->>HF: AI detector + content classifier
+  HF-->>EF: scores + labels
+  EF->>DB: UPDATE row SET suspected_ai/exif_status/content_class/...
+  Note over App: Patron ekran refresh ettiginde<br/>(pull-to-refresh) badge gozukur
+```
+
+### Demo coverage
+
+`src/demo/store.ts` 4 maintenance_request seed'i ile 4 badge senaryosunu kapsar:
+- `demo-mr-pending` → `ai_generated`
+- `demo-mr-rejected` → `wrong_content`
+- `demo-mr-cancelled` → `exif_missing`
+- `demo-mr-expired` → `exif_stale`
+
+Patron olarak "Bakim Talepleri" listesinde her badge'i dogrudan gorur.
+
+---
+
+## 22b. Vehicle Claim / Release Sistemi (Arac Ustune Alma)
+
+**Sorun:** Birden cok soforun ayni araci kullanabilecegi durumda "su an hangi soforde?" sorusu surekli sorulur. Iki sofor ayni anda aktif is alirken farkinda olmadan ayni araci secebilir.
+
+**Cozum:** Sofor bir araci "ustune alir" — DB'de `vehicles.current_user_id` set edilir, `vehicle_assignments` ledger'a satir eklenir. Yeni bir araci ustune alirsa onceki otomatik bosalir. Aktif isi olan arac baska sofor tarafindan claim'lenemez.
+
+### RPC: `claim_vehicle(p_vehicle_id, p_reason)`
+
+SECURITY DEFINER. Caller'in `auth.uid()`'i kullanir. Adimlar:
+
+1. Hedef arac var mi + bos mi (active job yok, claim edilebilir mi) — `vehicleHasActiveJob` check
+2. Caller'in onceki araci varsa (`current_user_id = caller_id`) → release et (audit ledger'a satir)
+3. Hedef aracin onceki sahibi (`current_user_id`) varsa → release et (released_by_other reason ile)
+4. Hedef arac.current_user_id = caller_id
+5. Idempotent: caller zaten o aracta ise no-op
+
+### RPC: `release_vehicle(p_vehicle_id)`
+
+Caller'in uzerindeki araci bosaltir. Ledger'a `released_at` yazilir.
+
+### Aktif is koruma
+
+`claim_vehicle` icinde son adim:
+```sql
+IF EXISTS (
+  SELECT 1 FROM jobs WHERE vehicle_id = p_vehicle_id
+    AND status IN ('assigned','in_progress')
+    AND driver_id IS NOT NULL
+    AND driver_id != caller_id
+) THEN
+  RAISE EXCEPTION 'vehicle_has_active_job_with_another_driver' USING ERRCODE='42501';
+END IF;
+```
+
+UI tarafindan vehicles/[id] ekraninda guard'lanir — claim butonu disabled gosterilir.
+
+### vehicle_assignments tablosu
+
+Audit log: kim, ne zaman, hangi araca, hangi sebeple. `reason` enum-like text: `manual`, `job_start`, `transfer`, `released_by_other`.
+
+```sql
+CREATE TABLE public.vehicle_assignments (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  vehicle_id      UUID NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
+  user_id         UUID NOT NULL REFERENCES profiles(id),
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  reason          TEXT NOT NULL DEFAULT 'manual',
+  claimed_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  released_at     TIMESTAMPTZ
+);
+```
+
+---
+
+## 22c. Force Update Mekanizmasi (app_versions)
+
+**Sorun:** Mobile app'lerde kritik backend degisikligi (schema migration, security fix) yapildiginda eski versiyondaki kullanicilarin app'i kirilir. Mecbur tutmak ve store'a yonlendirmek gerek.
+
+**Cozum:** `app_versions` tablosu her platform icin tek satir tutar. App startup'ta bu tablo okunur:
+- `current_version < min_supported_version` → **HARD BLOCK** (full-screen modal, store linki, kapatma yok)
+- `current_version < latest_version` → **SOFT PROMPT** (banner, kapatilabilir, "guncelle" CTA)
+- `current_version >= latest_version` → no-op
+
+### Schema
+
+```sql
+CREATE TABLE public.app_versions (
+  platform                TEXT PRIMARY KEY, -- 'android' | 'ios'
+  min_supported_version   TEXT NOT NULL,    -- semver; bunun altindakiler bloklu
+  latest_version          TEXT NOT NULL,    -- semver; bunun altindakiler soft uyarilir
+  store_url               TEXT NOT NULL,    -- Play Store / App Store URL
+  force_update_message_tr TEXT NOT NULL DEFAULT '...',
+  force_update_message_en TEXT NOT NULL DEFAULT '...',
+  release_notes_tr        TEXT,
+  release_notes_en        TEXT,
+  updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+### Client kontrolu (`src/lib/forceUpdate.ts`)
+
+App startup'ta:
+1. `expo-application` ile current version oku
+2. `supabase.from('app_versions').select().eq('platform', Platform.OS).single()`
+3. Semver compare:
+   - hard block: modal goster → "Hemen Guncelle" → store URL aç → app'i kapat
+   - soft prompt: banner goster, dismissible
+4. RLS public read (login oncesi de calismali)
+
+### Patron update akisi
+
+Yeni surum store'a girdiginde Patron Supabase Dashboard → app_versions tablosu → `latest_version` guncelle. Kritik bir backend degisikligi varsa `min_supported_version` da yukseltilir (anlik global force).
+
+---
 
 ---
 
@@ -889,16 +1054,30 @@ organizations (id, name, owner_id, hq_lat/lng/address, feedback_*)
               │  └─► permission_overrides (user_id, organization_id, key, allowed, granted_by)
               │
        └─► vehicles (organization_id, plate, brand, model, year, status, color,
-                     photo_url, is_at_hq, added_by, maintenance_*)
+                     photo_url, is_at_hq, added_by, current_user_id,
+                     maintenance_*, maintenance_photo_urls,
+                     suspected_ai, ai_score, exif_status, content_class,
+                     content_top_label, content_score,
+                     authenticity_checked_at, authenticity_metadata)
               │
-              └─► maintenance_requests (organization_id, vehicle_id, requester_id,
-                                        reason, photo_urls, estimated_minutes,
-                                        status, decided_by, decided_at, rejection_reason)
+              ├─► vehicle_assignments (vehicle_id, user_id, organization_id,
+              │                        claimed_at, released_at, reason)  -- claim/release ledger
+              │
+              ├─► maintenance_requests (organization_id, vehicle_id, requester_id,
+              │                         reason, photo_urls, estimated_minutes,
+              │                         status, decided_by, decided_at, rejection_reason,
+              │                         suspected_ai, ai_score, exif_status, content_class,
+              │                         content_top_label, content_score,
+              │                         authenticity_checked_at, authenticity_metadata)
               │
               └─► jobs (organization_id, customer_name, pickup/dropoff, status, source,
                         vehicle_id, driver_id, created_by, started_at, completed_at)
-              │
-              └─► notifications (organization_id, recipient_id, actor_id, type, payload, read_at)
+
+       app_versions (platform [PK], min_supported_version, latest_version, store_url,
+                     force_update_message_tr/en, release_notes_tr/en, updated_at)
+                  -- org bagimsiz; force-update + soft-update tek satir per platform
+
+       └─► notifications (organization_id, recipient_id, actor_id, type, payload, read_at)
 ```
 
 ### Enum'lar
@@ -926,19 +1105,26 @@ organizations (id, name, owner_id, hq_lat/lng/address, feedback_*)
 | `simulate_ride_job()` | — | UUID (demo) |
 | `transfer_ownership(target_user_id)` | UUID | VOID |
 | `delete_fleet()` | — | VOID |
-| `maintenance_auto_checkout()` | — | INTEGER (affected) ★ |
+| `claim_vehicle(p_vehicle_id, p_reason?)` | UUID, TEXT | VOID ★ |
+| `release_vehicle(p_vehicle_id)` | UUID | VOID ★ |
+| `request_account_deletion()` | — | JSON {ok, error?} ★ |
+| `maintenance_cron_invoke()` | — | TEXT (status) ★ |
+| `get_vault_secret(p_name)` | TEXT | TEXT ★ |
+| `set_vault_secret(p_name, p_value)` | TEXT, TEXT | TEXT ★ |
 | `cloudinary_public_id_from_url(url)` | TEXT | TEXT ★ |
 
 ### RLS politikaları
 
 - `profiles` — view self or org members; update self
 - `vehicles` — org read; owner+manager add/update; owner delete
+- `vehicle_assignments` — org read; INSERT/UPDATE sadece `claim_vehicle`/`release_vehicle` RPC araciligiyla (SECURITY DEFINER)
 - `jobs` — org read; owner+manager create/delete/update; driver self update
 - `invitations` — owner+manager view/create/revoke
 - `notifications` — recipient self only (read+update); blokklu insert/delete (server-side)
 - `maintenance_requests` — org read; create with own requester_id; org update
 - `permission_overrides` — RPC-only writes; read self or org owner
 - `permission_keys`, `role_default_permissions` — public read
+- `app_versions` — herkes read (login oncesi force-update kontrolu icin); write yok (Patron Supabase Dashboard'dan elle gunceller)
 
 ---
 

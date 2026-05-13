@@ -139,6 +139,42 @@ Hesap → Çıkış Yap
 - Bilgiler card (driver, color, added_by, eklendi)
 - Son işler (5 job)
 - Aracı Sil (canDelete.allowed)
+  - **Bu PR sonrasi:** silmeden once Cloudinary asset cleanup yapilir (photo_url + maintenance_photo_urls + ilgili maintenance_requests.photo_urls). DB row delete + best-effort destroyImage. Sentry konsoluna "destroy" hatasi gelirse fonksiyonel basari yine de kalir.
+
+### 4.5 Vehicle Claim / Release (Arac Ustune Alma) ⭐ yeni
+
+**Ozet:** Sofor bir araci "ustune alir" — `vehicles.current_user_id` set edilir + `vehicle_assignments` ledger'a row. Yeni bir araci ustune alirsa onceki otomatik bosalir. Aktif isi olan arac baska sofor tarafindan claim'lenemez.
+
+#### 4.5.1 Bos arac ustune alma
+1. Driver olarak vehicles/[id] ac (ornek demo: 35 MNO 567, claimable + fotosuz)
+2. "Ustume Al" buton goz onunde — tap
+3. Onay modal'i — "Evet, ustume al"
+4. Toast "Arac size atandi"
+5. **Dogrulama:** vehicles/[id] basliginda "Sizin uzerinizde" badge, "Birak" buton aktif
+6. DB: `vehicles.current_user_id = caller.id`, `vehicle_assignments` yeni satir (claimed_at=now, released_at=null, reason='manual')
+
+#### 4.5.2 Onceki araci otomatik birakma
+1. Driver zaten 35 MNO 567'yi ustune almis
+2. vehicles/[34 ABC 123] ac, "Ustume Al"
+3. Onay → toast
+4. **Dogrulama:**
+   - 35 MNO 567 → current_user_id=null, banner "Sizin uzerinizde" kaybolur
+   - 34 ABC 123 → current_user_id=caller, banner yeni gozukur
+   - vehicle_assignments: 35 MNO 567'nin satiri released_at=now ile guncellenmis, 34 ABC 123'un yeni satiri eklenmis
+
+#### 4.5.3 Aktif isi olan arac claim engellemesi
+1. Manager olarak driver-A'ya bir iş ata, driver-A "Baslat" der → status='in_progress'
+2. Driver-B olarak ayni araci vehicles/[id]'ten ac
+3. "Ustume Al" buton **disabled**, alt yazi: "Arac aktif bir is icin baska soforde"
+4. Eger somehow ham RPC `supabase.rpc('claim_vehicle')` cagrilirsa exception `vehicle_has_active_job_with_another_driver`
+
+#### 4.5.4 Self-release
+1. Driver kendi uzerindeki araci ac, "Birak" tap
+2. Onay → toast "Arac birakildi"
+3. **Dogrulama:** banner gizlenir, current_user_id=null, ledger released_at set
+
+#### 4.5.5 Idempotency
+- Ayni araci ikinci kez claim → RPC no-op, hata yok, ledger'a yeni satir yazilmaz
 
 ---
 
@@ -254,6 +290,55 @@ FROM cron.job_run_details
 WHERE jobid = (SELECT jobid FROM cron.job WHERE jobname='maintenance-auto-checkout')
 ORDER BY start_time DESC LIMIT 5;
 ```
+
+### 5.9 Photo Authenticity Badge (Patron-only) ⭐ yeni
+
+**Ozet:** Bakim talebi yapildiginda `photo-authenticity-check` edge function (v7) fire-and-forget tetiklenir, 3 katmanli analiz (EXIF + AI detector + content classifier) yapilir, DB row'una skorlar yazilir. Patron ekranda 4 olasi badge gorur (oncelik sirasi: wrong_content > ai_generated > exif_missing > exif_stale).
+
+#### 5.9.1 Demo'da badge gosterimi (en hizli yol)
+
+Demo modda login ol → Owner olarak "Bakim Talepleri" sekmesini ac. 4 hazir seed:
+
+| Talep | Beklenen badge | Renk | Sebep (demo seed) |
+|---|---|---|---|
+| Lastik degisimi (pending) | **AI suphesi** | sari | suspected_ai=true |
+| Klima arizasi (rejected) | **Yanlis icerik** | kirmizi | content_class='non_vehicle' (jersey) |
+| Sag far (cancelled) | **EXIF metadata yok** | gri | exif_status='missing' |
+| Aki testi (expired) | **EXIF tarihi eski** | gri | exif_status='stale' |
+
+Her badge'in altinda kucuk icon + kisa metin.
+
+#### 5.9.2 Production end-to-end (gercek edge fn)
+
+1. Driver olarak login (real session, Cloudinary creds Supabase'de aktif)
+2. Bakim talebi olustur, foto yukle (gercek arac fotosu)
+3. Talep gonder → kayit basarili toast
+4. **Backend behavior:**
+   - INSERT maintenance_request — initial all authenticity columns NULL
+   - `photo-authenticity-check` async invoke (fire-and-forget)
+   - Edge fn:
+     - Cloudinary'den foto indir
+     - EXIF parse (DateTimeOriginal -> ne kadar eski?)
+     - HF AI detector inference (umm-maybe/AI-image-detector)
+     - HF content classifier (ViT veya benzeri)
+   - DB UPDATE: suspected_ai, ai_score, exif_status, content_class, content_top_label, content_score, authenticity_checked_at=now
+5. ~5-15 saniye sonra Owner ekrani pull-to-refresh → badge gozukur
+
+**Dogrulama (SQL):**
+```sql
+SELECT id, status, suspected_ai, ai_score, exif_status, content_class,
+       content_top_label, content_score, authenticity_checked_at
+FROM maintenance_requests
+ORDER BY requested_at DESC LIMIT 5;
+```
+
+#### 5.9.3 Edge case: HF_TOKEN missing
+
+`HF_TOKEN` env'i Supabase secrets'ta tanimsizsa edge fn EXIF kontrolu yapar ama AI+content NULL kalir. Badge sadece exif_missing/exif_stale gosterilir. Sentry'e warn loglanir.
+
+#### 5.9.4 Edge case: Photo not on Cloudinary (kayit silinmis)
+
+photo_url ya 404 doner ya da bilinmeyen domain → edge fn skip + authenticity_metadata={error:'photo_unreachable'}. Patron ekraninda badge gosterilmez (defansif).
 
 ---
 
@@ -437,6 +522,65 @@ Home → "Haritada Gör" link veya Filo → "Haritada Gör"
 
 ### 10.6 Tehlikeli Bölge
 - Hesabımı Sil (owner blok yapılır — önce filo sil)
+- Filo Sil (sadece owner): **bu PR sonrasi** delete_fleet RPC oncesinde
+  client tarafindan tüm araclar+request fotolarinin Cloudinary asset'leri
+  destroy edilir (best-effort). Sonra RPC tum org-scoped tablolari cascade
+  siler.
+
+---
+
+## 10a. Force Update (app_versions) ⭐ yeni
+
+**Ozet:** App startup'ta `app_versions` tablosundan platform satiri okunur, current_version semver karsilastirilir.
+
+- `current < min_supported` → **HARD BLOCK** (full-screen modal, store linki, kapatma yok)
+- `min_supported <= current < latest` → **SOFT PROMPT** (banner, dismissible)
+- `current >= latest` → no-op
+
+### 10a.1 Demo (manuel SQL)
+
+Hard block testi:
+```sql
+INSERT INTO public.app_versions (platform, min_supported_version, latest_version, store_url,
+  force_update_message_tr, force_update_message_en)
+VALUES ('android', '9.9.9', '9.9.9', 'https://play.google.com/store/apps/details?id=com.drivermesh.android',
+  'Onemli guvenlik guncellemesi gerekiyor. Hemen guncelle.',
+  'Critical security update required. Update now.')
+ON CONFLICT (platform) DO UPDATE
+  SET min_supported_version = EXCLUDED.min_supported_version,
+      latest_version = EXCLUDED.latest_version,
+      force_update_message_tr = EXCLUDED.force_update_message_tr,
+      force_update_message_en = EXCLUDED.force_update_message_en;
+```
+
+App'i tekrar ac → tam ekran modal, "Hemen Guncelle" butonu → store URL acilmali, "Daha sonra" yok.
+
+### 10a.2 Soft prompt testi
+
+```sql
+UPDATE public.app_versions
+   SET min_supported_version = '1.0.0',
+       latest_version = '9.9.9',
+       release_notes_tr = 'Bug fixes ve performans iyilestirmeleri.'
+ WHERE platform = 'android';
+```
+
+App'i tekrar ac → banner gozukmeli (kapatilabilir, X ile dismiss).
+
+### 10a.3 Geri al
+
+```sql
+UPDATE public.app_versions
+   SET min_supported_version = '1.0.0',
+       latest_version = '1.0.0'
+ WHERE platform = 'android';
+```
+
+App'i tekrar ac → modal/banner yok, normal startup.
+
+### 10a.4 Edge case: network kapali
+
+App offline → app_versions fetch fail → exception yutulur, app normal acilir (defansif). Network gelince bir sonraki startup'ta yeniden denenir.
 
 ---
 
@@ -526,9 +670,12 @@ $crop.Save("zoomed.png")
 ```
 [ ] Smoke test (1-10) ✓
 [ ] Auth: demo + login + register + redeem + signOut
-[ ] Vehicle: create (foto'lu) + edit (foto change/remove) + delete
+[ ] Vehicle: create (foto'lu) + edit (foto change/remove) + delete (Cloudinary cleanup)
+[ ] Vehicle Claim/Release: claim bos arac + onceki birakma + aktif is engellemesi + self-release
 [ ] Maintenance: auto-approve + pending+approve + reject + cancel + endMaintenance
 [ ] Maintenance: aktif iş varken "Bakıma Al" gizli
+[ ] Photo Authenticity: 4 badge case (ai_generated, wrong_content, exif_missing, exif_stale) demo'da gozukur
+[ ] Photo Authenticity prod: 1 real foto upload sonra ~10sn icinde DB'de skorlar dolar
 [ ] Job: create + assign + driver start/complete/fail + cancel + reassign + update
 [ ] Job: driver_request + approve/reject
 [ ] Notifications: tüm tipler render + deep-link
@@ -537,11 +684,13 @@ $crop.Save("zoomed.png")
 [ ] Push: doğrudan send-push çağrısı `notification_id` döndürüyor + DB'de satır var
 [ ] Cron: pg_cron logs status='succeeded'
 [ ] Auto-checkout: maintenance_until past → idle + overdue notif
+[ ] Force Update: hard block modal + soft prompt banner + geri al senaryosu
 [ ] Maps: 5 marker + tap dispatch (vehicle/HQ/pickup/dropoff)
 [ ] Maps: white pill text contrast (siyah)
 [ ] Permissions: owner override member → useCan effect
 [ ] i18n: TR ↔ EN toggle, raw key görünmez
 [ ] Account: HQ + Feedback + Bakım Talepleri + Çıkış Yap
+[ ] Account: Filo Sil (owner) — Cloudinary cleanup + RPC cascade
 [ ] Demo persistence: kapat-aç sonrası state korur
 [ ] Theme: dark mode tutarlı, Toast/Confirm modal styling
 [ ] Native maps: iOS Apple, Android Google haritası açılır
@@ -549,4 +698,4 @@ $crop.Save("zoomed.png")
 
 ---
 
-*Doküman versiyonu: 1.1 — send-push v3 (persist + notification_id) ve app içi bildirim listesi entegrasyonu eklendi.*
+*Doküman versiyonu: 1.2 — vehicle claim/release (§4.5), photo authenticity 4 badge (§5.9), force update (§10a) test senaryolari + Cloudinary cleanup notlari.*
