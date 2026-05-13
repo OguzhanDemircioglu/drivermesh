@@ -49,7 +49,7 @@
         "@sentry/react-native/expo",
         {
           "organization": "drivermesh",
-          "project": "react-native",
+          "project": "drivermesh-mobile",
           "url": "https://de.sentry.io/"
         }
       ]
