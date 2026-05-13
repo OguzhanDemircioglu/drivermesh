@@ -58,7 +58,7 @@ jobs:
           token: ${{ secrets.EXPO_EAS_TOKEN }}
 
       - name: Install deps
-        run: npm ci --legacy-peer-deps
+        run: npm install --legacy-peer-deps --no-audit --no-fund
 
       - name: TypeScript check
         run: npx tsc --noEmit
