@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Screen } from '@/components/Screen';
 import { useAuth } from '@/auth/AuthProvider';
 import { listMaintenanceRequests, type MaintenanceRequestWithRefs } from '@/lib/maintenance';
+import { badgeFromSummary, type AuthenticityBadge } from '@/lib/photoAuthenticity';
 import { theme } from '@/theme';
 
 type Tab = 'pending' | 'all';
@@ -163,11 +164,69 @@ export default function MaintenanceListScreen() {
                   </>
                 ) : null}
               </View>
+              <AuthenticityBadgeRow item={item} />
             </Pressable>
           )}
         />
       )}
     </Screen>
+  );
+}
+
+// Photo authenticity flag — 3 katmanli check sonucu (lib/photoAuthenticity.ts).
+// Edge fn `photo-authenticity-check` v6 arkada DB row'una yazar; talep
+// olusturulduktan ~5-15 sn sonra goruntulenir (Pull-to-refresh ile guncel).
+function AuthenticityBadgeRow({ item }: { item: MaintenanceRequestWithRefs }) {
+  const badge: AuthenticityBadge = badgeFromSummary({
+    suspected_ai: item.suspected_ai,
+    ai_score: item.ai_score ?? 0,
+    exif_status: item.exif_status as never,
+    content_class: item.content_class as never,
+    content_top_label: item.content_top_label ?? '',
+    content_score: item.content_score ?? 0,
+  });
+  if (!badge) return null;
+  const config = {
+    wrong_content: {
+      icon: 'alert-octagon' as const,
+      color: theme.colors.danger,
+      bg: 'rgba(239,68,68,0.12)',
+      label: item.content_top_label
+        ? `Yanlis icerik: ${item.content_top_label}`
+        : 'Yanlis icerik',
+    },
+    ai_generated: {
+      icon: 'cpu' as const,
+      color: '#F59E0B',
+      bg: 'rgba(245,158,11,0.12)',
+      label: 'AI ile uretilmis suphesi',
+    },
+    exif_missing: {
+      icon: 'help-circle' as const,
+      color: theme.colors.textMuted,
+      bg: 'rgba(148,163,184,0.12)',
+      label: 'EXIF metadata yok',
+    },
+  }[badge];
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginTop: 6,
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        borderRadius: 6,
+        backgroundColor: config.bg,
+        alignSelf: 'flex-start',
+      }}
+    >
+      <Feather name={config.icon} size={11} color={config.color} />
+      <Text style={{ fontSize: 11, color: config.color, fontWeight: '600' }}>
+        {config.label}
+      </Text>
+    </View>
   );
 }
 

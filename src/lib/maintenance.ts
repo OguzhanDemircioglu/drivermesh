@@ -22,6 +22,7 @@ import type {
 } from './database.types';
 import { destroyImage, publicIdFromUrl } from './cloudinary';
 import { checkPermission } from './permissions';
+import { checkPhotoAuthenticity } from './photoAuthenticity';
 import { captureException } from './sentry';
 import { demo, DEMO_ORG_ID, isDemoActive } from '@/demo/store';
 import i18n from '@/i18n';
@@ -233,6 +234,14 @@ export async function createMaintenanceRequest(input: {
       plate,
       reason,
     });
+  }
+
+  // Foto authenticity check fire-and-forget — UI bekletme. 3 katman
+  // (Cloudinary EXIF + HF AI-detector + HF ViT content classifier)
+  // 3-15 sn surebilir; sonuc DB row'a yazilir, Patron sonraki tab
+  // refresh'inde authenticity badge'leri gorur.
+  if (input.photoUrls && input.photoUrls.length > 0 && !isDemoActive()) {
+    checkPhotoAuthenticity('maintenance_requests', row.id, input.photoUrls);
   }
 
   return (await getMaintenanceRequest(row.id))!;

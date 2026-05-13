@@ -33,9 +33,10 @@ import type { MemberPermission } from '@/lib/permissions';
 // kere açtığında yeni seed otomatik gelir; eski saved state diskte
 // orphan kalır, GC'lenmez ama okunmaz.
 // v3: vehicle seed gucleristirildi (maintenance state dolu, current_user_id
-// claim ornekleri) + maintenanceRequests history seed (5 status). Eski v2
+// claim ornekleri) + maintenanceRequests history seed (5 status with
+// 3 authenticity scenarios in v4). Eski v2/v3
 // AsyncStorage key'i otomatik invalidate olur, demo yeniden reseed yapar.
-const DEMO_STATE_KEY = 'drivermesh.demo.state.v3';
+const DEMO_STATE_KEY = 'drivermesh.demo.state.v4';
 
 // ---------- IDs ----------
 
@@ -323,6 +324,15 @@ function reseed() {
       decided_at: null,
       rejection_reason: null,
       requested_at: minutesAgo(45),
+      // demo: AI-generated suspect — Patron'da "AI suphesi" badge gosterir
+      suspected_ai: true,
+      ai_score: 0.84,
+      exif_status: 'valid',
+      content_class: 'vehicle',
+      content_top_label: 'sports_car',
+      content_score: 0.78,
+      authenticity_checked_at: minutesAgo(44),
+      authenticity_metadata: { demo_seed: true },
     },
     {
       id: 'demo-mr-approved',
@@ -337,13 +347,22 @@ function reseed() {
       decided_at: hoursAgo(3),
       rejection_reason: null,
       requested_at: hoursAgo(4),
+      // demo: temiz authenticity — badge gosterilmez
+      suspected_ai: false,
+      ai_score: 0.04,
+      exif_status: 'valid',
+      content_class: 'vehicle',
+      content_top_label: 'pickup',
+      content_score: 0.91,
+      authenticity_checked_at: hoursAgo(4),
+      authenticity_metadata: { demo_seed: true },
     },
     {
       id: 'demo-mr-rejected',
       organization_id: DEMO_ORG_ID,
       vehicle_id: 'demo-v2',
       requester_id: DEMO_DRIVER_IDS[2],
-      reason: 'Klima ariza yapmis gibi',
+      reason: 'Klima ariza yapmis gibi (driver kendi selfie yukledi)',
       photo_urls: [],
       estimated_minutes: null,
       status: 'rejected',
@@ -351,13 +370,22 @@ function reseed() {
       decided_at: hoursAgo(20),
       rejection_reason: 'Klima zaten gecen ay servise gitti, yeniden kontrol gerekmiyor. Sicaklik fanı ayarini kontrol et.',
       requested_at: hoursAgo(22),
+      // demo: yanlis icerik — Patron'da "Yanlis icerik" badge gosterir
+      suspected_ai: false,
+      ai_score: 0.02,
+      exif_status: 'valid',
+      content_class: 'non_vehicle',
+      content_top_label: 'jersey',
+      content_score: 0.67,
+      authenticity_checked_at: hoursAgo(22),
+      authenticity_metadata: { demo_seed: true },
     },
     {
       id: 'demo-mr-cancelled',
       organization_id: DEMO_ORG_ID,
       vehicle_id: 'demo-v1',
       requester_id: DEMO_DRIVER_IDS[0],
-      reason: 'Sag farin parlakligi azaldi',
+      reason: 'Sag farin parlakligi azaldi (foto internetten indirildi)',
       photo_urls: [],
       estimated_minutes: 60,
       status: 'cancelled',
@@ -365,6 +393,15 @@ function reseed() {
       decided_at: null,
       rejection_reason: null,
       requested_at: hoursAgo(48),
+      // demo: EXIF eksik — Patron'da "EXIF metadata yok" badge gosterir
+      suspected_ai: false,
+      ai_score: 0.08,
+      exif_status: 'missing',
+      content_class: 'vehicle',
+      content_top_label: 'minivan',
+      content_score: 0.83,
+      authenticity_checked_at: hoursAgo(48),
+      authenticity_metadata: { demo_seed: true },
     },
     {
       id: 'demo-mr-expired',

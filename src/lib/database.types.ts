@@ -625,6 +625,16 @@ export type Database = {
           requester_id: string;
           status: 'pending' | 'approved' | 'rejected' | 'expired' | 'cancelled';
           vehicle_id: string;
+          // Photo authenticity check (edge fn `photo-authenticity-check` v6
+          // arkada doldurur, async). null = henuz check edilmedi.
+          suspected_ai: boolean | null;
+          ai_score: number | null;
+          exif_status: 'valid' | 'missing' | 'suspicious' | null;
+          content_class: 'vehicle' | 'non_vehicle' | 'unknown' | null;
+          content_top_label: string | null;
+          content_score: number | null;
+          authenticity_checked_at: string | null;
+          authenticity_metadata: Record<string, unknown> | null;
         };
         Insert: {
           decided_at?: string | null;
