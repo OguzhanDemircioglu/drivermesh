@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Stack, useRootNavigationState, useRouter, useSegments } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { AppState, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import {
   useFonts,
@@ -14,9 +14,11 @@ import {
 import { AuthProvider, useAuth } from '@/auth/AuthProvider';
 import { ConfirmProvider } from '@/components/ConfirmDialog';
 import { ToastProvider } from '@/components/Toast';
+import { ForceUpdateModal } from '@/components/ForceUpdateModal';
 import { WelcomeHero } from '@/components/WelcomeHero';
 import { setupI18n } from '@/i18n';
 import { initSentry } from '@/lib/sentry';
+import { checkAppVersion, type VersionCheckResult } from '@/lib/forceUpdate';
 import { theme } from '@/theme';
 
 // Module load — Sentry init mumkun olan en erken anda. DSN .env'de yoksa
@@ -115,6 +117,28 @@ export default function RootLayout() {
     setupI18n().catch((e) => console.warn('[i18n] init failed', e));
   }, []);
 
+  // Force update version check — cold start + foreground transition.
+  // demo modda no-op (lib guard).
+  const [versionCheck, setVersionCheck] = useState<VersionCheckResult | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      const r = await checkAppVersion();
+      if (!cancelled) setVersionCheck(r);
+    };
+    run();
+    // AppState listener: app foreground'a geri donerken tekrar check
+    // (kullanici 1 hafta uyutmus olabilir, bu sirada force_update flag
+    // backend tarafindan set edilmis olabilir).
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') run();
+    });
+    return () => {
+      cancelled = true;
+      sub.remove();
+    };
+  }, []);
+
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
@@ -122,6 +146,10 @@ export default function RootLayout() {
           <ConfirmProvider>
             <AuthProvider>
               <AuthGate />
+              <ForceUpdateModal
+                result={versionCheck}
+                onDismiss={() => setVersionCheck(null)}
+              />
             </AuthProvider>
           </ConfirmProvider>
         </ToastProvider>

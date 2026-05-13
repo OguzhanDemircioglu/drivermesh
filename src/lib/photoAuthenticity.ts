@@ -14,12 +14,14 @@ import { isDemoActive } from '@/demo/store';
 import { supabase } from '@/lib/supabase';
 import { captureException } from '@/lib/sentry';
 
-export type AuthenticityTable = 'maintenance_requests';
+export type AuthenticityTable = 'maintenance_requests' | 'vehicles';
+
+export type ExifStatus = 'valid' | 'missing' | 'suspicious' | 'stale';
 
 export type AuthenticitySummary = {
   suspected_ai: boolean;
   ai_score: number;
-  exif_status: 'valid' | 'missing' | 'suspicious';
+  exif_status: ExifStatus;
   content_class: 'vehicle' | 'non_vehicle' | 'unknown';
   content_top_label: string;
   content_score: number;
@@ -76,13 +78,15 @@ export type AuthenticityBadge =
   | 'wrong_content'   // foto bir arac degil (kedi, selfie, dokuman)
   | 'ai_generated'    // AI ile uretilmis suphesi
   | 'exif_missing'    // EXIF metadata yok (download/screenshot)
+  | 'exif_stale'      // EXIF DateTimeOriginal 30+ gun eski
   | null;             // saglikli, badge gosterme
 
 export function badgeFromSummary(s: Partial<AuthenticitySummary> | null | undefined): AuthenticityBadge {
   if (!s) return null;
-  // Oncelik sirasi: yanlis icerik > AI > EXIF
+  // Oncelik sirasi: yanlis icerik > AI > EXIF eksik > EXIF eski
   if (s.content_class === 'non_vehicle') return 'wrong_content';
   if (s.suspected_ai) return 'ai_generated';
   if (s.exif_status === 'missing') return 'exif_missing';
+  if (s.exif_status === 'stale') return 'exif_stale';
   return null;
 }

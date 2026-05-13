@@ -19,6 +19,7 @@ import { Button } from '@/components/Button';
 import { VehicleCard } from '@/components/VehicleCard';
 import { useAuth } from '@/auth/AuthProvider';
 import { listVehicles, type VehicleWithAdder } from '@/lib/vehicles';
+import { badgeFromSummary } from '@/lib/photoAuthenticity';
 import { theme } from '@/theme';
 import { useTranslation } from 'react-i18next';
 
@@ -94,6 +95,14 @@ export default function VehiclesScreen() {
               addedBy={v.added_by_profile?.full_name ?? null}
               photoUrl={v.photo_url}
               color={v.color}
+              authenticityBadge={badgeFromSummary({
+                suspected_ai: v.suspected_ai,
+                ai_score: v.ai_score ?? 0,
+                exif_status: v.exif_status as never,
+                content_class: v.content_class as never,
+                content_top_label: v.content_top_label ?? '',
+                content_score: v.content_score ?? 0,
+              })}
               onPress={() => router.push(`/(app)/vehicles/${v.id}`)}
             />
           )}

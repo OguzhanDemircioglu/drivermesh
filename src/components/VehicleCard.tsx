@@ -43,6 +43,10 @@ type Props = {
   /** Operator-chosen colour (hex). When set, overrides the plate-derived
    * gradient with a solid colour matching the real vehicle. */
   color?: string | null;
+  /** Photo authenticity badge type from `badgeFromSummary()`. Card sag
+   * altinda kucuk bir flag gosterir — Patron araclar listesinde supheli
+   * foto'lari bir bakista ayirt edebilsin. */
+  authenticityBadge?: 'wrong_content' | 'ai_generated' | 'exif_missing' | 'exif_stale' | null;
   onPress?: () => void;
 };
 
@@ -70,6 +74,7 @@ function VehicleCardImpl({
   addedBy,
   photoUrl,
   color,
+  authenticityBadge,
   onPress,
 }: Props) {
   const { t } = useTranslation();
@@ -118,14 +123,46 @@ function VehicleCardImpl({
               </Text>
             ) : null}
           </View>
-          <View style={[styles.badge, { backgroundColor: s.bg }]}>
-            <Text style={[styles.badgeText, { color: s.fg }]}>
-              {t(`vehicles.status.${status}`)}
-            </Text>
+          <View style={{ alignItems: 'flex-end', gap: 4 }}>
+            <View style={[styles.badge, { backgroundColor: s.bg }]}>
+              <Text style={[styles.badgeText, { color: s.fg }]}>
+                {t(`vehicles.status.${status}`)}
+              </Text>
+            </View>
+            {authenticityBadge ? <AuthenticityFlag kind={authenticityBadge} /> : null}
           </View>
         </View>
       </Card>
     </Pressable>
+  );
+}
+
+// Foto authenticity mini-flag (sag-altta status pill'in altinda).
+// Tam metin VehicleCard'a sigmaz, sadece icon + kisa label.
+const FLAG_CONFIG = {
+  wrong_content: { icon: 'alert-octagon' as const, color: '#EF4444', label: 'Yanlis' },
+  ai_generated: { icon: 'cpu' as const, color: '#F59E0B', label: 'AI' },
+  exif_missing: { icon: 'help-circle' as const, color: '#94A3B8', label: 'EXIF' },
+  exif_stale: { icon: 'clock' as const, color: '#94A3B8', label: 'Eski' },
+};
+
+function AuthenticityFlag({ kind }: { kind: NonNullable<Props['authenticityBadge']> }) {
+  const c = FLAG_CONFIG[kind];
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        paddingVertical: 2,
+        paddingHorizontal: 6,
+        borderRadius: 4,
+        backgroundColor: c.color + '22',
+      }}
+    >
+      <Feather name={c.icon} size={9} color={c.color} />
+      <Text style={{ fontSize: 9, color: c.color, fontWeight: '700' }}>{c.label}</Text>
+    </View>
   );
 }
 

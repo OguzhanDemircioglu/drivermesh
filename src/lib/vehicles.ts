@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { Vehicle, VehicleStatus } from './database.types';
+import { checkPhotoAuthenticity } from './photoAuthenticity';
 import { DEMO_ORG_ID, demo, isDemoActive } from '@/demo/store';
 
 export type VehicleWithAdder = Vehicle & {
@@ -85,6 +86,12 @@ export async function createVehicle(input: CreateVehicleInput): Promise<Vehicle>
     .select('*')
     .single();
   if (error) throw error;
+  // Photo authenticity check fire-and-forget (vehicle main photo).
+  // Driver kendi araci yerine baska arac veya selfie yukluyorsa
+  // VehicleCard'da badge ile yakalanir.
+  if (input.photoUrl) {
+    checkPhotoAuthenticity('vehicles', data.id, [input.photoUrl]);
+  }
   return data;
 }
 
@@ -200,4 +207,11 @@ export async function updateVehicle(id: string, patch: VehiclePatch) {
   }
   const { error } = await supabase.from('vehicles').update(next).eq('id', id);
   if (error) throw error;
+  // Photo degistiyse authenticity check tekrar tetikle. photoUrl=null
+  // ise foto silindi, check'e gerek yok (eski authenticity field'lari
+  // null'a setlenmeli? Surasi UX karari — simdilik bos birak, foto yoksa
+  // badge zaten gosterilmez).
+  if (typeof photoUrl === 'string' && photoUrl) {
+    checkPhotoAuthenticity('vehicles', id, [photoUrl]);
+  }
 }

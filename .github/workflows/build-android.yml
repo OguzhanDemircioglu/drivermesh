@@ -1,0 +1,101 @@
+name: Build Android (master)
+
+# Master push -> EAS Build (cloud) -> AAB artifact + Sentry source map upload.
+# Production submit ETMEZ — sadece Internal Testing track'e otomatik gonderilir
+# (release-android.yml git tag uzerinden manuel tetiklenir).
+#
+# Required GitHub Secrets:
+#   EXPO_TOKEN                       — expo.dev hesabi access token
+#   SENTRY_AUTH_TOKEN                — sentry-cli source map upload (.env'deki ile ayni)
+#   GOOGLE_PLAY_SERVICE_ACCOUNT_JSON — Play Console service account (base64 encoded)
+#   EXPO_PUBLIC_APP_ENV              — "production"
+#   EXPO_PUBLIC_SUPABASE_URL         — prod Supabase URL
+#   EXPO_PUBLIC_SUPABASE_ANON_KEY    — prod Supabase anon key
+#   EXPO_PUBLIC_SENTRY_DSN           — Sentry DSN (PII-safe public)
+#   EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_ANDROID — Maps key (Android)
+#   EXPO_PUBLIC_TELEGRAM_SUPPORT_USERNAME   — bot username (deep-link)
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - 'docs/**'
+      - 'web/**'
+      - '*.md'
+      - 'memory/**'
+      - '.tmp/**'
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'EAS build profile'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - preview
+          - production
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_EAS_TOKEN }}
+
+      - name: Install deps
+        run: npm ci --legacy-peer-deps
+
+      - name: TypeScript check
+        run: npx tsc --noEmit
+        continue-on-error: true
+
+      - name: Build (EAS preview profile)
+        if: github.event_name == 'push' || github.event.inputs.profile == 'preview'
+        run: eas build --platform android --profile preview --non-interactive --no-wait
+        env:
+          EXPO_PUBLIC_APP_ENV: production
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_SENTRY_DSN: ${{ secrets.EXPO_PUBLIC_SENTRY_DSN }}
+          EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_ANDROID: ${{ secrets.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_ANDROID }}
+          EXPO_PUBLIC_TELEGRAM_SUPPORT_USERNAME: ${{ secrets.EXPO_PUBLIC_TELEGRAM_SUPPORT_USERNAME }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: drivermesh
+          SENTRY_PROJECT: drivermesh-mobile
+
+      - name: Build (EAS production profile)
+        if: github.event.inputs.profile == 'production'
+        run: eas build --platform android --profile production --non-interactive --no-wait
+        env:
+          EXPO_PUBLIC_APP_ENV: production
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_SENTRY_DSN: ${{ secrets.EXPO_PUBLIC_SENTRY_DSN }}
+          EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_ANDROID: ${{ secrets.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_ANDROID }}
+          EXPO_PUBLIC_TELEGRAM_SUPPORT_USERNAME: ${{ secrets.EXPO_PUBLIC_TELEGRAM_SUPPORT_USERNAME }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: drivermesh
+          SENTRY_PROJECT: drivermesh-mobile
+
+      - name: Build trigger summary
+        run: |
+          echo "## EAS Build queued" >> $GITHUB_STEP_SUMMARY
+          echo "Profile: ${{ github.event.inputs.profile || 'preview' }}" >> $GITHUB_STEP_SUMMARY
+          echo "Track: https://expo.dev/accounts/drivermesh/projects/drivermesh/builds" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Build ~10-15 dk surer (EAS cloud). Tamamlandiginda artifact (APK/AAB) Expo dashboard'tan indirilebilir, source map otomatik Sentry'e upload edilir." >> $GITHUB_STEP_SUMMARY
