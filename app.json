@@ -58,7 +58,12 @@
       "typedRoutes": false
     },
     "extra": {
-      "appEnv": "production"
-    }
+      "appEnv": "production",
+      "router": {},
+      "eas": {
+        "projectId": "8aa98c27-8538-4202-9586-337e148e9abc"
+      }
+    },
+    "owner": "cray61"
   }
 }
