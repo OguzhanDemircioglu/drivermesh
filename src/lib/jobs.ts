@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { Job, JobStatus, Json, Profile, Vehicle } from './database.types';
+import { captureException } from './sentry';
 import { DEMO_ORG_ID, demo, isDemoActive } from '@/demo/store';
 import i18n from '@/i18n';
 
@@ -415,8 +416,12 @@ export async function updateJob(
       })
       .then(({ error: nErr }) => {
         // Notification başarısız olursa update'i geri almıyoruz; en kötü
-        // ihtimalle driver bildirim almaz, log'a düşer.
-        if (nErr) console.warn('[jobs] notify driver failed', nErr.message);
+        // ihtimalle driver bildirim almaz, Sentry'e operasyonel olarak
+        // raporlanir.
+        if (nErr) {
+          console.warn('[jobs] notify driver failed', nErr.message);
+          captureException(nErr, { context: 'notify_driver_update', jobId });
+        }
       });
   }
 }
@@ -468,7 +473,10 @@ async function notifyDriverEvent(
     type,
     payload: jsonPayload,
   });
-  if (error) console.warn('[notify] driver insert failed', error.message);
+  if (error) {
+    console.warn('[notify] driver insert failed', error.message);
+    captureException(error, { context: 'notify_driver_insert', type, driverId });
+  }
 
   // FCM push — best effort. persist:false: notifications tablosuna insert
   // yukarida zaten yapildi, send-push duplicate atmasin.

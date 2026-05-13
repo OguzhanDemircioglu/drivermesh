@@ -9,6 +9,7 @@
  */
 import * as Sentry from '@sentry/react-native';
 import Constants from 'expo-constants';
+import * as Device from 'expo-device';
 
 const DSN =
   process.env.EXPO_PUBLIC_SENTRY_DSN ??
@@ -43,11 +44,14 @@ export function initSentry(): void {
     // Performans trace: production'da %5 (free plan 10K transactions/month
     // limitini ~600 daily active user'a kadar tasir). Dev'de %100.
     tracesSampleRate: __DEV__ ? 1.0 : 0.05,
-    // Replay (UI session recording) — sadece error oldugunda, %50.
-    // Free plan 50 replay/month; %50 sample rate ~100 crash/month'a kadar
-    // tasir. Crash rate dusukse %100'e cikarilabilir.
+    // Replay (UI session recording) — sadece error oldugunda. Dusuk-end
+    // cihazda (totalMemory < ~3 GB) replay buffer 5-15 MB native heap'e
+    // ek yuk biniyor; 4GB RAM cihazda 1-2 replay queued olursa OOM
+    // riski. RAM yetersizse 0 (replay yok), yeterse 0.5 (50% crash'te).
     replaysSessionSampleRate: 0,
-    replaysOnErrorSampleRate: __DEV__ ? 0 : 0.5,
+    replaysOnErrorSampleRate: __DEV__
+      ? 0
+      : ((Device.totalMemory ?? 0) > 3 * 1024 * 1024 * 1024 ? 0.5 : 0),
     enableNativeCrashHandling: true,
     enableNativeNagger: false, // dev'de annoying Sentry uyarisi kapat
     debug: __DEV__,

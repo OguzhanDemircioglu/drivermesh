@@ -22,6 +22,7 @@ import type {
 } from './database.types';
 import { destroyImage, publicIdFromUrl } from './cloudinary';
 import { checkPermission } from './permissions';
+import { captureException } from './sentry';
 import { demo, DEMO_ORG_ID, isDemoActive } from '@/demo/store';
 import i18n from '@/i18n';
 
@@ -508,7 +509,13 @@ async function remindPendingRequesters(
     }
     pending = data ?? [];
   }
+  // Dedupe: bir driver ayni vehicle icin birden fazla pending talebe sahip
+  // olabilir (memory karar #7); her birine ayri push gondermek tekrar olur.
+  // Ayni requester'a tek bildirim ver — requestId'yi keep edilen ilki secer.
+  const seen = new Set<string>();
   for (const r of pending) {
+    if (seen.has(r.requester_id)) continue;
+    seen.add(r.requester_id);
     await notifyOne(orgId, r.requester_id, actorId, 'maintenance_pending_reminder', {
       requestId: r.id,
       vehicleId,
@@ -550,7 +557,12 @@ async function notifyOne(
     type,
     payload: json,
   });
-  if (error) console.warn('[maintenance] notify failed', error.message);
+  if (error) {
+    // Operasyonel gorunurluk — UI eylemi tamamlandi, sadece bildirim
+    // sızdı. Sentry'e raporla ki dashboard'tan trend izlenebilsin.
+    console.warn('[maintenance] notify failed', error.message);
+    captureException(error, { context: 'notify_insert', type, recipientId });
+  }
 
   // FCM push — best effort. push_token yoksa edge function 'no_token' doner.
   // persist:false: notifications insert yukarida lib tarafindan yapildi,
