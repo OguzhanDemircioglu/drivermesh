@@ -57,19 +57,17 @@ export default function AccountScreen() {
     }
   }, [profile?.organization_id]);
 
+  // Konsolide focus effect — refreshProfile + getFeedbackChannels paralel
+  // tetiklenir. Onceden 2 ayri useFocusEffect vardi, her focus'ta 2 sequential
+  // hook fire ediyordu; simdi tek hook, ici asenkron paralel.
   useFocusEffect(
     useCallback(() => {
+      refreshProfile();
       if (!profile?.organization_id) return;
       getFeedbackChannels(profile.organization_id)
         .then(setChannels)
         .catch(() => setChannels(null));
-    }, [profile?.organization_id]),
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      refreshProfile();
-    }, [refreshProfile]),
+    }, [refreshProfile, profile?.organization_id]),
   );
 
   const currentLocale = (i18n.language as AppLocale) ?? 'tr';

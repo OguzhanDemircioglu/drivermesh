@@ -196,9 +196,15 @@ export type FeedbackChannels = {
 // form so a viewer can tap "Activate bot" → "Save" without typing anything.
 // The Open-in-Telegram button on the team-side card uses botUsername to
 // build a t.me/<username> link, which DOES open the real bot in Telegram.
+//
+// **Security:** botToken intentionally a placeholder. Real test bot
+// (8594702070:...) was revoked via BotFather 2026-05-13 after being
+// committed to repo earlier; if you need to wire a fresh demo bot,
+// generate a new one via @BotFather and replace this placeholder
+// (still demo-only context — token will leak via APK decompile).
 const DEMO_TELEGRAM_TEST_BOT = {
   botUsername: 'offcats_bot',
-  botToken: '8594702070:AAG2QozW9tmcWWQLZ9M_jXzxG2VmUYi6hJQ',
+  botToken: 'DEMO_BOT_TOKEN_PLACEHOLDER',
   chatId: '1943990878',
 };
 

@@ -620,7 +620,11 @@ export async function reassignJob(
     .eq('id', jobId)
     .single();
   if (fetchErr) throw fetchErr;
-  const { error } = await supabase
+  // Concurrency guard: yalnizca 'open' veya 'assigned' job'i reassign et.
+  // 'in_progress' / 'completed' / 'cancelled' job'i overwrite etmeyiz —
+  // started_at null'a duser ve in-flight is silinmis gibi gorulurdu.
+  // Iki manager ayni anda reassign denese, ikinci UPDATE 0 row donor.
+  const { data: updated, error } = await supabase
     .from('jobs')
     .update({
       driver_id: driverId,
@@ -628,8 +632,13 @@ export async function reassignJob(
       status: driverId ? 'assigned' : 'open',
       started_at: null,
     })
-    .eq('id', jobId);
+    .eq('id', jobId)
+    .in('status', ['open', 'assigned'])
+    .select('id');
   if (error) throw error;
+  if (!updated || updated.length === 0) {
+    throw new Error('job_not_assignable_state');
+  }
   if (before && driverId && before.driver_id !== driverId) {
     await notifyDriverEvent(
       before.organization_id,

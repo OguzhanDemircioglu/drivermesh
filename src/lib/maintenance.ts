@@ -257,12 +257,21 @@ export async function approveMaintenanceRequest(
       decided_at: now,
     });
   } else {
-    const { error } = await supabase
+    // Race-safe: UPDATE conditional + rowcount check. Iki manager ayni
+    // anda approve cagirirsa sadece biri row'u yakalar; digeri 0 row
+    // doner ve buradan donus yapilir — vehicle state bir kere update,
+    // notify bir kere gonderilir.
+    const { data: updated, error } = await supabase
       .from('maintenance_requests')
       .update({ status: 'approved', decided_by: deciderId, decided_at: now })
       .eq('id', requestId)
-      .eq('status', 'pending');
+      .eq('status', 'pending')
+      .select('id');
     if (error) throw error;
+    if (!updated || updated.length === 0) {
+      // Yarisi kaybedildi — baska biri zaten approve/reject/cancel etti.
+      throw new MaintenanceError('not_pending');
+    }
   }
 
   await applyVehicleMaintenanceState({
