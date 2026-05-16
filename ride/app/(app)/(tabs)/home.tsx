@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import {
   Linking,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -201,27 +202,42 @@ export default function HomeScreen() {
     );
   }
 
+  const refreshControl = (
+    <RefreshControl
+      refreshing={list.isRefetching}
+      onRefresh={() => void list.refetch()}
+      tintColor={colors.accent}
+    />
+  );
+  const listHeader = (
+    <View style={{ gap: spacing.md, paddingBottom: spacing.md }}>
+      {headerNode}
+      {pendingNode}
+    </View>
+  );
+
+  // FlashList web'de blank render — RPC max 50 vehicle olduğu için virtualization
+  // gerekli değil; web tarafında ScrollView + map, native'de FlashList.
   return (
     <Screen>
-      <FlashList
-        data={data}
-        keyExtractor={(item) => item.vehicle_id}
-        renderItem={({ item }) => <VehicleCard vehicle={item} onCall={onCall} />}
-        ListHeaderComponent={
-          <View style={{ gap: spacing.md, paddingBottom: spacing.md }}>
-            {headerNode}
-            {pendingNode}
-          </View>
-        }
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={list.isRefetching}
-            onRefresh={() => void list.refetch()}
-            tintColor={colors.accent}
-          />
-        }
-      />
+      {Platform.OS === 'web' ? (
+        <ScrollView contentContainerStyle={styles.listContent} refreshControl={refreshControl}>
+          {listHeader}
+          {data.map((item) => (
+            <VehicleCard key={item.vehicle_id} vehicle={item} onCall={onCall} />
+          ))}
+        </ScrollView>
+      ) : (
+        <FlashList
+          data={data}
+          keyExtractor={(item) => item.vehicle_id}
+          renderItem={({ item }) => <VehicleCard vehicle={item} onCall={onCall} />}
+          ListHeaderComponent={listHeader}
+          contentContainerStyle={styles.listContent}
+          refreshControl={refreshControl}
+          estimatedItemSize={278}
+        />
+      )}
       {refreshFab}
     </Screen>
   );

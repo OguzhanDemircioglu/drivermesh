@@ -120,7 +120,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       finalizeProfile: async ({ fullName }) => {
         const uid = session?.user.id;
-        const phone = session?.user.phone ?? customer?.phone;
+        // Email-only signUp (dev/preview) → session.user.phone='' (boş string).
+        // `??` boş string'i kapsamadığı için `||` ile fallback'e düş: customer
+        // satırı önceden seed edilmişse oradan al, yoksa hata at.
+        const phone =
+          (session?.user.phone && session.user.phone.trim() !== ''
+            ? session.user.phone
+            : null) ?? customer?.phone;
         if (!uid || !phone) throw new Error('Session yok, finalize çağrılamaz.');
         const row = await upsertMyCustomer({
           authUserId: uid,
