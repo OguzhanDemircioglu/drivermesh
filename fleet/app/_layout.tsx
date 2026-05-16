@@ -26,7 +26,7 @@ import { theme } from '@/theme';
 // AuthGate'in Stack'i bu image'in üzerine transparent contentStyle ile binebilir,
 // böylece welcome/login arası flicker olmaz. Welcome ekranındaki WelcomeHero
 // dil-bazlı override eder (TR/EN); diğer auth ekranlarında JS root bg fallback.
-const DRIVERMESH_BG = require('../assets/drivermesh-splash.png');
+const DRIVERMESH_BG = require('../assets/drivermesh-splash.webp');
 
 // Module load — Sentry init mumkun olan en erken anda. DSN .env'de yoksa
 // silent skip (dev). Native crashlar bile yakalanir bu sekilde.
