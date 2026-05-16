@@ -18,13 +18,11 @@ name: Build Android (master)
 on:
   push:
     branches: [master]
+    paths:
+      - 'fleet/**'
+      - '.github/workflows/build-android.yml'
     paths-ignore:
-      - 'docs/**'
-      - 'web/**'
-      - 'ride/**'
-      - '*.md'
-      - 'memory/**'
-      - '.tmp/**'
+      - 'fleet/**/*.md'
   workflow_dispatch:
     inputs:
       profile:

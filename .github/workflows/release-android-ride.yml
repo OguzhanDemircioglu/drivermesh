@@ -1,0 +1,81 @@
+name: Release Android — Ride (git tag)
+
+# Git tag `ride-v*.*.*` -> EAS production build + EAS submit Play Store internal.
+# Fleet'in `release-android.yml`'siyle aynı şablon, ayrı tag namespace
+# (`ride-v0.2.0` gibi) ile karışmaz.
+#
+# Trigger:
+#   git tag ride-v0.2.0 && git push --tags
+
+on:
+  push:
+    tags:
+      - 'ride-v*.*.*'
+
+defaults:
+  run:
+    working-directory: ride
+
+jobs:
+  release-android-ride:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: ride/package-lock.json
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_EAS_TOKEN }}
+
+      - name: Install deps
+        run: npm ci --legacy-peer-deps
+
+      - name: TypeScript check
+        run: npx tsc --noEmit
+
+      - name: Decode Play Service Account
+        run: |
+          echo "${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}" | base64 -d > google-play-service-account.json
+          echo "Service account decoded"
+
+      - name: Build production AAB
+        run: eas build --platform android --profile production --non-interactive --wait
+        env:
+          EXPO_PUBLIC_APP_ENV: production
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_SENTRY_DSN_RIDE: ${{ secrets.EXPO_PUBLIC_SENTRY_DSN_RIDE }}
+          EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: drivermesh
+          SENTRY_PROJECT: drivermesh-ride
+
+      - name: Submit to Play Store Internal Testing
+        run: eas submit --platform android --latest --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_EAS_TOKEN }}
+
+      - name: Telegram notification
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          TAG="${{ github.ref_name }}"
+          MSG=":rocket: *DriverMesh Ride $TAG* — *$STATUS*%0A%0AInternal Testing track'e gönderildi.%0AProd rollout için Play Console -> Submit for review."
+          if [ -n "${{ secrets.TELEGRAM_BOT_TOKEN }}" ] && [ -n "${{ secrets.TELEGRAM_CHAT_ID }}" ]; then
+            curl -s "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+              -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+              -d "text=$MSG" \
+              -d "parse_mode=Markdown"
+          fi
