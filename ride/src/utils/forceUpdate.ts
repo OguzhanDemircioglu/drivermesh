@@ -47,10 +47,13 @@ export async function checkForceUpdate(): Promise<ForceUpdateState> {
     (Constants.expoConfig?.version as string | undefined) ?? '0.0.0';
 
   try {
+    // (platform, app) composite key — fleet ve ride aynı row'u paylaşmıyor.
+    // Migration: 2026-05-16 app_versions_split_fleet_ride.
     const { data, error } = await supabase
       .from('app_versions')
       .select('latest_version, min_supported_version, store_url, force_update_message_tr, force_update_message_en')
       .eq('platform', platform)
+      .eq('app', 'ride')
       .maybeSingle();
 
     if (error || !data) {

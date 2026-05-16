@@ -25,10 +25,11 @@ export default function PhoneScreen() {
     if (!valid || submitting) return;
     setSubmitting(true);
     try {
-      // GEÇİCİ: SMS provider (Twilio) yapılandırılana kadar OTP'yi atla.
-      // Telefon onaylanınca mock session açılır, doğrudan home'a yönlen.
-      // Twilio ayarlandığında bu blok kaldırılır.
-      if (devSignIn) {
+      // SMS provider (Twilio) yapılandırılana kadar dev build'lerde OTP'yi
+      // atlamak için devSignIn fallback. AuthProvider, release APK'larda
+      // devSignIn'i undefined döndürür → bu blok yalnızca __DEV__ true ise
+      // tetiklenir.
+      if (__DEV__ && devSignIn) {
         await devSignIn();
         return;
       }

@@ -77,6 +77,14 @@ module.exports = {
         defaultChannel: 'default',
       },
     ],
+    [
+      '@sentry/react-native/expo',
+      {
+        organization: 'drivermesh',
+        project: 'drivermesh-ride',
+        url: 'https://de.sentry.io/',
+      },
+    ],
   ],
   experiments: { typedRoutes: false },
   extra: {

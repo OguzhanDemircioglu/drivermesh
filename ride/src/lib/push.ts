@@ -63,3 +63,28 @@ if (Platform.OS === 'android') {
     lightColor: '#FF7A1A',
   }).catch(() => {});
 }
+
+/**
+ * Push notification payload deep-link mapping (data.screen → route).
+ *
+ * Backend push'larına `data` alanında `screen` (ve opsiyonel `ride_id`)
+ * geçilir. Tap'te bu alan okunup uygun rota'ya yönlendiririz.
+ *   - 'active'    → /(app)/(tabs)/home (anasayfadaki ActiveRideView)
+ *   - 'rating'    → /(app)/(tabs)/home (pending rating banner home'da)
+ *   - 'home' veya tanınmayan → /(app)/(tabs)/home
+ *
+ * Ride app şu an iki taban path'i kullanıyor; herşey home'da topluyor.
+ * V2'de ayrı /(app)/ride/[id] route'u açılırsa burası genişler.
+ */
+export function routeForPushPayload(
+  data: Record<string, unknown> | undefined | null,
+): string {
+  const screen = typeof data?.screen === 'string' ? data.screen : 'home';
+  switch (screen) {
+    case 'active':
+    case 'rating':
+    case 'home':
+    default:
+      return '/(app)/(tabs)/home';
+  }
+}

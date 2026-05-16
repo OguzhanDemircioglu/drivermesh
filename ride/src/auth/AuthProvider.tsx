@@ -145,15 +145,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
       },
-      // GEÇİCİ: Twilio yapılandırılana kadar tüm build'lerde aktif (release
-      // dahil). Twilio ayarlandığında `__DEV__ ?` koşulu geri eklenir.
-      devSignIn: async () => {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: 'dev-customer@drivermeshride.local',
-          password: 'devpass1234',
-        });
-        if (error) console.warn('[dev-signin] error', error.message);
-      },
+      // Sadece dev/preview build'lerde sunulur. Release APK __DEV__ false
+      // olduğu için devSignIn undefined kalır → string-dump'ta hardcoded
+      // credential sızması yok, UI'da da fallback gizlenir.
+      devSignIn: __DEV__
+        ? async () => {
+            const { error } = await supabase.auth.signInWithPassword({
+              email: 'dev-customer@drivermeshride.local',
+              password: 'devpass1234',
+            });
+            if (error) console.warn('[dev-signin] error', error.message);
+          }
+        : undefined,
     }),
     [session, customer, loading, fetchCustomer],
   );

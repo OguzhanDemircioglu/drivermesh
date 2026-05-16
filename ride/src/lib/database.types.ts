@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       app_versions: {
         Row: {
+          app: string
           force_update_message_en: string
           force_update_message_tr: string
           latest_version: string
@@ -27,6 +28,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          app?: string
           force_update_message_en?: string
           force_update_message_tr?: string
           latest_version: string
@@ -38,6 +40,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          app?: string
           force_update_message_en?: string
           force_update_message_tr?: string
           latest_version?: string
