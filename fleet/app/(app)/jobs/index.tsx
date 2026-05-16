@@ -23,6 +23,7 @@ import { JobCard } from '@/components/JobCard';
 import { useToast } from '@/components/Toast';
 import { useAuth } from '@/auth/AuthProvider';
 import { listJobs, simulateRideJob, type JobWithRefs } from '@/lib/jobs';
+import { isDemoActive } from '@/demo/store';
 import { theme } from '@/theme';
 import type { JobStatus } from '@/lib/database.types';
 
@@ -126,6 +127,9 @@ export default function JobsScreen() {
     }
   }, [load, toast, t]);
 
+  // Simulate ride buton sadece demo mode'da (production gerçek user'da yok).
+  // Prod kullanıcı bir RPC ile sentetik ride job inject edemez/etmemeli.
+  const showSimulate = canCreate && isDemoActive();
   const topActions = canCreate ? (
     <View style={styles.topActions}>
       <Button
@@ -133,13 +137,15 @@ export default function JobsScreen() {
         leftIcon={<Feather name="plus" size={18} color="#0A0E1F" />}
         onPress={() => router.push('/(app)/jobs/new')}
       />
-      <Pressable
-        onPress={onSimulate}
-        style={({ pressed }) => [styles.simBtn, pressed && { opacity: 0.7 }]}
-      >
-        <Feather name="zap" size={14} color={theme.colors.mesh} />
-        <Text style={styles.simText}>{t('jobs.simulateRide')}</Text>
-      </Pressable>
+      {showSimulate ? (
+        <Pressable
+          onPress={onSimulate}
+          style={({ pressed }) => [styles.simBtn, pressed && { opacity: 0.7 }]}
+        >
+          <Feather name="zap" size={14} color={theme.colors.mesh} />
+          <Text style={styles.simText}>{t('jobs.simulateRide')}</Text>
+        </Pressable>
+      ) : null}
     </View>
   ) : isDriver ? (
     <View style={styles.topActions}>
