@@ -20,7 +20,7 @@ import { JobCard } from '@/components/JobCard';
 import { BottomNav } from '@/components/BottomNav';
 import { Card } from '@/components/Card';
 import { StatusPill } from '@/components/StatusPill';
-import { useDriverActiveRide } from '@/hooks/useDriverActiveRide';
+import { useDriverActiveRide } from '../../src/hooks/useDriverActiveRide';
 import { useAuth } from '@/auth/AuthProvider';
 import { setAppLocale, type AppLocale } from '@/i18n';
 import { fetchHomeStats, type HomeStats } from '@/lib/queries';

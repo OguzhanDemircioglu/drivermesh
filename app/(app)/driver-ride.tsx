@@ -16,7 +16,7 @@ import { Feather } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card } from '@/components/Card';
 import { useAuth } from '@/auth/AuthProvider';
-import { useDriverActiveRide } from '@/hooks/useDriverActiveRide';
+import { useDriverActiveRide } from '../../src/hooks/useDriverActiveRide';
 import { supabase } from '@/lib/supabase';
 import { theme } from '@/theme';
 
