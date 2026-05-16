@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       app_versions: {
         Row: {
+          app: string
           force_update_message_en: string
           force_update_message_tr: string
           latest_version: string
@@ -27,6 +28,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          app?: string
           force_update_message_en?: string
           force_update_message_tr?: string
           latest_version: string
@@ -38,6 +40,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          app?: string
           force_update_message_en?: string
           force_update_message_tr?: string
           latest_version?: string
@@ -2494,3 +2497,23 @@ export const Constants = {
     },
   },
 } as const
+
+// ---------------------------------------------------------------------------
+// Named exports — fleet kod tabanı bu kısa isimleri kullanıyor.
+// Supabase CLI auto-gen sadece Database tipini export eder; aşağıdaki kısa
+// aliaslar `npm run gen:types` sonrası elle korunur. Yeni tablo/enum eklenirse
+// burayı da güncelle.
+// ---------------------------------------------------------------------------
+export type Job = Database['public']['Tables']['jobs']['Row']
+export type JobStatus = Database['public']['Enums']['job_status']
+export type JobSource = Database['public']['Enums']['job_source']
+export type Profile = Database['public']['Tables']['profiles']['Row']
+export type Vehicle = Database['public']['Tables']['vehicles']['Row']
+export type VehicleStatus = Database['public']['Enums']['vehicle_status']
+export type MaintenanceRequest =
+  Database['public']['Tables']['maintenance_requests']['Row']
+export type UserRole = Database['public']['Enums']['user_role']
+export type Invitation = Database['public']['Tables']['invitations']['Row']
+export type Organization = Database['public']['Tables']['organizations']['Row']
+export type Notification = Database['public']['Tables']['notifications']['Row']
+

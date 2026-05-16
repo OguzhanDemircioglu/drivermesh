@@ -729,6 +729,7 @@ function mkJob(id: string, spec: JobSpec): Job {
       spec.startedMinutesAgo != null ? minutesAgo(spec.startedMinutesAgo) : null,
     completed_at:
       spec.completedMinutesAgo != null ? minutesAgo(spec.completedMinutesAgo) : null,
+    ride_request_id: null,
   };
 }
 

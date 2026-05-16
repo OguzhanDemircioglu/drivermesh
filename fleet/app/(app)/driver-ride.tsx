@@ -2,12 +2,13 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Linking,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -15,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card } from '@/components/Card';
+import { useToast } from '@/components/Toast';
 import { useAuth } from '@/auth/AuthProvider';
 import { useDriverActiveRide } from '../../src/hooks/useDriverActiveRide';
 import { supabase } from '@/lib/supabase';
@@ -24,12 +26,20 @@ export default function DriverRideScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
+  const toast = useToast();
   const { session } = useAuth();
   const driverId = session?.user.id;
   const { data: ride, loading, refetch } = useDriverActiveRide(driverId);
   const [busy, setBusy] = useState(false);
   const [fareStr, setFareStr] = useState('');
   const [distanceStr, setDistanceStr] = useState('');
+  // complete_ride success'inden sonra rating modal'ı için kapatılan ride id.
+  // useDriverActiveRide 'completed'i yakalamadığı için yereldeki ride.id'yi
+  // saklamak en güvenilir yöntem.
+  const [pendingRatingRideId, setPendingRatingRideId] = useState<string | null>(null);
+  const [ratingStars, setRatingStars] = useState(0);
+  const [ratingComment, setRatingComment] = useState('');
+  const [ratingBusy, setRatingBusy] = useState(false);
 
   const callRpc = async (
     fn: 'driver_arrived' | 'start_ride' | 'complete_ride',
@@ -46,6 +56,13 @@ export default function DriverRideScreen() {
         }
       ).rpc(fn, args);
       if (error) throw new Error(error.message);
+      // complete_ride sonrası rating modal aç (ride id'yi ride henüz null'a
+      // düşmeden yakala).
+      if (fn === 'complete_ride' && ride) {
+        setPendingRatingRideId(ride.id);
+        setRatingStars(0);
+        setRatingComment('');
+      }
       await refetch();
     } catch (e) {
       Alert.alert('Hata', e instanceof Error ? e.message : 'Bilinmeyen');
@@ -54,12 +71,52 @@ export default function DriverRideScreen() {
     }
   };
 
+  const submitRating = async () => {
+    if (!pendingRatingRideId || ratingStars < 1 || ratingStars > 5) return;
+    setRatingBusy(true);
+    try {
+      const { error } = await (
+        supabase as unknown as {
+          rpc: (
+            f: string,
+            a: Record<string, unknown>,
+          ) => Promise<{ error: { message: string } | null }>;
+        }
+      ).rpc('submit_driver_rating', {
+        p_ride_id: pendingRatingRideId,
+        p_stars: ratingStars,
+        p_comment: ratingComment.trim() || null,
+      });
+      if (error) throw new Error(error.message);
+      toast.success(t('driverRide.ratingSent'), '');
+      setPendingRatingRideId(null);
+    } catch (e) {
+      Alert.alert('Hata', e instanceof Error ? e.message : 'Bilinmeyen');
+    } finally {
+      setRatingBusy(false);
+    }
+  };
+
+  const ratingModal = pendingRatingRideId ? (
+    <RatingModal
+      stars={ratingStars}
+      comment={ratingComment}
+      busy={ratingBusy}
+      onStars={setRatingStars}
+      onComment={setRatingComment}
+      onSubmit={submitRating}
+      onSkip={() => setPendingRatingRideId(null)}
+      t={t}
+    />
+  ) : null;
+
   if (loading) {
     return (
       <SafeAreaView style={styles.root}>
         <View style={styles.center}>
           <ActivityIndicator color={theme.colors.accent} />
         </View>
+        {ratingModal}
       </SafeAreaView>
     );
   }
@@ -83,6 +140,7 @@ export default function DriverRideScreen() {
           <Text style={styles.emptyTitle}>{t('driverRide.emptyTitle')}</Text>
           <Text style={styles.emptyBody}>{t('driverRide.emptyBody')}</Text>
         </View>
+        {ratingModal}
       </SafeAreaView>
     );
   }
@@ -222,7 +280,92 @@ export default function DriverRideScreen() {
           <TimelineRow label={t('driverRide.tlStarted')} time={ride.started_at} />
         </Card>
       </ScrollView>
+      {ratingModal}
     </SafeAreaView>
+  );
+}
+
+function RatingModal({
+  stars,
+  comment,
+  busy,
+  onStars,
+  onComment,
+  onSubmit,
+  onSkip,
+  t,
+}: {
+  stars: number;
+  comment: string;
+  busy: boolean;
+  onStars: (n: number) => void;
+  onComment: (s: string) => void;
+  onSubmit: () => void;
+  onSkip: () => void;
+  t: (k: string) => string;
+}) {
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onSkip}>
+      <TouchableWithoutFeedback onPress={onSkip}>
+        <View style={styles.modalBackdrop}>
+          <TouchableWithoutFeedback>
+            <View style={styles.modalSheet}>
+              <Text style={styles.modalTitle}>{t('driverRide.ratingTitle')}</Text>
+              <Text style={styles.modalBody}>{t('driverRide.ratingBody')}</Text>
+              <View style={styles.starsRow}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Pressable
+                    key={n}
+                    hitSlop={6}
+                    onPress={() => onStars(n)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${n} yıldız`}
+                  >
+                    <Feather
+                      name="star"
+                      size={36}
+                      color={n <= stars ? theme.colors.accent : theme.colors.textDim}
+                    />
+                  </Pressable>
+                ))}
+              </View>
+              <TextInput
+                style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]}
+                placeholder={t('driverRide.ratingCommentPlaceholder')}
+                placeholderTextColor={theme.colors.textDim}
+                multiline
+                value={comment}
+                onChangeText={onComment}
+                maxLength={500}
+              />
+              <View style={styles.modalActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={onSkip}
+                  disabled={busy}
+                  style={({ pressed }) => [styles.modalSkip, pressed && { opacity: 0.7 }]}
+                >
+                  <Text style={styles.modalSkipText}>{t('driverRide.ratingSkip')}</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={onSubmit}
+                  disabled={busy || stars < 1}
+                  style={({ pressed }) => [
+                    styles.modalSubmit,
+                    (busy || stars < 1) && styles.ctaDisabled,
+                    pressed && { opacity: 0.85 },
+                  ]}
+                >
+                  <Feather name="check" size={18} color={theme.colors.bg} />
+                  <Text style={styles.ctaText}>{t('driverRide.ratingSubmit')}</Text>
+                </Pressable>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
   );
 }
 
@@ -303,4 +446,46 @@ const styles = StyleSheet.create({
   tlRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   tlLabel: { flex: 1, color: theme.colors.text, fontSize: 13 },
   tlTime: { color: theme.colors.textMuted, fontSize: 12 },
+
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: theme.colors.bgElevated,
+    borderTopLeftRadius: theme.radius.xl,
+    borderTopRightRadius: theme.radius.xl,
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl + 8,
+    gap: 12,
+  },
+  modalTitle: { color: theme.colors.text, fontSize: 19, fontWeight: '700' },
+  modalBody: { color: theme.colors.textMuted, fontSize: 14, marginBottom: 4 },
+  starsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  modalActions: { flexDirection: 'row', gap: 12, marginTop: 4 },
+  modalSkip: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: theme.radius.md,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    alignItems: 'center',
+  },
+  modalSkipText: { color: theme.colors.textMuted, fontSize: 15, fontWeight: '600' },
+  modalSubmit: {
+    flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.accent,
+  },
 });

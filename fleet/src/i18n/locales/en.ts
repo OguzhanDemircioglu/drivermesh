@@ -32,6 +32,12 @@ export const en: TranslationShape = {
     tlAssigned: 'Assigned',
     tlArrived: 'Arrived',
     tlStarted: 'Started',
+    ratingTitle: 'Rate the passenger',
+    ratingBody: 'Trip completed. Leave a quick note about the passenger?',
+    ratingCommentPlaceholder: 'Comment (optional)',
+    ratingSubmit: 'Submit',
+    ratingSkip: 'Skip',
+    ratingSent: 'Thanks, your rating is in.',
   },
   rideSettings: {
     title: 'Ride Service',

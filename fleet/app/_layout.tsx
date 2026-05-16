@@ -19,6 +19,7 @@ import { WelcomeHero } from '@/components/WelcomeHero';
 import { setupI18n } from '@/i18n';
 import { initSentry } from '@/lib/sentry';
 import { checkAppVersion, type VersionCheckResult } from '@/lib/forceUpdate';
+import { routeForPushPayload } from '@/lib/pushNotifications';
 import { theme } from '@/theme';
 
 // Module load — Sentry init mumkun olan en erken anda. DSN .env'de yoksa
@@ -42,6 +43,41 @@ function AuthGate() {
   const { session, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+
+  // Push notification tap → deep-link routing. expo-notifications dinamik
+  // import (modül yoksa no-op). Cold-start: getLastNotificationResponseAsync;
+  // foreground/background: addNotificationResponseReceivedListener.
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    let cleanup: (() => void) | undefined;
+    import('expo-notifications')
+      .then((Notifications) => {
+        Notifications.getLastNotificationResponseAsync()
+          .then((resp) => {
+            if (cancelled || !resp) return;
+            const route = routeForPushPayload(
+              resp.notification.request.content.data as Record<string, unknown> | undefined,
+            );
+            router.replace(route as never);
+          })
+          .catch(() => {});
+        const sub = Notifications.addNotificationResponseReceivedListener((resp) => {
+          const route = routeForPushPayload(
+            resp.notification.request.content.data as Record<string, unknown> | undefined,
+          );
+          router.push(route as never);
+        });
+        cleanup = () => sub.remove();
+      })
+      .catch(() => {
+        // expo-notifications native modul yok (dev build) — sessiz skip
+      });
+    return () => {
+      cancelled = true;
+      cleanup?.();
+    };
+  }, [session, router]);
   // Root navigator'ın mount tamamlanıp tamamlanmadığının tek güvenilir
   // sinyali. Fresh start + pm clear sonrası auth state useEffect'i navigator
   // mount'undan önce tetiklenebilir; key set olmadan replace çağırırsak

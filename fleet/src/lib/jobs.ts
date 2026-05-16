@@ -143,6 +143,7 @@ export async function createJob(input: CreateJobInput): Promise<Job> {
       started_at: null,
       completed_at: null,
       fail_reason: null,
+      ride_request_id: null,
     };
     demo.addJob(job);
     return job;
@@ -203,6 +204,7 @@ export async function simulateRideJob(): Promise<string> {
       started_at: null,
       completed_at: null,
       fail_reason: null,
+      ride_request_id: null,
     });
     return id;
   }

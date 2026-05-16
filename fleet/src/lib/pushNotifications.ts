@@ -118,3 +118,38 @@ export async function clearPushToken(userId: string): Promise<void> {
     })
     .eq('id', userId);
 }
+
+/**
+ * Push notification payload deep-link mapping (data.screen → route).
+ *
+ * Backend push'larında `data.screen` (ve opsiyonel `ride_id`, `job_id` vb.)
+ * geçer. Tap'te uygun route'a yönlendirilir.
+ *   - 'driver_ride' veya 'ride'    → /(app)/driver-ride
+ *   - 'job'      → /(app)/jobs/[id]  (data.job_id varsa)
+ *   - 'jobs'     → /(app)/jobs
+ *   - 'fleet_map'→ /(app)/fleet-map
+ *   - 'notifications' → /(app)/notifications
+ *   - default    → /(app) (home)
+ */
+export function routeForPushPayload(
+  data: Record<string, unknown> | undefined | null,
+): string {
+  const screen = typeof data?.screen === 'string' ? data.screen : 'home';
+  const jobId = typeof data?.job_id === 'string' ? data.job_id : null;
+  switch (screen) {
+    case 'driver_ride':
+    case 'ride':
+      return '/(app)/driver-ride';
+    case 'job':
+      return jobId ? `/(app)/jobs/${jobId}` : '/(app)/jobs';
+    case 'jobs':
+      return '/(app)/jobs';
+    case 'fleet_map':
+      return '/(app)/fleet-map';
+    case 'notifications':
+      return '/(app)/notifications';
+    case 'home':
+    default:
+      return '/(app)';
+  }
+}

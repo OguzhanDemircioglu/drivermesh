@@ -30,6 +30,12 @@ export const tr = {
     tlAssigned: 'Atandı',
     tlArrived: 'Vardı',
     tlStarted: 'Başladı',
+    ratingTitle: 'Müşteriyi değerlendir',
+    ratingBody: 'Yolculuk tamamlandı. Müşteri için bir not bırakır mısın?',
+    ratingCommentPlaceholder: 'Yorum (opsiyonel)',
+    ratingSubmit: 'Gönder',
+    ratingSkip: 'Atla',
+    ratingSent: 'Teşekkürler, değerlendirme alındı.',
   },
   rideSettings: {
     title: 'Yolcu Hizmeti',

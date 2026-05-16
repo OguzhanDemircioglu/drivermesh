@@ -52,10 +52,13 @@ export async function checkAppVersion(): Promise<VersionCheckResult | null> {
   if (platform !== 'android' && platform !== 'ios') return null;
 
   try {
+    // (platform, app) composite key — fleet ve ride aynı row'u paylaşmıyor.
+    // Migration: 2026-05-16 app_versions_split_fleet_ride.
     const { data, error } = await supabase
       .from('app_versions')
       .select('*')
       .eq('platform', platform)
+      .eq('app', 'fleet')
       .maybeSingle();
 
     if (error || !data) {
