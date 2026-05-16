@@ -194,13 +194,18 @@ export default function HomeScreen() {
 
           {/* Setup mode'da onboarding hero'su, ready mode'da tek satırlık
               "live status strip" — KPI'lar saymakla meşgul, bu şerit "şu an
-              ne oluyor + Haritaya git" tetikleyicisi. */}
+              ne oluyor + Haritaya git" tetikleyicisi.
+              Setup hero sadece owner/manager için — driver'ın filo kurma
+              yetkisi yok, kendisi setup'ı tamamlayamaz. Driver için fleet
+              ready değilse hiçbir şey gösterme. */}
           {!isFleetReady ? (
-            <FleetSetupHero
-              stats={stats}
-              onInvite={() => router.push('/(app)/team')}
-              onAddVehicle={() => router.push('/(app)/vehicles/new')}
-            />
+            canAdd ? (
+              <FleetSetupHero
+                stats={stats}
+                onInvite={() => router.push('/(app)/team')}
+                onAddVehicle={() => router.push('/(app)/vehicles/new')}
+              />
+            ) : null
           ) : (
             <Pressable
               onPress={() => router.push('/(app)/fleet-map')}
@@ -270,6 +275,7 @@ export default function HomeScreen() {
             {stats.todaysJobs.length === 0 ? (
               <EmptyJobs
                 hasAnyData={hasAnyData}
+                canCreate={canAdd}
                 onCreate={() =>
                   router.push(canAdd ? '/(app)/jobs/new' : '/(app)/jobs')
                 }
@@ -593,9 +599,11 @@ function QuickAction({
 
 function EmptyJobs({
   hasAnyData,
+  canCreate,
   onCreate,
 }: {
   hasAnyData: boolean;
+  canCreate: boolean;
   onCreate: () => void;
 }) {
   const { t } = useTranslation();
@@ -610,13 +618,15 @@ function EmptyJobs({
           ? t('home.emptyJobsTextHasData')
           : t('home.emptyJobsTextEmpty')}
       </Text>
-      <Pressable
-        onPress={onCreate}
-        style={({ pressed }) => [styles.emptyCta, pressed && { opacity: 0.85 }]}
-      >
-        <Feather name="plus" size={16} color={theme.colors.accent} />
-        <Text style={styles.emptyCtaText}>{t('home.emptyJobsCta')}</Text>
-      </Pressable>
+      {canCreate ? (
+        <Pressable
+          onPress={onCreate}
+          style={({ pressed }) => [styles.emptyCta, pressed && { opacity: 0.85 }]}
+        >
+          <Feather name="plus" size={16} color={theme.colors.accent} />
+          <Text style={styles.emptyCtaText}>{t('home.emptyJobsCta')}</Text>
+        </Pressable>
+      ) : null}
     </Card>
   );
 }

@@ -258,7 +258,9 @@ export default function NewVehicleScreen() {
                     },
                     pressed && { opacity: 0.7 },
                   ]}
+                  accessibilityRole="button"
                   accessibilityLabel={colorLabel}
+                  accessibilityState={{ selected: active }}
                 >
                   {active ? (
                     <Feather
