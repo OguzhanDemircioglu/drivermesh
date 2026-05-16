@@ -102,15 +102,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(null);
       return;
     }
-    // Orphaned session: auth.users sildiğinden profile [] döner. Hayalet
-    // oturumla devam etmek UI'da spinner kilidi + sahte verilere yol açıyor;
-    // kullanıcıyı temiz başlangıca götürmek için signOut ediyoruz.
-    if (!data && !isDemoActiveStore()) {
-      console.warn('[auth] orphaned session detected (profile missing) — signing out');
-      setProfile(null);
-      supabase.auth.signOut().catch(() => {});
-      return;
-    }
+    // Profile null durumu birden çok nedenle olabilir: JWT expiry (RLS reddi),
+    // network gecikmesi, gerçek orphan (auth.users silinmiş). Otomatik signOut
+    // false positive üretiyordu (her restart logout). Bunun yerine profile=null
+    // bırakıp UI'in empty-state'ine bırakıyoruz; Hesap ekranından kullanıcı manuel
+    // signOut yapabilir. Orphan kullanıcılar zaten profile null nedeniyle org-based
+    // query'lerden boş sonuç alır (Bug B fix ile spinner sıkışmaz).
     setProfile(data ?? null);
   }, []);
 
