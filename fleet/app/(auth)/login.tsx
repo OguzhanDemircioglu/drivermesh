@@ -57,7 +57,7 @@ export default function LoginScreen() {
   });
 
   return (
-    <Screen scroll contentStyle={styles.scroll}>
+    <Screen scroll transparent contentStyle={styles.scroll}>
       <View style={styles.header}>
         <Logo size={84} />
         <Text style={styles.brand}>

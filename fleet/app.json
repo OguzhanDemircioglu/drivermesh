@@ -33,9 +33,9 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash-blank.png",
+          "image": "./assets/drivermesh-splash.png",
           "backgroundColor": "#0A0E1F",
-          "resizeMode": "contain"
+          "resizeMode": "cover"
         }
       ],
       [

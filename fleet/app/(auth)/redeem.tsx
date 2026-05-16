@@ -156,7 +156,7 @@ export default function RedeemScreen() {
   const roleLabel = lookup ? t(`roles.${lookup.role}`) : '';
 
   return (
-    <Screen scroll contentStyle={styles.scroll}>
+    <Screen scroll transparent contentStyle={styles.scroll}>
       <Pressable
         onPress={() => router.back()}
         hitSlop={12}

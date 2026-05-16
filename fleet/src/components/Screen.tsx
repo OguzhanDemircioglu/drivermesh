@@ -9,6 +9,9 @@ type Props = {
   children: ReactNode;
   scroll?: boolean;
   showMesh?: boolean;
+  /** Root view bg + mesh overlay kapatır — auth ekranlarında RootLayout'un
+   *  DRIVERMESH_BG image'inin görünür kalması için. */
+  transparent?: boolean;
   edges?: Array<'top' | 'bottom' | 'left' | 'right'>;
   contentStyle?: object;
 };
@@ -17,14 +20,15 @@ export function Screen({
   children,
   scroll = false,
   showMesh = true,
+  transparent = false,
   edges = ['top', 'bottom', 'left', 'right'],
   contentStyle,
 }: Props) {
   const Body = scroll ? ScrollView : View;
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, transparent && styles.transparentRoot]}>
       <StatusBar style="light" />
-      {showMesh ? <MeshBackground /> : null}
+      {showMesh && !transparent ? <MeshBackground /> : null}
       <SafeAreaView style={styles.flex} edges={edges}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -49,6 +53,7 @@ export function Screen({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.bg },
+  transparentRoot: { backgroundColor: 'transparent' },
   flex: { flex: 1 },
   body: { flex: 1, paddingHorizontal: theme.spacing.xl },
   scrollContent: {

@@ -87,7 +87,7 @@ export default function RegisterScreen() {
   });
 
   return (
-    <Screen scroll contentStyle={styles.scroll}>
+    <Screen scroll transparent contentStyle={styles.scroll}>
       <Pressable
         onPress={() => router.back()}
         hitSlop={12}

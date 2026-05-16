@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Stack, useRootNavigationState, useRouter, useSegments } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { AppState, StyleSheet, Text, TextInput, View } from 'react-native';
+import { AppState, Image, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import {
   useFonts,
@@ -15,12 +15,18 @@ import { AuthProvider, useAuth } from '@/auth/AuthProvider';
 import { ConfirmProvider } from '@/components/ConfirmDialog';
 import { ToastProvider } from '@/components/Toast';
 import { ForceUpdateModal } from '@/components/ForceUpdateModal';
-import { WelcomeHero } from '@/components/WelcomeHero';
 import { setupI18n } from '@/i18n';
 import { initSentry } from '@/lib/sentry';
 import { checkAppVersion, type VersionCheckResult } from '@/lib/forceUpdate';
 import { routeForPushPayload } from '@/lib/pushNotifications';
 import { theme } from '@/theme';
+
+// Native splash → JS bridge → ilk auth ekranı geçişini "kesintisiz" yapmak için
+// aynı görseli JS Root'unda da arka planda render ediyoruz (ride pattern).
+// AuthGate'in Stack'i bu image'in üzerine transparent contentStyle ile binebilir,
+// böylece welcome/login arası flicker olmaz. Welcome ekranındaki WelcomeHero
+// dil-bazlı override eder (TR/EN); diğer auth ekranlarında JS root bg fallback.
+const DRIVERMESH_BG = require('../assets/drivermesh-splash.png');
 
 // Module load — Sentry init mumkun olan en erken anda. DSN .env'de yoksa
 // silent skip (dev). Native crashlar bile yakalanir bu sekilde.
@@ -105,34 +111,33 @@ function AuthGate() {
   }, [session, loading, rootNavReady, segments, router]);
 
   // Splash hide'ı View ekrana yerleştikten sonra tetikle. Bu sayede native
-  // splash kapanırken ekranda zaten React frame (WelcomeHero) hazır olur,
-  // geçişte siyah frame yaşanmaz.
+  // splash kapanırken ekranda zaten JS Root bg image hazır olur, geçişte
+  // siyah frame yaşanmaz (ride pattern: aynı görsel native + JS).
   const handleRootLayout = () => {
     if (splashHiddenRef.current) return;
     splashHiddenRef.current = true;
     SplashScreen.hideAsync().catch(() => {});
   };
 
-  // Min splash süresi yok — auth resolve eder etmez routing devreye girer.
-  // Native splash + JS overlay görsel olarak birebir aynı resmi gösterdiği
-  // için flicker yaşanmaz.
-  const showSplash = loading;
-
   return (
     <View style={styles.root} onLayout={handleRootLayout}>
+      {/* Tam ekran bg image — native splash ile birebir aynı görsel.
+          Stack contentStyle transparent olduğu için Welcome/Login/Register
+          ekranları bu image üzerine biner; WelcomeHero kendi dil-bazlı
+          imajı ile bunu override eder. Boş frame/flicker yok. */}
+      <Image
+        source={DRIVERMESH_BG}
+        style={StyleSheet.absoluteFill}
+        resizeMode="cover"
+      />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: theme.colors.bg },
+          contentStyle: { backgroundColor: 'transparent' },
           animation: 'none',
           statusBarTranslucent: true,
         }}
       />
-      {showSplash ? (
-        <View style={StyleSheet.absoluteFill} pointerEvents="none">
-          <WelcomeHero />
-        </View>
-      ) : null}
     </View>
   );
 }
