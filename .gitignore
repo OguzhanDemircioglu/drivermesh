@@ -1,16 +1,15 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# Workspace-level ignores. App-specific ignores live in fleet/.gitignore and ride/.gitignore.
 
-# dependencies
+# Dependencies
 node_modules/
 
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
+# OS / Editors
+.DS_Store
+*.pem
+.idea/
+Thumbs.db
 
-# Native
-.kotlin/
+# Native signing
 *.orig.*
 *.jks
 *.keystore
@@ -22,47 +21,19 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
-# debug
+# Debug
 npm-debug.*
 yarn-debug.*
 yarn-error.*
 
-# macOS
-.DS_Store
-*.pem
-
-# IDE
-.idea/
-
-# local env files
-.env
-.env*.local
-.env.bak*
-
-# dev/test artifacts
+# Dev/test artifacts (workspace-wide)
 screenshots/
 .scratch/
 .claude/
 .tmp/
-
-# typescript
-*.tsbuildinfo
-
-# generated native folders
-/ios
-/android
-
-# Sentry — source map upload auth token (defansif; /android zaten ignored)
-android/sentry.properties
-ios/sentry.properties
-
-# Firebase / FCM client config — committed at root for EAS prebuild
-!/google-services.json
-
-# Claude Code MCP server config (contains API keys)
-.mcp.json
-
-# Local test artifacts
 .adb-shots/
 .fleet-build.log
 .fleet-metro.log
+
+# Claude Code MCP server config (contains API keys)
+.mcp.json

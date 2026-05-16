@@ -22,7 +22,6 @@ import { Card } from '@/components/Card';
 import { StatusPill } from '@/components/StatusPill';
 import { useDriverActiveRide } from '../../src/hooks/useDriverActiveRide';
 import { useAuth } from '@/auth/AuthProvider';
-import { setAppLocale, type AppLocale } from '@/i18n';
 import { fetchHomeStats, type HomeStats } from '@/lib/queries';
 import { theme } from '@/theme';
 
@@ -42,16 +41,8 @@ const EMPTY_STATS: HomeStats = {
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { session, profile } = useAuth();
-  const currentLocale = (i18n.language as AppLocale) ?? 'tr';
-  // Tap → diğer dil. Etiket aktif dili gösterir (kullanıcı hangisinde
-  // olduğunu, basınca neye geçeceğini bilsin diye flag + kod).
-  const localeFlag = currentLocale === 'tr' ? '🇹🇷' : '🇬🇧';
-  const localeLabel = currentLocale === 'tr' ? 'TR' : 'EN';
-  const toggleLocale = () => {
-    setAppLocale(currentLocale === 'tr' ? 'en' : 'tr');
-  };
 
   // Saat dilimine göre selamlama. JavaScript `new Date().getHours()` cihazın
   // sistem timezone'unu kullanır → kullanıcı hangi ülkedeyse o yerel saatte
@@ -155,9 +146,11 @@ export default function HomeScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Avatar name={fullName} size={48} uri={profile?.avatar_url} />
+              <Avatar name={fullName} size={72} uri={profile?.avatar_url} />
               <View style={styles.headerText}>
-                <Text style={styles.greet}>{t(greetingKey)}</Text>
+                <Text style={styles.greet} numberOfLines={1}>
+                  {t(greetingKey)}
+                </Text>
                 <Text style={styles.name} numberOfLines={1}>
                   {firstName}
                 </Text>
@@ -169,28 +162,16 @@ export default function HomeScreen() {
                 onPress={() => router.push('/(app)/notifications')}
                 style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.7 }]}
               >
-                <Feather name="bell" size={20} color={theme.colors.text} />
-              </Pressable>
-              <Pressable
-                hitSlop={10}
-                onPress={toggleLocale}
-                accessibilityRole="button"
-                accessibilityLabel={`Dil: ${localeLabel}`}
-                style={({ pressed }) => [
-                  styles.localeBtn,
-                  pressed && { opacity: 0.7 },
-                ]}
-              >
-                <Text style={styles.localeFlag}>{localeFlag}</Text>
-                <Text style={styles.localeText}>{localeLabel}</Text>
+                <Feather name="bell" size={28} color={theme.colors.text} />
               </Pressable>
             </View>
           </View>
 
-          {/* Status row — dil seçici altında, kullanıcının çalışma durumu.
-              Driver için ride'da görünürlüğü, owner/manager için takım visibility'sini etkiler. */}
+          {/* Status row — bildirim + dil seçici satırının ALTINDA, full-width
+              comfortable tap target. Driver için ride'da görünürlüğü,
+              owner/manager için takım visibility'sini etkiler. */}
           <View style={styles.statusRow}>
-            <StatusPill />
+            <StatusPill expanded />
           </View>
 
           {/* Driver active-ride banner — şoför aktif yolculuktayken anasayfa kısayolu */}
@@ -654,17 +635,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
   headerText: { flex: 1 },
-  greet: { color: theme.colors.textMuted, fontSize: theme.font.size.sm },
+  greet: {
+    color: theme.colors.textMuted,
+    fontSize: theme.font.size.md,
+    fontWeight: theme.font.weight.medium,
+  },
   name: {
     color: theme.colors.text,
-    fontSize: theme.font.size.xl,
+    fontSize: theme.font.size['2xl'],
     fontWeight: theme.font.weight.bold,
-    letterSpacing: -0.4,
+    letterSpacing: -0.6,
+    marginTop: 2,
   },
-  headerRight: { flexDirection: 'row', gap: 10 },
-  statusRow: { marginTop: 4, marginBottom: 6 },
+  headerRight: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  statusRow: { marginTop: 8 },
   driverBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -688,33 +674,14 @@ const styles = StyleSheet.create({
   driverBannerTitle: { color: theme.colors.text, fontSize: 15, fontWeight: '700' },
   driverBannerHint: { color: theme.colors.textMuted, fontSize: 13, marginTop: 2 },
   iconBtn: {
-    width: 42,
-    height: 42,
+    width: 60,
+    height: 60,
     borderRadius: theme.radius.md,
     backgroundColor: theme.colors.bgElevated,
     borderWidth: 1,
     borderColor: theme.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  localeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    height: 42,
-    paddingHorizontal: 12,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.bgElevated,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  localeFlag: { fontSize: 18 },
-  localeText: {
-    color: theme.colors.text,
-    fontSize: theme.font.size.sm,
-    fontWeight: theme.font.weight.semibold,
-    letterSpacing: 0.4,
   },
 
   liveStrip: {

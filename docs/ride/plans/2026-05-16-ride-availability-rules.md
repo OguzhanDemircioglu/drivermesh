@@ -2,7 +2,7 @@
 
 **Tarih:** 2026-05-16
 **Durum:** Spec — implementasyon bekliyor
-**İlgili:** [2026-05-15-drivermeshride-architecture.md](2026-05-15-drivermeshride-architecture.md), [TESTING.md](../TESTING.md)
+**İlgili:** [2026-05-15-drivermeshride-architecture.md](2026-05-15-drivermeshride-architecture.md), [TESTING.md](../../TESTING.md)
 
 ---
 

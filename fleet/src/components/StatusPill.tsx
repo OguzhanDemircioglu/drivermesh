@@ -30,7 +30,15 @@ const STATUS_META: Record<
 // Manuel set edilebilir 4 status (on_trip auto, sistem set eder).
 const SELECTABLE: Status[] = ['active', 'break', 'off_duty', 'unavailable'];
 
-export function StatusPill() {
+type Props = {
+  /**
+   * Compact (default) → header içinde küçük chip.
+   * Expanded → full-width comfortable tap target; anasayfa primary status row için.
+   */
+  expanded?: boolean;
+};
+
+export function StatusPill({ expanded = false }: Props = {}) {
   const { t } = useTranslation();
   const { profile, refreshProfile } = useAuth();
   const status = ((profile as unknown as { status?: Status })?.status ?? 'off_duty') as Status;
@@ -75,16 +83,27 @@ export function StatusPill() {
         accessibilityRole="button"
         accessibilityLabel={`${t('status.title')}: ${t(meta.labelKey)}`}
         onPress={onPress}
+        hitSlop={expanded ? 4 : 8}
         style={({ pressed }) => [
           styles.pill,
+          expanded && styles.pillExpanded,
           { borderColor: meta.color, backgroundColor: meta.color + '22' },
           pressed && { opacity: 0.7 },
         ]}
       >
-        <View style={[styles.dot, { backgroundColor: meta.color }]} />
-        <Feather name={meta.icon} size={14} color={meta.color} />
-        <Text style={[styles.text, { color: meta.color }]}>{t(meta.labelKey)}</Text>
-        {!isOnTrip ? <Feather name="chevron-down" size={14} color={meta.color} /> : null}
+        <View style={[styles.dot, expanded && styles.dotExpanded, { backgroundColor: meta.color }]} />
+        <Feather name={meta.icon} size={expanded ? 18 : 14} color={meta.color} />
+        <Text style={[styles.text, expanded && styles.textExpanded, { color: meta.color }]}>
+          {t(meta.labelKey)}
+        </Text>
+        {!isOnTrip ? (
+          <Feather
+            name="chevron-down"
+            size={expanded ? 18 : 14}
+            color={meta.color}
+            style={expanded ? styles.chevronExpanded : undefined}
+          />
+        ) : null}
       </Pressable>
 
       <Modal
@@ -156,8 +175,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignSelf: 'flex-start',
   },
+  pillExpanded: {
+    alignSelf: 'stretch',
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    gap: 10,
+    borderWidth: 1.5,
+  },
   dot: { width: 8, height: 8, borderRadius: 4 },
+  dotExpanded: { width: 10, height: 10, borderRadius: 5 },
   text: { fontSize: 13, fontWeight: '600' },
+  textExpanded: { flex: 1, fontSize: 16, fontWeight: '700', letterSpacing: 0.2 },
+  chevronExpanded: { marginLeft: 4 },
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.55)',

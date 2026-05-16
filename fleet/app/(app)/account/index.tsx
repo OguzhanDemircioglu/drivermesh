@@ -208,32 +208,9 @@ export default function AccountScreen() {
             <Text style={styles.email}>{session?.user.email}</Text>
           </Card>
 
-          {/* Quick stats */}
-          <Card>
-            <Text style={styles.sectionTitle}>{t('account.info')}</Text>
-            <Row icon="user" label={t('account.rowName')} value={fullName} />
-            <Row icon="mail" label={t('account.rowEmail')} value={session?.user.email ?? '—'} />
-            <Row
-              icon="phone"
-              label={t('account.rowPhone')}
-              value={profile?.phone ?? t('account.rowPhoneEmpty')}
-              muted={!profile?.phone}
-            />
-            <Row
-              icon="calendar"
-              label={t('account.rowMembership')}
-              value={formatDate(profile?.created_at, currentLocale)}
-            />
-            <Pressable
-              onPress={() => router.push('/(app)/account/edit')}
-              style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.6 }]}
-            >
-              <Feather name="edit-2" size={14} color={theme.colors.accent} />
-              <Text style={styles.editBtnText}>{t('account.editProfile')}</Text>
-            </Pressable>
-          </Card>
-
-          {/* Language */}
+          {/* Language — Profil kartının (avatar + email) hemen altında.
+              Kullanıcı dil tercihini değiştirmek istediğinde profil görünümünden
+              hızlı erişim. */}
           <Card>
             <Text style={styles.sectionTitle}>{t('account.language')}</Text>
             <View style={styles.langRow}>
@@ -278,6 +255,31 @@ export default function AccountScreen() {
                 ) : null}
               </Pressable>
             </View>
+          </Card>
+
+          {/* Quick stats */}
+          <Card>
+            <Text style={styles.sectionTitle}>{t('account.info')}</Text>
+            <Row icon="user" label={t('account.rowName')} value={fullName} />
+            <Row icon="mail" label={t('account.rowEmail')} value={session?.user.email ?? '—'} />
+            <Row
+              icon="phone"
+              label={t('account.rowPhone')}
+              value={profile?.phone ?? t('account.rowPhoneEmpty')}
+              muted={!profile?.phone}
+            />
+            <Row
+              icon="calendar"
+              label={t('account.rowMembership')}
+              value={formatDate(profile?.created_at, currentLocale)}
+            />
+            <Pressable
+              onPress={() => router.push('/(app)/account/edit')}
+              style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.6 }]}
+            >
+              <Feather name="edit-2" size={14} color={theme.colors.accent} />
+              <Text style={styles.editBtnText}>{t('account.editProfile')}</Text>
+            </Pressable>
           </Card>
 
           {/* Role-specific actions */}

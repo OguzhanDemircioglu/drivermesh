@@ -601,4 +601,4 @@ Fleet UI değişiklikleri:
 - Vehicle kartında "Üzerinde: <ad>" badge.
 - Status counter yeniden hesaplandı: "aktif (ride'da) · müsait (driver+active) · boşta (owner üstünde veya driver non-active) · bakımda".
 
-Test kapsamı: [`TESTING.md`](../TESTING.md) §15-16 (Case 9-17 + RPC unit testler).
+Test kapsamı: [`TESTING.md`](../../TESTING.md) §15-16 (Case 9-17 + RPC unit testler).

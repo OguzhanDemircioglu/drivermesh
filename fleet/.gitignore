@@ -1,0 +1,26 @@
+# Fleet-specific ignores (workspace-level ignores in /.gitignore)
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native build outputs (regenerated via prebuild)
+android/
+ios/
+
+# Env
+.env
+.env*.local
+.env.bak*
+
+# Sentry — source map upload auth token
+android/sentry.properties
+ios/sentry.properties
+
+# Firebase / FCM client config — committed for EAS prebuild
+!google-services.json
+
+# Typescript
+*.tsbuildinfo

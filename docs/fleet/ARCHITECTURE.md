@@ -809,7 +809,7 @@ Demo store her mutation'da 250ms debounced disk yazma (`drivermesh.demo.state.v2
 `src/lib/openInMaps.ts` helper: iOS `maps://`, Android `geo:`, web `https://www.google.com/maps/...`.
 
 ### AuthGate Mount Race
-Fresh start sonrası Expo Router'ın internal state mount tamamlanmadan `router.replace` çağrılırsa "Attempted to navigate before mounting the Root Layout" hatası tetikleniyordu. `useRootNavigationState()?.key` guard + try/catch silent fail ile çözüldü ([app/_layout.tsx](../app/_layout.tsx)).
+Fresh start sonrası Expo Router'ın internal state mount tamamlanmadan `router.replace` çağrılırsa "Attempted to navigate before mounting the Root Layout" hatası tetikleniyordu. `useRootNavigationState()?.key` guard + try/catch silent fail ile çözüldü ([fleet/app/_layout.tsx](../../fleet/app/_layout.tsx)).
 
 ### Master-only Workflow
 Bu projede tüm commit'ler `master` branch'ine gider. Feature branch açılmaz (kullanıcı tercihi). Permission rule sırasında onay alınır.
