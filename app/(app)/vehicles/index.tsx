@@ -32,7 +32,12 @@ export default function VehiclesScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    if (!profile?.organization_id) return;
+    if (!profile?.organization_id) {
+      // Profile yoksa (oturum bozulmuş / yetim auth user) sonsuz spinner'ı önle.
+      setVehicles([]);
+      setLoading(false);
+      return;
+    }
     try {
       const data = await listVehicles(profile.organization_id);
       setVehicles(data);

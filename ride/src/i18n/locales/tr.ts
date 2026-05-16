@@ -1,0 +1,182 @@
+type LocaleShape = {
+  app: { name: string };
+  common: Record<
+    'continue' | 'cancel' | 'save' | 'send' | 'later' | 'retry' | 'confirm' | 'back' | 'close' | 'edit' | 'logout' | 'yes' | 'no',
+    string
+  >;
+  welcome: { cta: string; subtitle: string };
+  phone: { title: string; subtitle: string; label: string; placeholder: string; cta: string; errorInvalid: string };
+  otp: { title: string; subtitle: string; placeholder: string; cta: string; resendActive: string; resendCountdown: string; errorInvalid: string };
+  profileSetup: { title: string; subtitle: string; label: string; placeholder: string; cta: string };
+  tabs: { home: string; vehicles: string; account: string };
+  home: { greetingMorning: string; greetingAfternoon: string; greetingEvening: string; statsTotalRides: string; statsTotalKm: string; lastTrip: string; callCta: string; pendingRating: string };
+  vehicles: { title: string; cityLabel: string; callBtn: string; callPhone: string; emptyTitle: string; emptyBody: string; permissionRequired: string; permissionBody: string; permissionOpenSettings: string; refresh: string };
+  account: { title: string; editProfile: string; language: string; notifications: string; help: string; legal: string; version: string; logoutConfirmTitle: string; logoutConfirmBody: string };
+  call: { title: string; pickupLabel: string; pickupLoading: string; cta: string; waitingTitle: string; waitingBody: string; cancelBtn: string; timeoutTitle: string; timeoutBody: string };
+  active: { statusAssigned: string; statusArrived: string; statusInProgress: string; callDriver: string; cancelTrip: string; cancelConfirmTitle: string; cancelConfirmBody: string };
+  rating: { title: string; starLabel1: string; starLabel2: string; starLabel3: string; starLabel4: string; starLabel5: string; commentLabel: string; commentPlaceholder: string; cta: string; thanks: string };
+  complete: { title: string; paymentReminder: string; rateDriver: string };
+  help: { title: string; heroTitle: string; heroBody: string; sendCta: string; sent: string };
+  errors: Record<
+    'T1' | 'T2' | 'T3' | 'T4' | 'T5' | 'T6' | 'T7' | 'network' | 'networkRestored' | 'unknown',
+    string
+  >;
+  forceUpdate: { title: string; body: string; cta: string };
+  permissions: { pushTitle: string; pushBody: string; pushAllow: string; pushDeny: string };
+};
+
+export type TranslationKeys = LocaleShape;
+
+export const tr: LocaleShape = {
+  app: {
+    name: 'DriverMesh Ride',
+  },
+  common: {
+    continue: 'Devam',
+    cancel: 'İptal',
+    save: 'Kaydet',
+    send: 'Gönder',
+    later: 'Sonra',
+    retry: 'Tekrar dene',
+    confirm: 'Onayla',
+    back: 'Geri',
+    close: 'Kapat',
+    edit: 'Düzenle',
+    logout: 'Çıkış yap',
+    yes: 'Evet',
+    no: 'Hayır',
+  },
+  welcome: {
+    cta: 'Telefonla başla',
+    subtitle: 'YOLCU UYGULAMASI',
+  },
+  phone: {
+    title: 'Telefon numaran',
+    subtitle: 'Sana 6 haneli bir doğrulama kodu göndereceğiz.',
+    label: 'Cep telefonu',
+    placeholder: '5XX XXX XX XX',
+    cta: 'Kodu gönder',
+    errorInvalid: 'Geçerli bir cep telefonu numarası gir.',
+  },
+  otp: {
+    title: 'Doğrulama kodu',
+    subtitle: '{{phone}} numarasına gönderilen 6 haneli kodu gir.',
+    placeholder: '000000',
+    cta: 'Doğrula',
+    resendActive: 'Kodu yeniden gönder',
+    resendCountdown: '{{seconds}} sn sonra tekrar gönderebilirsin',
+    errorInvalid: 'Kod hatalı veya süresi dolmuş.',
+  },
+  profileSetup: {
+    title: 'Seni nasıl tanıyalım?',
+    subtitle: 'Şoför sana ulaşırken bu adı görecek.',
+    label: 'Ad soyad',
+    placeholder: 'Örn. Ayşe Yılmaz',
+    cta: 'Devam et',
+  },
+  tabs: {
+    home: 'Anasayfa',
+    vehicles: 'Araçlar',
+    account: 'Hesap',
+  },
+  home: {
+    greetingMorning: 'Günaydın',
+    greetingAfternoon: 'İyi günler',
+    greetingEvening: 'İyi akşamlar',
+    statsTotalRides: 'Toplam yolculuk',
+    statsTotalKm: 'Toplam km',
+    lastTrip: 'Son yolculuğun',
+    callCta: 'Araç çağır',
+    pendingRating: 'Son yolculuğunu değerlendir',
+  },
+  vehicles: {
+    title: 'Araçlar',
+    cityLabel: 'Şehir',
+    callBtn: 'Çağır',
+    callPhone: 'Ara',
+    emptyTitle: 'Bu şehirde müsait araç yok',
+    emptyBody: 'Başka bir şehir seçebilir veya birazdan tekrar bakabilirsin.',
+    permissionRequired: 'Konum izni gerekli',
+    permissionBody: 'Şoförün sana ulaşabilmesi için konum iznine ihtiyacımız var.',
+    permissionOpenSettings: 'Ayarları aç',
+    refresh: 'Listeyi yenile',
+  },
+  account: {
+    title: 'Hesabım',
+    editProfile: 'Profili düzenle',
+    language: 'Dil',
+    notifications: 'Bildirimler',
+    help: 'Yardım',
+    legal: 'Yasal',
+    version: 'Sürüm',
+    logoutConfirmTitle: 'Çıkış yap',
+    logoutConfirmBody: 'Oturumunu kapatmak istediğine emin misin?',
+  },
+  call: {
+    title: 'Bu aracı çağır',
+    pickupLabel: 'Buluşma noktası',
+    pickupLoading: 'Konumun bulunuyor…',
+    cta: 'Çağır',
+    waitingTitle: 'Şoför bilgilendirildi',
+    waitingBody: 'Kabul bekleniyor…',
+    cancelBtn: 'İptal',
+    timeoutTitle: 'Şu an müsait değil',
+    timeoutBody: 'Şoför yanıt vermedi. Başka bir araç dene.',
+  },
+  active: {
+    statusAssigned: 'Şoför yolda',
+    statusArrived: 'Şoför geldi!',
+    statusInProgress: 'Yoldayız',
+    callDriver: 'Ara',
+    cancelTrip: 'İptal',
+    cancelConfirmTitle: 'Yolculuğu iptal et',
+    cancelConfirmBody: 'Şoför yola çıktı. Yine de iptal etmek istiyor musun?',
+  },
+  rating: {
+    title: 'Yolculuğu değerlendir',
+    starLabel1: 'Hiç beğenmedim',
+    starLabel2: 'Beğenmedim',
+    starLabel3: 'Fena değil',
+    starLabel4: 'Beğendim',
+    starLabel5: 'Mükemmel',
+    commentLabel: 'Yorumun (opsiyonel)',
+    commentPlaceholder: 'Şoförle yolculuğun nasıldı?',
+    cta: 'Gönder',
+    thanks: 'Teşekkürler 🙏',
+  },
+  complete: {
+    title: 'Yolculuğun tamamlandı',
+    paymentReminder: 'Kapıda nakit ödemeyi unutma',
+    rateDriver: 'Şoförü değerlendir',
+  },
+  help: {
+    title: 'Yardım',
+    heroTitle: 'Nasıl yardım edebiliriz?',
+    heroBody: 'Sorularına 24 saat içinde dönüş yaparız.',
+    sendCta: 'Gönder',
+    sent: 'Mesajın iletildi 📩',
+  },
+  errors: {
+    T1: 'Geçerli bir telefon numarası gir.',
+    T2: 'Çok fazla deneme yaptın. Birazdan tekrar dene.',
+    T3: 'Bu araç şu an müsait değil.',
+    T4: 'Hesabın şu an aktif değil. Destek ile iletişime geç.',
+    T5: 'Konum izni gerekli.',
+    T6: 'Bu filo şu an ride entegrasyonu kapalı.',
+    T7: 'Zaten aktif bir yolculuğun var.',
+    network: 'İnternet bağlantın yok.',
+    networkRestored: 'Bağlantı kuruldu',
+    unknown: 'Bir şeyler ters gitti. Tekrar dene.',
+  },
+  forceUpdate: {
+    title: 'Yeni sürüm gerekli',
+    body: 'Bu sürümü artık desteklemiyoruz. Devam etmek için güncelle.',
+    cta: 'Mağazadan güncelle',
+  },
+  permissions: {
+    pushTitle: 'Bildirimlere izin ver',
+    pushBody: 'Şoförün yola çıktığında ve geldiğinde haberin olsun.',
+    pushAllow: 'İzin ver',
+    pushDeny: 'Şimdi değil',
+  },
+};

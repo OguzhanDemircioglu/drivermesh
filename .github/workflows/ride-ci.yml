@@ -1,0 +1,47 @@
+name: ride-ci
+
+# Ride app (apps/ride/) için typecheck + lint. Fleet workflows'una dokunmaz;
+# path filter ile sadece ride/** veya bu workflow değişince tetiklenir.
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'ride/**'
+      - '.github/workflows/ride-ci.yml'
+  pull_request:
+    paths:
+      - 'ride/**'
+      - '.github/workflows/ride-ci.yml'
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: ride
+
+jobs:
+  typecheck:
+    name: TypeScript typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-ride-npm-${{ hashFiles('ride/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-ride-npm-
+
+      - name: Install
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+
+      - name: TypeScript
+        run: npm run typecheck

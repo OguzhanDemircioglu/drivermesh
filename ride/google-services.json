@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "828815055730",
+    "project_id": "drivermesh",
+    "storage_bucket": "drivermesh.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:828815055730:android:b64b6b15f5a2c9e7a39beb",
+        "android_client_info": {
+          "package_name": "com.drivermesh.android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCneM8AuTrbhqWDUfa8aSesoXPddXd3sEU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:828815055730:android:aa9f8a02243786d0a39beb",
+        "android_client_info": {
+          "package_name": "com.drivermesh.ride"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCneM8AuTrbhqWDUfa8aSesoXPddXd3sEU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

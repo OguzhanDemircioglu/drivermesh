@@ -1,0 +1,30 @@
+node_modules/
+.expo/
+dist/
+web-build/
+
+# Native build outputs (regenerated via prebuild)
+android/
+ios/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# EAS
+.eas

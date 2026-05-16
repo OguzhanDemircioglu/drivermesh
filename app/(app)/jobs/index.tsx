@@ -45,7 +45,12 @@ export default function JobsScreen() {
   const [filter, setFilter] = useState<JobStatus | 'all'>('all');
 
   const load = useCallback(async () => {
-    if (!profile?.organization_id) return;
+    if (!profile?.organization_id) {
+      // Profile yoksa (oturum bozulmuş / yetim auth user) sonsuz spinner'ı önle.
+      setJobs([]);
+      setLoading(false);
+      return;
+    }
     try {
       const data = await listJobs(profile.organization_id);
       setJobs(data);

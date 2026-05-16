@@ -61,3 +61,8 @@ ios/sentry.properties
 
 # Claude Code MCP server config (contains API keys)
 .mcp.json
+
+# Local test artifacts
+.adb-shots/
+.fleet-build.log
+.fleet-metro.log

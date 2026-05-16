@@ -1,4 +1,14 @@
 export const tr = {
+  status: {
+    title: 'Durumum',
+    body: 'Çalışma durumunu seç',
+    active: 'Aktif',
+    break: 'Molada',
+    offDuty: 'Mesai Dışı',
+    onTrip: 'Yolculukta',
+    unavailable: 'Müsait Değil',
+    onTripLocked: 'Aktif bir yolculukta olduğun için durumu manuel değiştiremezsin. Yolculuk bittiğinde önceki duruma döneceksin.',
+  },
   common: {
     appName: 'DriverMesh',
     loading: 'Yükleniyor...',
@@ -378,7 +388,7 @@ export const tr = {
     liveStripActive: '{{count}} aktif sürüş',
     liveStripActive_other: '{{count}} aktif sürüş',
     liveStripIdle: 'Filon hazır, bekliyor',
-    liveStripCta: 'Haritada gör',
+    liveStripCta: 'Filo Haritasını Görüntüle',
     heroSetupTitle: 'Filonu Kurmaya Başla',
     heroSetupSubtitle: 'Önce ekibini ekle, sonra ilk aracını tanımla. İlk işin oluşunca buradan canlı özet göreceksin.',
     completedToday: 'Bugün Biten',

@@ -699,3 +699,175 @@ $crop.Save("zoomed.png")
 ---
 
 *Doküman versiyonu: 1.2 — vehicle claim/release (§4.5), photo authenticity 4 badge (§5.9), force update (§10a) test senaryolari + Cloudinary cleanup notlari.*
+
+---
+
+## 15. Ride Görünürlük + Şoför Sahiplenme + Mesai Kuralları (2026-05-16)
+
+> Bu bölüm `docs/plans/2026-05-16-ride-availability-rules.md` spec'ine bağlıdır. Implementasyon tamamlandıktan sonra bu case'ler kabul testidir. Şu an sadece happy-path (Case 1-8) `request_ride`/`cancel_ride`/`submit_rating` üzerinden çalışıyor — yeni RPC'ler (`claim_vehicle`, `set_my_status`, `is_fleet_open`) eklendikten sonra Case 9-16 koşturulur.
+
+### Setup (her case için ortak ön durum)
+
+- Org: `Test Lojistik` (`d1dca541-bd31-4aa2-9558-e2c50f9249b6`) — ride_enabled=true, service_area Galata 30km, operating_hours `{"tz":"Europe/Istanbul","mon"..."fri": [{"start":"08:00","end":"18:00"}],"sat":[{"start":"10:00","end":"16:00"}],"sun":[]}`.
+- Owner: `Test Patron` (`32c96a66-...`).
+- Driver1: `Test Şoför` (`8b9841d7-...`).
+- Driver2 (yeni — Case 11/12 için): `Test Şoför 2` (yeni profile + auth.users phone signup).
+- Vehicle1: `Renault Master 34 TL 1234` (`7e340e6c-...`).
+- Vehicle2 (yeni — Case 11 için): `Renault Trafic 34 TL 5678`.
+- Müşteri: Demo customer (`f9ee759f-...`).
+
+### Case 9 — Araç create default = owner
+
+| Adım | Eylem | Beklenen |
+|---|---|---|
+| 1 | Owner (Test Patron) fleet UI → Filo → "Araç Ekle" → form doldur → kaydet | `vehicles.current_user_id = owner_id` (Test Patron) DB'de görünür |
+| 2 | `ride_search_vehicles(galata)` SQL | Yeni araç **listede YOK** (current_user.role='owner', filtre dışı) |
+| 3 | Fleet vehicle listesinde araç görünür | "Üzerinde: Test Patron" badge |
+
+**Pass kriteri:** owner üstündeki araç ride'da gizli, fleet'te görünür.
+
+---
+
+### Case 10 — Driver bir aracı claim eder
+
+| Adım | Eylem | Beklenen |
+|---|---|---|
+| 1 | Driver Test Şoför oturum aç, status='active' set | `profiles.status='active'` |
+| 2 | Vehicle list'te owner üstündeki Renault Master için "Üzerine Al" tıkla | `claim_vehicle('7e340e6c-...')` RPC çağrısı → success |
+| 3 | DB | `vehicles.current_user_id = test_sofor.id` |
+| 4 | Ride app vehicles tab refresh | Renault Master **listede görünür** (driver üstünde, active, mesai içi) |
+| 5 | Fleet'te vehicle kartı | "Üzerinde: Test Şoför" |
+
+**Pass kriteri:** claim sonrası ride'da görünür hale geçiş.
+
+---
+
+### Case 11 — Bir şoför birden fazla araç üstüne alabilir
+
+| Adım | Eylem | Beklenen |
+|---|---|---|
+| 1 | Owner ikinci araç ekler: Renault Trafic 34 TL 5678 | `current_user_id = owner` |
+| 2 | Test Şoför `claim_vehicle('5678-id')` | success |
+| 3 | DB query | `SELECT count(*) FROM vehicles WHERE current_user_id = test_sofor` → 2 |
+| 4 | Ride vehicles tab | Her iki araç da listede görünür (status='active' yeterli) |
+
+**Pass kriteri:** 1 şoför → N araç ilişkisi serbest, listede her ikisi de var.
+
+---
+
+### Case 12 — Aktif ride iken claim_vehicle reddedilir (T8)
+
+| Adım | Eylem | Beklenen |
+|---|---|---|
+| 1 | Test Şoför Renault Master'a sahip, müşteri çağrı yaptı (`ride.status='assigned'`) | Araç ride'a kilitli |
+| 2 | İkinci driver Test Şoför 2 `claim_vehicle('7e340e6c-...')` | RPC `T8: vehicle on active ride` hatası |
+| 3 | DB | `vehicles.current_user_id` değişmedi (hala Test Şoför) |
+| 4 | Ride tamamlanır (`status='completed'`) | Kilit kalkar |
+| 5 | Test Şoför 2 tekrar claim | success |
+
+**Pass kriteri:** Aktif state'lerde (`searching/assigned/driver_arrived/in_progress`) claim_vehicle reject. Completed/cancelled sonrası serbest.
+
+---
+
+### Case 13 — Bakımdaki araç claim edilemez (T9)
+
+| Adım | Eylem | Beklenen |
+|---|---|---|
+| 1 | Owner Renault Master'ı bakıma alır (`maintenance_started_at=now()`) | DB OK |
+| 2 | Test Şoför `claim_vehicle` | `T9: vehicle in maintenance` |
+| 3 | Ride vehicles tab | Araç listede yok (mevcut maintenance filtresi) |
+| 4 | Bakım biter (`maintenance_started_at=NULL`) | Tekrar claim edilebilir + listede görünür |
+
+---
+
+### Case 14 — Profile status filter: break/off_duty araç listeden düşürür
+
+| Adım | Eylem | Beklenen |
+|---|---|---|
+| 1 | Test Şoför `set_my_status('active')` + Renault Master üstünde | Ride'da görünür |
+| 2 | Test Şoför `set_my_status('break')` | 3-6sn içinde ride listesinden DÜŞER |
+| 3 | Test Şoför `set_my_status('off_duty')` | Liste boş kalır (Galata'da başka driver yoksa) |
+| 4 | Test Şoför `set_my_status('active')` | Tekrar görünür |
+| 5 | Active ride başlat → manuel `set_my_status('break')` deneme | `T10: on_trip cannot be manually overridden` (eğer trip otomatik on_trip set ettiyse) |
+
+**Pass kriteri:** Manuel status değişimi anında (max 1 polling cycle) ride listesini etkiler. on_trip manuel override edilemez.
+
+---
+
+### Case 15 — Operating hours filter
+
+| Adım | Eylem | Beklenen |
+|---|---|---|
+| 1 | fleets_visibility.operating_hours pazartesi 08:00–18:00 set | OK |
+| 2 | DB clock'u 07:30 simüle (`SELECT is_fleet_open(org_id, '2026-05-18 07:30+03'::timestamptz)`) | `false` |
+| 3 | Aynı saatte `ride_search_vehicles` | Test Lojistik araçları listede YOK |
+| 4 | 09:00'a simüle et | `true` + araçlar görünür |
+| 5 | Pazar günü `sun: []` | Liste boş tüm gün |
+| 6 | `operating_hours IS NULL` | 7/24 açık (geriye uyumluluk) |
+
+**Pass kriteri:** Filo mesai dışında ride listesinde hiç görünmez.
+
+---
+
+### Case 16 — Fleet UI: Status seçici
+
+| Adım | Eylem | Beklenen |
+|---|---|---|
+| 1 | Test Şoför fleet anasayfada | Dil seçici (TR/EN) altında status pill 🟢 "Aktif" |
+| 2 | Pille tıkla | Bottom sheet açılır: Aktif / Mola / Mesai Dışı / Müsait Değil seçenekleri |
+| 3 | "Mola" seç | Pill 🟡 "Mola" + `profiles.status='break'` + status_updated_at güncellenir |
+| 4 | Ride app paralel kontrol | Driver'ın aracı 3-6sn içinde müşteri listesinden düşer |
+| 5 | Aktif ride başla (on_trip otomatik) | Pill 🔵 "Yolculukta", tıklanabilir değil (disabled) |
+| 6 | Ride biter | Pill pre-trip status'a döner (varsa break → break, yoksa active) |
+
+**Pass kriteri:** UI ↔ DB ↔ ride app görünürlük üçü tutarlı.
+
+---
+
+### Case 17 — Vehicle status counter yeniden hesaplama
+
+Anasayfa "X aktif · Y müsait · Z boşta · W bakımda" formatı:
+- **aktif:** active ride'da en az 1 araç (`vehicle_id IN (SELECT vehicle_id FROM ride_requests WHERE status IN active)`).
+- **müsait:** driver üstünde + driver.status='active' + bakım dışı + ride'a girmemiş.
+- **boşta:** owner üstünde, ya da driver üstünde ama status active değil.
+- **bakımda:** maintenance_started_at NOT NULL.
+
+| Adım | Eylem | Beklenen |
+|---|---|---|
+| 1 | 4 araç: 1 active ride'da, 1 driver+active, 1 owner üstünde, 1 bakımda | "1 aktif · 1 müsait · 1 boşta · 1 bakımda" |
+| 2 | Driver mola | "1 aktif · 0 müsait · 2 boşta · 1 bakımda" |
+
+---
+
+## 16. Yeni RPC test kapsamı (DB seviyesinde)
+
+Her yeni RPC için en az 3 unit test (Supabase MCP execute_sql):
+
+### `claim_vehicle(p_vehicle_id)`
+1. Happy: aynı org, idle vehicle → success, current_user_id update.
+2. T8: aktif ride'lı vehicle → reject.
+3. T9: maintenance vehicle → reject.
+4. T3: farklı org'un aracı → reject.
+5. Yeniden claim: zaten benim ise no-op (success, idempotent).
+
+### `set_my_status(p_status)`
+1. Happy: active → break geçiş, status_updated_at güncellenir.
+2. T10: aktif ride iken active → break (on_trip override) → reject.
+3. on_trip manuel set → reject (sadece sistem set edebilir).
+
+### `is_fleet_open(p_org_id, p_at)`
+1. Mesai içi → true.
+2. Mesai dışı → false.
+3. NULL operating_hours → true (geriye uyumluluk).
+4. Pazar boş array → false her saat.
+
+### `ride_search_vehicles` regression
+1. Driver active + claim + mesai içi → görünür.
+2. Driver break → gizli.
+3. Owner claim → gizli (role filter).
+4. Mesai dışı → tüm filo gizli.
+5. Vehicle aktif ride'da → gizli.
+
+---
+
+*Doküman versiyonu: 1.3 — ride availability & user status & operating hours test senaryoları (§15-16).*

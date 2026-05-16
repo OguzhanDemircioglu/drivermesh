@@ -19,6 +19,7 @@ import { Avatar } from '@/components/Avatar';
 import { JobCard } from '@/components/JobCard';
 import { BottomNav } from '@/components/BottomNav';
 import { Card } from '@/components/Card';
+import { StatusPill } from '@/components/StatusPill';
 import { useAuth } from '@/auth/AuthProvider';
 import { setAppLocale, type AppLocale } from '@/i18n';
 import { fetchHomeStats, type HomeStats } from '@/lib/queries';
@@ -183,6 +184,12 @@ export default function HomeScreen() {
             </View>
           </View>
 
+          {/* Status row — dil seçici altında, kullanıcının çalışma durumu.
+              Driver için ride'da görünürlüğü, owner/manager için takım visibility'sini etkiler. */}
+          <View style={styles.statusRow}>
+            <StatusPill />
+          </View>
+
           {/* Setup mode'da onboarding hero'su, ready mode'da tek satırlık
               "live status strip" — KPI'lar saymakla meşgul, bu şerit "şu an
               ne oluyor + Haritaya git" tetikleyicisi. */}
@@ -200,13 +207,7 @@ export default function HomeScreen() {
               <View style={styles.livePulseDot} />
               <Text style={styles.liveLabel}>{t('home.heroLive')}</Text>
               <Text style={styles.liveSep}>·</Text>
-              <Text style={styles.liveCount}>
-                {stats.jobsInProgress > 0
-                  ? t('home.liveStripActive', { count: stats.jobsInProgress })
-                  : t('home.liveStripIdle')}
-              </Text>
-              <View style={styles.liveSpacer} />
-              <Text style={styles.liveCta}>{t('home.liveStripCta')}</Text>
+              <Text style={styles.liveCta} numberOfLines={1}>{t('home.liveStripCta')}</Text>
               <Feather name="chevron-right" size={14} color={theme.colors.accent} />
             </Pressable>
           )}
@@ -642,6 +643,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
   },
   headerRight: { flexDirection: 'row', gap: 10 },
+  statusRow: { marginTop: 4, marginBottom: 6 },
   iconBtn: {
     width: 42,
     height: 42,
@@ -697,13 +699,9 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   liveSep: { color: theme.colors.textDim, fontSize: 12 },
-  liveCount: {
-    color: theme.colors.text,
-    fontSize: theme.font.size.sm,
-    fontWeight: theme.font.weight.medium,
-  },
-  liveSpacer: { flex: 1 },
   liveCta: {
+    flex: 1,
+    textAlign: 'right',
     color: theme.colors.accent,
     fontSize: theme.font.size.xs,
     fontWeight: theme.font.weight.semibold,

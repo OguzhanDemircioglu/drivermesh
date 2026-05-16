@@ -102,6 +102,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(null);
       return;
     }
+    // Orphaned session: auth.users sildiğinden profile [] döner. Hayalet
+    // oturumla devam etmek UI'da spinner kilidi + sahte verilere yol açıyor;
+    // kullanıcıyı temiz başlangıca götürmek için signOut ediyoruz.
+    if (!data && !isDemoActiveStore()) {
+      console.warn('[auth] orphaned session detected (profile missing) — signing out');
+      setProfile(null);
+      supabase.auth.signOut().catch(() => {});
+      return;
+    }
     setProfile(data ?? null);
   }, []);
 

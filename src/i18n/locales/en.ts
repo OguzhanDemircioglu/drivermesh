@@ -1,6 +1,16 @@
 import type { TranslationShape } from './tr';
 
 export const en: TranslationShape = {
+  status: {
+    title: 'My Status',
+    body: 'Pick your work status',
+    active: 'Active',
+    break: 'On Break',
+    offDuty: 'Off Duty',
+    onTrip: 'On Trip',
+    unavailable: 'Unavailable',
+    onTripLocked: 'You are on an active trip. Status will return to previous when the trip ends.',
+  },
   common: {
     appName: 'DriverMesh',
     loading: 'Loading...',
@@ -380,7 +390,7 @@ export const en: TranslationShape = {
     liveStripActive: '{{count}} active trip',
     liveStripActive_other: '{{count}} active trips',
     liveStripIdle: 'Fleet ready, idle',
-    liveStripCta: 'View on map',
+    liveStripCta: 'View Fleet Map',
     heroSetupTitle: 'Set Up Your Fleet',
     heroSetupSubtitle: 'First add your team, then your first vehicle. Once a job comes in, the live summary appears here.',
     completedToday: 'Done Today',
