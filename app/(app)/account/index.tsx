@@ -297,6 +297,12 @@ export default function AccountScreen() {
                 onPress={() => router.push('/(app)/account/feedback')}
               />
               <Action
+                icon="users"
+                label={t('rideSettings.entryLabel')}
+                hint={t('rideSettings.entryHint')}
+                onPress={() => router.push('/(app)/account/ride-settings')}
+              />
+              <Action
                 icon="shield"
                 label={t('account.ownerActionPermissions')}
                 hint={t('account.ownerActionPermissionsHint')}

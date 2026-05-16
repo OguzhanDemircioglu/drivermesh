@@ -20,6 +20,7 @@ import { JobCard } from '@/components/JobCard';
 import { BottomNav } from '@/components/BottomNav';
 import { Card } from '@/components/Card';
 import { StatusPill } from '@/components/StatusPill';
+import { useDriverActiveRide } from '@/hooks/useDriverActiveRide';
 import { useAuth } from '@/auth/AuthProvider';
 import { setAppLocale, type AppLocale } from '@/i18n';
 import { fetchHomeStats, type HomeStats } from '@/lib/queries';
@@ -67,6 +68,8 @@ export default function HomeScreen() {
   const [tab, setTab] = useState<'home' | 'jobs' | 'fleet' | 'account'>('home');
   const [stats, setStats] = useState<HomeStats>(EMPTY_STATS);
   const [refreshing, setRefreshing] = useState(false);
+  const isDriver = profile?.role === 'driver';
+  const driverActive = useDriverActiveRide(isDriver ? session?.user.id : undefined);
 
   const loadStats = useCallback(async () => {
     try {
@@ -189,6 +192,24 @@ export default function HomeScreen() {
           <View style={styles.statusRow}>
             <StatusPill />
           </View>
+
+          {/* Driver active-ride banner — şoför aktif yolculuktayken anasayfa kısayolu */}
+          {isDriver && driverActive.data ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/(app)/driver-ride')}
+              style={({ pressed }) => [styles.driverBanner, pressed && { opacity: 0.85 }]}
+            >
+              <View style={styles.driverBannerIcon}>
+                <Feather name="navigation" size={20} color={theme.colors.accent} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.driverBannerTitle}>{t('driverRide.bannerTitle')}</Text>
+                <Text style={styles.driverBannerHint}>{t('driverRide.bannerSubtitle')}</Text>
+              </View>
+              <Feather name="chevron-right" size={20} color={theme.colors.accent} />
+            </Pressable>
+          ) : null}
 
           {/* Setup mode'da onboarding hero'su, ready mode'da tek satırlık
               "live status strip" — KPI'lar saymakla meşgul, bu şerit "şu an
@@ -644,6 +665,28 @@ const styles = StyleSheet.create({
   },
   headerRight: { flexDirection: 'row', gap: 10 },
   statusRow: { marginTop: 4, marginBottom: 6 },
+  driverBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.accent,
+    backgroundColor: theme.colors.accentMuted,
+    marginTop: 6,
+  },
+  driverBannerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  driverBannerTitle: { color: theme.colors.text, fontSize: 15, fontWeight: '700' },
+  driverBannerHint: { color: theme.colors.textMuted, fontSize: 13, marginTop: 2 },
   iconBtn: {
     width: 42,
     height: 42,
