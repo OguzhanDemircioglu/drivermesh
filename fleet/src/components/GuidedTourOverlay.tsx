@@ -28,19 +28,19 @@ export function GuidedTourOverlay() {
   const segments = useSegments();
   const { signOut } = useAuth();
 
-  // Bootstrap: AsyncStorage flag check
+  // Bootstrap + route-change polling: AsyncStorage flag her pathname
+  // değişiminde yeniden okunur (OnboardingWelcome dismiss → Welcome'a
+  // router.replace sonrası tour flag set edilir, bu effect onu yakalar).
   useEffect(() => {
     (async () => {
       try {
         const flag = await AsyncStorage.getItem(TOUR_ACTIVE_KEY);
-        if (flag === 'true') {
-          setActive(true);
-        }
+        setActive(flag === 'true');
       } catch {
         /* ignore */
       }
     })();
-  }, []);
+  }, [pathname]);
 
   // Welcome ekranındayken Demo App highlight göster
   const isWelcomeRoute = pathname === '/' || pathname === '/welcome' || (segments[0] === '(auth)' && segments[1] === 'welcome');
@@ -86,10 +86,23 @@ export function GuidedTourOverlay() {
     setActive(false);
   }, []);
 
+  // DEBUG: pathname'i ekranda göster
+  if (active) {
+    // overlay alt köşede mini debug satırı (geçici)
+  }
+
   if (!active) return null;
 
-  // Welcome ekranındaysa: özel hint balonu (Demo App'e dokun)
-  if (isWelcomeRoute) {
+  // Welcome ekranındaysa: özel hint balonu (Demo App'e dokun).
+  // SADECE auth grubunda iken: home'da (app) grubunda olduğumuzda welcome
+  // hint görünmemeli, step tooltip görünmeli.
+  const inAuthGroup = segments[0] === '(auth)';
+  const looksLikeWelcome = inAuthGroup && (
+    isWelcomeRoute ||
+    pathname.toLowerCase().includes('welcome') ||
+    (segments as readonly string[]).includes('welcome')
+  );
+  if (looksLikeWelcome) {
     return (
       <SafeAreaView
         style={styles.fullScreen}

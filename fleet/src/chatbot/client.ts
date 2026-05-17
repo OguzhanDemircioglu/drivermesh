@@ -8,6 +8,7 @@
 // kuralı gereği hardcoded fallback mesaj döner.
 
 import { supabase } from '@/lib/supabase';
+import { isDemoActive } from '@/demo/store';
 import type { ChatBotResponse, ChatMessage, ChatSession } from './types';
 
 const CLIENT_TIMEOUT_MS = 15_000;
@@ -15,13 +16,36 @@ const CLIENT_TIMEOUT_MS = 15_000;
 const FALLBACK_REPLY =
   'Bağlantıda bir aksaklık oldu. Tekrar denemek ister misin? Sorun devam ederse Hesap → Destek menüsünden bize yazabilirsin.';
 
+const DEMO_REPLY = (msg: string) =>
+  `Demo modundasın 👋 — gerçek backend bağlantısı kapalı, sana örnek bir cevap vereyim:\n\n` +
+  `Sorduğun konu için temel adımlar:\n` +
+  `• İlgili sekmeye git (Filo / İşler / Ekip)\n` +
+  `• Sağ üstte "+" veya formdaki alanları doldur\n` +
+  `• Kaydet — değişiklik anında uygulanır\n\n` +
+  `Gerçek hesabınla giriş yaparsan bot sana adım adım ayrıntılı cevap verir. Şimdi sırasıyla "Devam" diyerek tur'a devam edebilirsin.`;
+
 export async function sendMessage(
   message: string,
   sessionId?: string,
 ): Promise<ChatBotResponse> {
+  // Demo modunda Supabase JWT yok — edge function 401 verir. Hardcoded
+  // örnek cevap döndür, kullanıcı yine etkileşim hissi alır.
+  if (isDemoActive()) {
+    await new Promise((r) => setTimeout(r, 600)); // typing hissi
+    return {
+      sessionId: sessionId ?? 'demo-session',
+      reply: DEMO_REPLY(message),
+      provider: 'hardcoded',
+    };
+  }
+
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) {
-    throw new Error('Not authenticated');
+    return {
+      sessionId: sessionId ?? '',
+      reply: FALLBACK_REPLY,
+      provider: 'hardcoded',
+    };
   }
 
   const url = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/chat-bot`;
