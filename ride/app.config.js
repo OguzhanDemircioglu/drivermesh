@@ -90,7 +90,7 @@ module.exports = {
   extra: {
     appEnv: process.env.EXPO_PUBLIC_APP_ENV ?? 'development',
     router: {},
-    eas: { projectId: '' },
+    eas: { projectId: 'fc9fa0cc-cdab-4e23-abe6-521d8c644216' },
   },
   owner: 'cray61',
 };
