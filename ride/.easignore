@@ -1,0 +1,36 @@
+# EAS Build sırasında upload edilen tarball'ı küçültür. EAS varsayılan
+# olarak .gitignore'u kullanır ama .easignore varsa onun yerine bu dosyayı
+# uygular — yani .gitignore'daki kurallar burada da olmalı.
+
+node_modules/
+.expo/
+.expo-shared/
+dist/
+web-build/
+
+# Native — Expo cloud build sırasında `expo prebuild` ile regenerate edilir
+android/
+ios/
+
+# Env — secret'lar EAS env vars üzerinden gelir, repo'da yer almaz
+.env
+.env.local
+.env.*.local
+
+# Compiled outputs
+*.apk
+*.aab
+*.ipa
+
+# Logs & local state
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# EAS internal
+.eas/
+
+# Git internals — EAS tarball'a girmemeli
+.git/
