@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
     top: 410,
-    right: 10, // yarım santim sağa (önceki 28'den)
+    right: -4, // biraz daha sağa (ekran kenarından az taşar)
     alignItems: 'flex-end',
     zIndex: 10,
     elevation: 10,
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 6,
     paddingHorizontal: 10,
-    marginTop: -32, // bana sor biraz daha yukarı
+    marginTop: -48, // bana sor az daha yukarı
     marginRight: 60,
     borderRadius: 16,
     backgroundColor: theme.colors.bgElevated,
