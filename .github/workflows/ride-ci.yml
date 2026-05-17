@@ -1,4 +1,4 @@
-name: ride-ci
+name: CI — Ride (typecheck + lint)
 
 # Ride app (apps/ride/) için typecheck + lint. Fleet workflows'una dokunmaz;
 # path filter ile sadece ride/** veya bu workflow değişince tetiklenir.

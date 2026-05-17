@@ -1,4 +1,4 @@
-name: Build Android (master)
+name: Build Android — Fleet (master)
 
 # Master push -> EAS Build (cloud) -> AAB artifact + Sentry source map upload.
 # Production submit ETMEZ — sadece Internal Testing track'e otomatik gonderilir

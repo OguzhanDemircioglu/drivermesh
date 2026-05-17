@@ -1,4 +1,4 @@
-name: Release Android (git tag)
+name: Release Android — Fleet (git tag)
 
 # Git tag (v1.x.x) -> EAS production build + EAS submit Play Store internal track.
 # Production rollout MANUEL (Google policy + safety) — Play Console'da
