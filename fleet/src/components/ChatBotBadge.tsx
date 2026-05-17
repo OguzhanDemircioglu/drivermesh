@@ -28,8 +28,8 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   icon: {
-    width: 48,
-    height: 48,
+    width: 64,
+    height: 64,
     backgroundColor: 'transparent',
   },
 });
