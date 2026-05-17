@@ -57,7 +57,7 @@ export const TextField = forwardRef<TextInput, Props>(function TextField(
                 ? theme.colors.danger
                 : focused
                   ? theme.colors.accent
-                  : theme.colors.textDim
+                  : theme.colors.textMuted
             }
             style={styles.icon}
           />
@@ -66,7 +66,7 @@ export const TextField = forwardRef<TextInput, Props>(function TextField(
           ref={ref}
           {...rest}
           secureTextEntry={hidden}
-          placeholderTextColor={theme.colors.textDim}
+          placeholderTextColor={theme.colors.textMuted}
           selectionColor={theme.colors.accent}
           onFocus={(e) => {
             setFocused(true);
