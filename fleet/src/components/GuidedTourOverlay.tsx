@@ -92,36 +92,11 @@ export function GuidedTourOverlay() {
 
   if (!active) return null;
 
-  // Welcome ekranındaysa: özel hint balonu (Demo App'e dokun).
-  // SADECE auth grubunda iken: home'da (app) grubunda olduğumuzda welcome
-  // hint görünmemeli, step tooltip görünmeli.
+  // Welcome ekranında özel bir hint card göstermiyoruz — floating robot
+  // (welcome.tsx içinde) zaten görünür durumda, çift bot ikon önlenir.
+  // Tour overlay sadece (app) grubunda step tooltip'i göstersin.
   const inAuthGroup = segments[0] === '(auth)';
-  const looksLikeWelcome = inAuthGroup && (
-    isWelcomeRoute ||
-    pathname.toLowerCase().includes('welcome') ||
-    (segments as readonly string[]).includes('welcome')
-  );
-  if (looksLikeWelcome) {
-    return (
-      <SafeAreaView
-        style={styles.fullScreen}
-        pointerEvents="box-none"
-        edges={['bottom']}
-      >
-        <View style={styles.welcomeHintCard} pointerEvents="auto">
-          <Image source={BOT_ICON} style={styles.bubbleAvatar} />
-          <View style={styles.welcomeHintBody}>
-            <Text style={styles.welcomeHintText}>
-              {t('chatbot.tour.welcomeDemoHint')}
-            </Text>
-            <Pressable hitSlop={8} onPress={skipTour}>
-              <Text style={styles.skipText}>×</Text>
-            </Pressable>
-          </View>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  if (inAuthGroup) return null;
 
   // Demo akışında: mevcut step'in tooltip'ini göster (sadece route eşleşiyorsa)
   const step = TOUR_STEPS[stepIndex];

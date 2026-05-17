@@ -56,7 +56,8 @@ export default function WelcomeScreen() {
   const currentLocale = (i18n.language as AppLocale) ?? 'tr';
 
   return (
-    <WelcomeHero
+    <View style={{ flex: 1 }}>
+      <WelcomeHero
       topRight={
         <Pressable
           onPress={toggleLocale}
@@ -78,10 +79,11 @@ export default function WelcomeScreen() {
       }
       bottom={
         <View style={styles.ctaWrap}>
-          {/* Demo App butonu — sondaki "→" yerine robot avatar + speech
-              bubble. Tap → tour aktive + demo'ya gir. */}
+          {/* Demo App butonu — eski hali (sol play-circle, orta başlık+badge,
+              sağ arrow-right). Robot ayrı bir absolute element olarak
+              ekranın üstünde yüzer (return root'unda render edilir). */}
           <Pressable
-            onPress={onBotHintTap}
+            onPress={onTryDemo}
             disabled={demoLoading}
             style={({ pressed }) => [
               styles.demoCard,
@@ -108,16 +110,7 @@ export default function WelcomeScreen() {
                 </View>
               </View>
             </View>
-            {/* Robot avatar + kafasından çıkan speech bubble. Önceki
-                arrow-right ikonunun yerinde, sağ tarafta. */}
-            <View style={styles.botCorner}>
-              <View style={styles.botSpeech}>
-                <Text style={styles.botSpeechText} numberOfLines={1}>
-                  {t('chatbot.welcomeBotHint')}
-                </Text>
-              </View>
-              <Image source={BOT_ICON} style={styles.botAvatar} />
-            </View>
+            <Feather name="arrow-right" size={18} color={theme.colors.textMuted} />
           </Pressable>
 
           <Button
@@ -140,6 +133,20 @@ export default function WelcomeScreen() {
         </View>
       }
     />
+    {/* Absolute robot — sadece resim, çerçeve/bg yok. Demo App butonunun
+        sağ tarafında yüzer. Tap → tour aktive + demo'ya gir. */}
+    <Pressable
+      onPress={onBotHintTap}
+      disabled={demoLoading}
+      style={({ pressed }) => [
+        styles.floatingRobot,
+        pressed && { opacity: 0.7 },
+      ]}
+      hitSlop={8}
+    >
+      <Image source={BOT_ICON} style={styles.floatingRobotIcon} resizeMode="contain" />
+    </Pressable>
+  </View>
   );
 }
 
@@ -231,35 +238,17 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 
-  // Robot köşesi — Demo App card'ın sağında (sondaki → ikonun yerinde).
-  // Speech bubble robot avatar'ın hemen üstünde ("kafadan çıkan" mesaj).
-  botCorner: {
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 4,
-    marginLeft: 6,
-    maxWidth: 130,
+  // Floating robot — absolute positioned, sadece resim. Çerçeve, bg yok.
+  // Demo App butonunun sağ tarafında ekranda yüzer.
+  floatingRobot: {
+    position: 'absolute',
+    bottom: 280, // Demo App seviyesinde (Giriş Yap + Filo Başlat + Davet Kodum'un üstünde)
+    right: 4,    // sağa kayık, ekran kenarına yakın
+    zIndex: 10,
   },
-  botSpeech: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    backgroundColor: theme.colors.bgElevated,
-    borderWidth: 1,
-    borderColor: theme.colors.accent,
-  },
-  botSpeechText: {
-    color: theme.colors.text,
-    fontSize: 10,
-    fontWeight: theme.font.weight.semibold,
-    textAlign: 'center',
-  },
-  botAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    borderWidth: 2,
-    borderColor: theme.colors.accent,
-    backgroundColor: theme.colors.bg,
+  floatingRobotIcon: {
+    width: 120,
+    height: 120,
+    backgroundColor: 'transparent',
   },
 });
