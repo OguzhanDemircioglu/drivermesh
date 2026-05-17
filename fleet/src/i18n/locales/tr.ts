@@ -994,6 +994,7 @@ export const tr = {
     quickReply2: 'Bakım talebi nasıl açılır?',
     quickReply3: 'Şoför davet etme akışı nedir?',
     inputPlaceholder: 'Mesajını yaz...',
+    welcomeBotHint: 'Robotla uygulamayı tanı 👇',
     onboarding: {
       title: 'Hoş geldin! 👋',
       body:

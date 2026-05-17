@@ -996,6 +996,7 @@ export const en: TranslationShape = {
     quickReply2: 'How do I open a maintenance request?',
     quickReply3: 'How does inviting a driver work?',
     inputPlaceholder: 'Type your message...',
+    welcomeBotHint: 'Meet the bot — let me show you around 👇',
     onboarding: {
       title: 'Welcome! 👋',
       body:

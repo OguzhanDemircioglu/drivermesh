@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,6 +11,10 @@ import { useToast } from '@/components/Toast';
 import { useAuth } from '@/auth/AuthProvider';
 import { theme } from '@/theme';
 import { setAppLocale, getAppLocale, type AppLocale } from '@/i18n';
+
+import { TOUR_ACTIVE_KEY } from '@/chatbot/keys';
+
+const BOT_ICON = require('../../assets/chatbot.webp');
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -33,6 +38,19 @@ export default function WelcomeScreen() {
       toast.error(t('auth.login.errors.loginFailed'), msg);
       setDemoLoading(false);
     }
+  };
+
+  // Bot bubble tap → tour'u aktif et + demo'ya gir. Demo App butonu
+  // (aşağıdaki demoCard) tour aktive etmez; sadece bot hint demoyu tour
+  // ile başlatır.
+  const onBotHintTap = async () => {
+    if (demoLoading) return;
+    try {
+      await AsyncStorage.setItem(TOUR_ACTIVE_KEY, 'true');
+    } catch {
+      /* ignore */
+    }
+    await onTryDemo();
   };
 
   const currentLocale = (i18n.language as AppLocale) ?? 'tr';
@@ -60,6 +78,26 @@ export default function WelcomeScreen() {
       }
       bottom={
         <View style={styles.ctaWrap}>
+          {/* Bot hint balonu — Demo App butonunun hemen üstünde, robot
+              avatar + kısa mesaj. Tap → tour + demo. */}
+          <Pressable
+            onPress={onBotHintTap}
+            disabled={demoLoading}
+            style={({ pressed }) => [
+              styles.botHintRow,
+              pressed && { opacity: 0.85 },
+              demoLoading && { opacity: 0.6 },
+            ]}
+          >
+            <Image source={BOT_ICON} style={styles.botAvatar} />
+            <View style={styles.botBubble}>
+              <View style={styles.botBubbleTail} />
+              <Text style={styles.botBubbleText}>
+                {t('chatbot.welcomeBotHint')}
+              </Text>
+            </View>
+          </Pressable>
+
           <Pressable
             onPress={onTryDemo}
             disabled={demoLoading}
@@ -200,5 +238,50 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     fontSize: theme.font.size.xs,
     lineHeight: 16,
+  },
+
+  // Bot hint balonu (Demo App'in üstünde) — robot avatar + speech bubble.
+  botHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.sm,
+    paddingVertical: 4,
+  },
+  botAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: theme.colors.accent,
+    backgroundColor: theme.colors.bg,
+  },
+  botBubble: {
+    flex: 1,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 10,
+    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.bgElevated,
+    borderWidth: 1,
+    borderColor: theme.colors.accent,
+    position: 'relative',
+  },
+  botBubbleTail: {
+    position: 'absolute',
+    left: -7,
+    top: 14,
+    width: 12,
+    height: 12,
+    backgroundColor: theme.colors.bgElevated,
+    borderLeftWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: theme.colors.accent,
+    transform: [{ rotate: '45deg' }],
+  },
+  botBubbleText: {
+    color: theme.colors.text,
+    fontSize: theme.font.size.sm,
+    fontWeight: theme.font.weight.semibold,
+    lineHeight: 18,
   },
 });

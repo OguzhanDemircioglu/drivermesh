@@ -12,11 +12,10 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '@/theme';
 import { TOUR_STEPS, type TourStep } from '@/chatbot/tour';
-import { TOUR_ACTIVE_KEY } from './OnboardingWelcome';
+import { TOUR_ACTIVE_KEY, TOUR_COMPLETED_KEY } from '@/chatbot/keys';
 import { useAuth } from '@/auth/AuthProvider';
 
 const BOT_ICON = require('../../assets/chatbot.webp');
-const TOUR_COMPLETED_KEY = 'chatbot.tourCompleted';
 
 export function GuidedTourOverlay() {
   const [active, setActive] = useState(false);
