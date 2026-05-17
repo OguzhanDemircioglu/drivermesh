@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,10 +10,6 @@ import { useToast } from '@/components/Toast';
 import { useAuth } from '@/auth/AuthProvider';
 import { theme } from '@/theme';
 import { setAppLocale, getAppLocale, type AppLocale } from '@/i18n';
-
-import { TOUR_ACTIVE_KEY } from '@/chatbot/keys';
-
-const BOT_ICON = require('../../assets/chatbot.webp');
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -38,19 +33,6 @@ export default function WelcomeScreen() {
       toast.error(t('auth.login.errors.loginFailed'), msg);
       setDemoLoading(false);
     }
-  };
-
-  // Bot bubble tap → tour'u aktif et + demo'ya gir. Demo App butonu
-  // (aşağıdaki demoCard) tour aktive etmez; sadece bot hint demoyu tour
-  // ile başlatır.
-  const onBotHintTap = async () => {
-    if (demoLoading) return;
-    try {
-      await AsyncStorage.setItem(TOUR_ACTIVE_KEY, 'true');
-    } catch {
-      /* ignore */
-    }
-    await onTryDemo();
   };
 
   const currentLocale = (i18n.language as AppLocale) ?? 'tr';
@@ -133,20 +115,6 @@ export default function WelcomeScreen() {
         </View>
       }
     />
-    {/* Absolute robot — sadece resim, çerçeve/bg yok. Demo App butonunun
-        sağ üstünde yüzer. Tap → Demo App'e giriş yapar (signInDemo). */}
-    <Pressable
-      onPress={onTryDemo}
-      disabled={demoLoading}
-      style={({ pressed }) => [
-        styles.floatingRobot,
-        pressed && { opacity: 0.7 },
-      ]}
-      hitSlop={20}
-      android_ripple={null}
-    >
-      <Image source={BOT_ICON} style={styles.floatingRobotIcon} resizeMode="contain" />
-    </Pressable>
   </View>
   );
 }
@@ -237,20 +205,5 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     fontSize: theme.font.size.xs,
     lineHeight: 16,
-  },
-
-  // Floating robot — absolute positioned, sadece resim. Çerçeve, bg yok.
-  // Demo App butonunun sağ tarafında ekranda yüzer.
-  floatingRobot: {
-    position: 'absolute',
-    bottom: 155,
-    right: -28,
-    zIndex: 10,
-    elevation: 10, // Android için zIndex hint
-  },
-  floatingRobotIcon: {
-    width: 170,
-    height: 170,
-    backgroundColor: 'transparent',
   },
 });
