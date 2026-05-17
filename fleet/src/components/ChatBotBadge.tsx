@@ -27,13 +27,17 @@ export function ChatBotBadge() {
 
 const styles = StyleSheet.create({
   badge: {
+    position: 'absolute',
+    top: 460, // biraz yukarı (Kişi Ekle'nin sağ üst çaprazı)
+    right: -14,
     alignItems: 'center',
     padding: 2,
-    gap: 0,
+    zIndex: 10,
+    elevation: 10,
   },
   icon: {
-    width: 80,
-    height: 80,
+    width: 100,
+    height: 100,
     backgroundColor: 'transparent',
   },
   label: {

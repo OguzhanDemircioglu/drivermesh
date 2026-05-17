@@ -158,7 +158,6 @@ export default function HomeScreen() {
               </View>
             </View>
             <View style={styles.headerRight}>
-              <ChatBotBadge />
               <Pressable
                 hitSlop={10}
                 onPress={() => router.push('/(app)/notifications')}
@@ -292,6 +291,8 @@ export default function HomeScreen() {
       </SafeAreaView>
 
       <BottomNav active={tab} onChange={onTabChange} />
+      {/* AI robot — absolute positioned, header'ın üzerinde sağ tarafta yüzer */}
+      <ChatBotBadge />
     </View>
   );
 }
