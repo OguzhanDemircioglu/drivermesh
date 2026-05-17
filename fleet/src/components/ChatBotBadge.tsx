@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     marginTop: -48, // bana sor az daha yukarı
-    marginRight: 60,
+    marginRight: 110, // bubble robot'tan ayrı kalsın (overlap olmasın)
     borderRadius: 16,
     backgroundColor: theme.colors.bgElevated,
     borderWidth: 1,
