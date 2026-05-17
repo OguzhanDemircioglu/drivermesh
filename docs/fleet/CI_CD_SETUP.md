@@ -7,24 +7,26 @@
 ## Mimari
 
 ```
-master push                               git tag v1.x.x
-     │                                          │
-     ▼                                          ▼
-build-android.yml                       release-android.yml
-     │                                          │
-     ▼                                          ▼
-EAS Build (preview)                     EAS Build (production, autoIncrement)
-     │                                          │
-     ▼                                          ▼
-APK (sideloadable) → Expo dashboard     AAB → EAS Submit → Play Console Internal Testing (draft)
-                                                              │
-                                                              ▼
-                                                    SEN Play Console'da
-                                                    "Submit for review" basarsin
-                                                              │
-                                                              ▼
-                                                    Closed Beta → Production
+git tag v1.x.x                              git tag ride-v0.x.x
+     │                                              │
+     ▼                                              ▼
+Release Android — Fleet (git tag)        Release Android — Ride (git tag)
+     │                                              │
+     ▼                                              ▼
+EAS Build (production, autoIncrement)    EAS Build (production, autoIncrement)
+     │                                              │
+     ▼                                              ▼
+AAB → EAS Submit → Play Console          AAB → EAS Submit → Play Console
+        Internal Testing (draft)                  Internal Testing (draft)
+                │                                       │
+                ▼                                       ▼
+        SEN Play Console'da "Submit for review" basarsin
+                │
+                ▼
+        Closed Beta → Production
 ```
+
+> **Not (2026-05-17):** Master push'da otomatik build YOK. CI workflow'ları (`build-android.yml`, `build-android-ride.yml`, `ride-ci.yml`) repodan kaldırıldı; sadece tag-tetikli release workflow'ları aktif. Hızlı iterasyon için local'den `eas build --profile preview` veya cihazda gradle release build kullan (`fleet/.easignore` + `ride/.easignore` tarball'ı küçük tutar).
 
 ---
 
@@ -92,29 +94,42 @@ Play Console'da app oluşturduktan sonra:
 
 ## Günlük kullanım
 
-### Master'a push (otomatik APK build)
+### Hızlı iterasyon / preview APK (local)
 
+Master push artık otomatik build tetiklemez. Hızlı test için iki yol:
+
+**A) Local `eas build` (Expo cloud, dashboard'da görünür):**
 ```bash
-git push origin master
+export EXPO_TOKEN=$(grep '^EXPO_EAS_TOKEN=' .env | cut -d= -f2-)
+cd fleet  # veya ride
+npx eas-cli build --platform android --profile preview --non-interactive --no-wait
 ```
+→ EAS Build cloud queue olur, ~15 dk sonra Expo dashboard'da APK URL
+→ `adb install -r <apk>` ile cihaza kur
 
-→ `build-android.yml` tetiklenir
-→ EAS Build cloud'da APK üretir (~10-15 dk)
-→ Expo dashboard'tan APK indir + Sideloadly ile sideload
-→ Sentry source map otomatik upload
+**B) Lokal gradle release (~5 dk, internet hız bağımlı):**
+```bash
+$env:SENTRY_DISABLE_AUTO_UPLOAD = 'true'
+cd fleet/android  # veya ride/android
+.\gradlew.bat assembleRelease --no-daemon
+adb install -r app\build\outputs\apk\release\app-release.apk
+```
+→ Local'de signed APK, Expo dashboard'a yansımaz
 
-### Production release (versiyon bump)
+### Production release (versiyon bump + Play Store internal)
 
 ```bash
-# 1. app.json + android/app/build.gradle versionName güncelle
+# 1. fleet/app.config.js + fleet/android/app/build.gradle versionName güncelle
+#    (ride için ride/app.config.js + ride/android/app/build.gradle)
 # 2. CHANGELOG.md güncelle (varsa)
-# 3. Tag at + push
-git tag v1.0.1
-git push --tags
+# 3. Tag at + push — fleet ve ride farklı namespace
+git tag v1.0.1            # fleet
+git tag ride-v0.1.2       # ride
+git push origin v1.0.1 ride-v0.1.2
 ```
 
-→ `release-android.yml` tetiklenir
-→ EAS production build (autoIncrement versionCode)
+→ Fleet için `Release Android — Fleet (git tag)`, ride için `Release Android — Ride (git tag)` workflow tetiklenir
+→ EAS production build (autoIncrement versionCode) — AAB her iki proje için ayrı queue
 → EAS Submit → Play Store Internal Testing track (draft, kullanıcılara gitmez)
 → Telegram bildirim
 → **SEN Play Console'a girip:**

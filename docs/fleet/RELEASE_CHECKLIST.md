@@ -237,7 +237,7 @@
 
 1. **iOS ertelendi (Android-only track)** — Apple Developer üyeliği ($99/yıl) alınana kadar iOS pipeline kapalı. Bütün iOS-spesifik maddeler `[ DEFERRED ]` etiketli, Android submission için blocker DEĞİL. Detay: [`memory/project_android_only_track.md`](../../memory/project_android_only_track.md).
 2. **Demo mode** prod build'de **kapalı olmalı** — `__DEV__` veya environment flag ile gate edilmiş, mağaza versiyonunda görünmemeli. Demo mode'un "5 saniye sonra otomatik giriş" davranışı review'cuları yanıltabilir.
-3. **DriverMesh Ride** alt yapısı yok — müşteri-side app sonraki release'lere bırakıldı; iletişimde "şu an sadece filo yönetimi" mesajı tutarlı olmalı.
+3. **DriverMesh Ride** V0.1 entegrasyonu **yapıldı** (2026-05-17): bağımsız Expo projesi `ride/`, Expo dashboard'da `cray61/drivermeshride`, ilk production AAB `ride-v0.1.2` ile çıktı. Fleet tarafında `source: 'ride'` job source, `claim_vehicle_for_ride` RPC, `app/(app)/driver-ride.tsx` mevcut. Ride ile fleet arasında customer ↔ driver akışı entegre.
 4. **Hierarchy Phase 2 RLS** kritik — bir manager başka manager'ın şoförünü görebiliyorsa veri sızıntısı olur, store'a göndermeden önce DB'de simulate et.
 5. **Vault secret rotation** planı yaz — secret leak olursa nasıl rotate edilir, hangi servis etkilenir.
 6. **Open gaps** (`memory/project_open_gaps.md`) gözden geçir, hangileri release blocker oldu güncelle.

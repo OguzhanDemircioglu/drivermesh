@@ -1175,9 +1175,10 @@ npm run typecheck
 4. **send-push org-match auth** ⚠ release blocker — Edge Function caller'ın org'unu doğrulasın (recipient aynı org'da mı, başka org'a push atılamasın)
 5. **send-push deep-link tıklama** — FCM data payload'a `notification_id` konuyor (v3); app'in deep-link handler'ı bunu yakalayıp ilgili ekrana gitmeli
 6. **Cron auto-checkout canlı test** — `maintenance_until` past vehicle ile 1 dakikalık cron'un push + insert akışını doğrula
-7. **DriverMesh Ride alt yapı** — müşteri-side app + ride source job entegrasyonu
+7. ~~**DriverMesh Ride alt yapı**~~ — V0.1 yapıldı (2026-05-17): `ride/` bağımsız Expo projesi, Expo `cray61/drivermeshride`, fleet tarafında `source: 'ride'` job + `claim_vehicle_for_ride` RPC + `app/(app)/driver-ride.tsx`. V2 işler: ETA live update, mesajlaşma/aramayla iletişim.
 8. **Customer email** — sonraki konu (Ride app'e bağlanacak muhtemelen)
 9. **App Store / Play Store yayını** — `docs/RELEASE_CHECKLIST.md` faz 1–6 kontrol
+10. **Chatbot (in-app AI yardım)** — Gemini Flash + Cloudflare AI fallback, onboarding tour + her ekranda header'da erişim. Tasarım dokümanı: `docs/plans/2026-05-17-fleet-chatbot-design.md` (TODO).
 
 ---
 
