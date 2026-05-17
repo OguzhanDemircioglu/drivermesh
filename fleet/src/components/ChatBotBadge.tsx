@@ -52,20 +52,20 @@ const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
     top: 410,
-    right: 16,
-    alignItems: 'flex-end', // robot wrap'in sağ kenarında
+    right: 28, // robot az sola
+    alignItems: 'flex-end',
     zIndex: 10,
     elevation: 10,
   },
   bubble: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start', // robot'un SOL altına yaslı
+    alignSelf: 'flex-start',
     gap: 6,
     paddingVertical: 6,
     paddingHorizontal: 10,
-    marginTop: -10, // robot ile küçük overlap
-    marginRight: 60, // robot'un sol kısmına denk gelsin
+    marginTop: -32, // bana sor biraz daha yukarı
+    marginRight: 60,
     borderRadius: 16,
     backgroundColor: theme.colors.bgElevated,
     borderWidth: 1,
