@@ -11,7 +11,7 @@ import { Feather } from '@expo/vector-icons';
 import { theme } from '@/theme';
 
 type Props = TextInputProps & {
-  label: string;
+  label?: string;
   error?: string;
   icon?: keyof typeof Feather.glyphMap;
   /** Sağ tarafta gösterilen küçük ipucu ikonu (örn. read-only alanlar için
@@ -30,15 +30,17 @@ export const TextField = forwardRef<TextInput, Props>(function TextField(
 
   return (
     <View style={styles.wrapper}>
-      <Text
-        style={[
-          styles.label,
-          focused && !hasError && styles.labelFocused,
-          hasError && styles.labelError,
-        ]}
-      >
-        {label}
-      </Text>
+      {label ? (
+        <Text
+          style={[
+            styles.label,
+            focused && !hasError && styles.labelFocused,
+            hasError && styles.labelError,
+          ]}
+        >
+          {label}
+        </Text>
+      ) : null}
       <View
         style={[
           styles.field,
@@ -116,7 +118,7 @@ const styles = StyleSheet.create({
   field: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 54,
+    height: 64,
     borderRadius: theme.radius.lg,
     backgroundColor: theme.colors.bgElevated,
     borderWidth: 1,
@@ -141,8 +143,8 @@ const styles = StyleSheet.create({
   toggle: { padding: 4, marginLeft: 8 },
   rightIcon: { marginLeft: 8 },
   errorText: {
-    fontSize: theme.font.size.xs,
+    fontSize: 12,
     color: theme.colors.danger,
-    marginTop: 2,
+    marginTop: 0,
   },
 });

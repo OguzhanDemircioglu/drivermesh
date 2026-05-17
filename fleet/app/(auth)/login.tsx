@@ -13,9 +13,8 @@ import { useToast } from '@/components/Toast';
 import { useAuth } from '@/auth/AuthProvider';
 import { theme } from '@/theme';
 
-// Login form ekranı bg: sade splash (slogan'sız). Welcome'daki dil-bazlı
-// loginTR/EN yerine; form input'ları üstüne biner.
-const LOGIN_BG = require('../../assets/drivermesh-splash.png');
+// Login form ekranı bg: masaüstünden gelen özel LOGİN.webp görseli.
+const LOGIN_BG = require('../../assets/login-bg.webp');
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -79,7 +78,6 @@ export default function LoginScreen() {
           name="email"
           render={({ field: { value, onChange, onBlur } }) => (
             <TextField
-              label={t('auth.login.email')}
               icon="mail"
               placeholder={t('auth.login.emailPlaceholder')}
               keyboardType="email-address"
@@ -101,7 +99,6 @@ export default function LoginScreen() {
           name="password"
           render={({ field: { value, onChange, onBlur } }) => (
             <TextField
-              label={t('auth.login.password')}
               icon="lock"
               placeholder={t('auth.login.passwordPlaceholder')}
               isPassword
@@ -167,17 +164,17 @@ const styles = StyleSheet.create({
   // görünür; form alt yarıda yer alır.
   // Welcome WelcomeHero ile aynı paddingBottom: theme.spacing.sm — butonların
   // alt sınırı Welcome ekranı ile bire bir aynı pozisyonda olur.
-  scroll: { paddingTop: theme.spacing.xl, paddingBottom: theme.spacing.sm, gap: theme.spacing.xl, flexGrow: 1, justifyContent: 'space-between' },
-  // Spacer: form'u biraz aşağı iter (text box'lar üst kısımdan uzaklaşır).
-  topSpacer: { height: 120 },
-  form: { gap: theme.spacing.lg },
-  forgot: { alignSelf: 'flex-end', marginTop: -8 },
+  // Form ve footer ekranın altına yapışır — form butonların hemen üstünde.
+  scroll: { paddingTop: theme.spacing.xl, paddingBottom: theme.spacing.sm, gap: theme.spacing.xl, flexGrow: 1, justifyContent: 'flex-end' },
+  topSpacer: { height: 0 },
+  form: { gap: theme.spacing.sm },
+  forgot: { alignSelf: 'flex-end', marginTop: 6 },
   forgotText: {
-    color: theme.colors.mesh,
-    fontSize: theme.font.size.lg,
+    color: '#fff',
+    fontSize: theme.font.size.md,
     fontWeight: theme.font.weight.semibold,
   },
-  footer: { gap: theme.spacing.sm, marginTop: theme.spacing.xl },
+  footer: { gap: theme.spacing.sm, marginTop: 0 },
   divider: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
   dividerLine: { flex: 1, height: 1, backgroundColor: theme.colors.border },
   dividerText: {
