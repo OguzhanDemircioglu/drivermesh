@@ -14,7 +14,7 @@ const googleMapsIos =
 
 /** @type {import('@expo/config-types').ExpoConfig} */
 module.exports = {
-  name: 'DriverMesh',
+  name: 'DriverMesh Fleet',
   slug: 'drivermesh',
   version: '1.0.0',
   orientation: 'portrait',

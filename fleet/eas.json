@@ -30,8 +30,7 @@
       "env": {
         "EXPO_PUBLIC_APP_ENV": "production",
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
-      },
-      "prebuildCommand": "node scripts/eas-prebuild.js"
+      }
     },
     "production": {
       "distribution": "store",
