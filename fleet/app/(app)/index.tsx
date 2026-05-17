@@ -192,32 +192,19 @@ export default function HomeScreen() {
             </Pressable>
           ) : null}
 
-          {/* Setup mode'da onboarding hero'su, ready mode'da tek satırlık
-              "live status strip" — KPI'lar saymakla meşgul, bu şerit "şu an
-              ne oluyor + Haritaya git" tetikleyicisi.
-              Setup hero sadece owner/manager için — driver'ın filo kurma
-              yetkisi yok, kendisi setup'ı tamamlayamaz. Driver için fleet
-              ready değilse hiçbir şey gösterme. */}
-          {!isFleetReady ? (
-            canAdd ? (
-              <FleetSetupHero
-                stats={stats}
-                onInvite={() => router.push('/(app)/team')}
-                onAddVehicle={() => router.push('/(app)/vehicles/new')}
-              />
-            ) : null
-          ) : (
-            <Pressable
-              onPress={() => router.push('/(app)/fleet-map')}
-              style={({ pressed }) => [styles.liveStrip, pressed && { opacity: 0.85 }]}
-            >
-              <View style={styles.livePulseDot} />
-              <Text style={styles.liveLabel}>{t('home.heroLive')}</Text>
-              <Text style={styles.liveSep}>·</Text>
-              <Text style={styles.liveCta} numberOfLines={1}>{t('home.liveStripCta')}</Text>
-              <Feather name="chevron-right" size={14} color={theme.colors.accent} />
-            </Pressable>
-          )}
+          {/* Live status strip — demo ile aynı görünüm, her kullanıcıda
+              gösterilir. Onboarding setup hero'su kaldırıldı; filo
+              kurma adımlarına QuickAction'lardan ulaşılır. */}
+          <Pressable
+            onPress={() => router.push('/(app)/fleet-map')}
+            style={({ pressed }) => [styles.liveStrip, pressed && { opacity: 0.85 }]}
+          >
+            <View style={styles.livePulseDot} />
+            <Text style={styles.liveLabel}>{t('home.heroLive')}</Text>
+            <Text style={styles.liveSep}>·</Text>
+            <Text style={styles.liveCta} numberOfLines={1}>{t('home.liveStripCta')}</Text>
+            <Feather name="chevron-right" size={14} color={theme.colors.accent} />
+          </Pressable>
 
           {/* Filo Ritmi — KPI grid'in yerini aldı: filo durumunu macro
               (segmentli bar) + micro (per-vehicle dot) + mikro KPI metni
