@@ -134,15 +134,16 @@ export default function WelcomeScreen() {
       }
     />
     {/* Absolute robot — sadece resim, çerçeve/bg yok. Demo App butonunun
-        sağ tarafında yüzer. Tap → tour aktive + demo'ya gir. */}
+        sağ üstünde yüzer. Tap → Demo App'e giriş yapar (signInDemo). */}
     <Pressable
-      onPress={onBotHintTap}
+      onPress={onTryDemo}
       disabled={demoLoading}
       style={({ pressed }) => [
         styles.floatingRobot,
         pressed && { opacity: 0.7 },
       ]}
-      hitSlop={8}
+      hitSlop={20}
+      android_ripple={null}
     >
       <Image source={BOT_ICON} style={styles.floatingRobotIcon} resizeMode="contain" />
     </Pressable>
@@ -242,9 +243,10 @@ const styles = StyleSheet.create({
   // Demo App butonunun sağ tarafında ekranda yüzer.
   floatingRobot: {
     position: 'absolute',
-    bottom: 155, // çok az yukarı
-    right: -10,  // biraz sağa kaydır (ekran kenarına bastır)
+    bottom: 155,
+    right: -28,
     zIndex: 10,
+    elevation: 10, // Android için zIndex hint
   },
   floatingRobotIcon: {
     width: 170,
