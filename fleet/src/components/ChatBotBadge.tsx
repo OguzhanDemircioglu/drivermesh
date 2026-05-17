@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
     top: 410,
-    right: 28, // robot az sola
+    right: 10, // yarım santim sağa (önceki 28'den)
     alignItems: 'flex-end',
     zIndex: 10,
     elevation: 10,
