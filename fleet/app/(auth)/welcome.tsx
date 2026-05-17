@@ -242,13 +242,13 @@ const styles = StyleSheet.create({
   // Demo App butonunun sağ tarafında ekranda yüzer.
   floatingRobot: {
     position: 'absolute',
-    bottom: 280, // Demo App seviyesinde (Giriş Yap + Filo Başlat + Davet Kodum'un üstünde)
+    bottom: 180, // Demo App butonunun TAM ÜZERİNDE (overlap)
     right: 4,    // sağa kayık, ekran kenarına yakın
     zIndex: 10,
   },
   floatingRobotIcon: {
-    width: 120,
-    height: 120,
+    width: 140,
+    height: 140,
     backgroundColor: 'transparent',
   },
 });
