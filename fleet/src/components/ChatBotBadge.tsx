@@ -24,6 +24,14 @@ export function ChatBotBadge() {
 
   return (
     <View style={styles.wrap} pointerEvents="box-none">
+      <Pressable
+        testID="chatbot-badge"
+        hitSlop={10}
+        onPress={() => router.push('/(app)/chatbot')}
+        style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+      >
+        <Image source={BOT_ICON} style={styles.icon} resizeMode="contain" />
+      </Pressable>
       {bubbleVisible ? (
         <View style={styles.bubble}>
           <Text style={styles.bubbleText}>Bana Sor</Text>
@@ -36,14 +44,6 @@ export function ChatBotBadge() {
           </Pressable>
         </View>
       ) : null}
-      <Pressable
-        testID="chatbot-badge"
-        hitSlop={10}
-        onPress={() => router.push('/(app)/chatbot')}
-        style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-      >
-        <Image source={BOT_ICON} style={styles.icon} resizeMode="contain" />
-      </Pressable>
     </View>
   );
 }
@@ -52,19 +52,20 @@ const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
     top: 410,
-    right: -18,
-    flexDirection: 'row',
-    alignItems: 'center',
+    right: 16,
+    alignItems: 'flex-end', // robot wrap'in sağ kenarında
     zIndex: 10,
     elevation: 10,
   },
   bubble: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start', // robot'un SOL altına yaslı
     gap: 6,
     paddingVertical: 6,
     paddingHorizontal: 10,
-    marginRight: -6, // bubble robot'un kenarına biraz girsin
+    marginTop: -10, // robot ile küçük overlap
+    marginRight: 60, // robot'un sol kısmına denk gelsin
     borderRadius: 16,
     backgroundColor: theme.colors.bgElevated,
     borderWidth: 1,
