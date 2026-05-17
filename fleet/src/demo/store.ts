@@ -34,16 +34,19 @@ import type { MemberPermission } from '@/lib/permissions';
 // orphan kalır, GC'lenmez ama okunmaz.
 // v3: vehicle seed gucleristirildi (maintenance state dolu, current_user_id
 // claim ornekleri) + maintenanceRequests history seed (5 status with
-// 3 authenticity scenarios in v4). Eski v2/v3
-// AsyncStorage key'i otomatik invalidate olur, demo yeniden reseed yapar.
-const DEMO_STATE_KEY = 'drivermesh.demo.state.v4';
+// 3 authenticity scenarios in v4).
+// v5 (2026-05-18): seed zenginleştirildi — 7 araç (2 yeni: Renault Trafic
+// elektrik + Peugeot Boxer claimable), 10 iş (3 yeni: 2 ride-source +
+// 1 driver_request), 6 profile (yeni driver Burak), 5 notification (2 yeni:
+// ride_completed + maintenance_overdue). Eski v4 state otomatik invalidate.
+const DEMO_STATE_KEY = 'drivermesh.demo.state.v5';
 
 // ---------- IDs ----------
 
 export const DEMO_ORG_ID = 'demo-org';
 export const DEMO_OWNER_ID = 'demo-owner';
 export const DEMO_MANAGER_ID = 'demo-mgr';
-export const DEMO_DRIVER_IDS = ['demo-d1', 'demo-d2', 'demo-d3', 'demo-d4'] as const;
+export const DEMO_DRIVER_IDS = ['demo-d1', 'demo-d2', 'demo-d3', 'demo-d4', 'demo-d5'] as const;
 
 // ---------- Helpers ----------
 
@@ -248,9 +251,9 @@ function reseed() {
     mkProfile(DEMO_DRIVER_IDS[0], 'Ahmet Şoför', 'ahmet@demo.drivermesh', 'driver', 25, AVATAR(33), DEMO_MANAGER_ID),
     mkProfile(DEMO_DRIVER_IDS[1], 'Mehmet Yıldız', 'mehmet@demo.drivermesh', 'driver', 24, AVATAR(11), DEMO_MANAGER_ID),
     mkProfile(DEMO_DRIVER_IDS[2], 'Ayşe Demir', 'ayse@demo.drivermesh', 'driver', 20, AVATAR(44), DEMO_MANAGER_ID),
-    // 4. driver var ama atanmamış işle çalışır — toplam 6 kişi olmasın diye sadece 5 ana kişi
-    // kullanıcının istediği: 5 kişi — owner+manager+3 driver = 5 ✓
-    // (DEMO_DRIVER_IDS[3] ileride invitation olarak kullanılabilir, profile değil)
+    // v5: yeni şoför Burak — 4. araç (Renault Trafic) onun üzerinde
+    mkProfile(DEMO_DRIVER_IDS[3], 'Burak Çelik', 'burak@demo.drivermesh', 'driver', 12, AVATAR(15), DEMO_MANAGER_ID),
+    // (DEMO_DRIVER_IDS[4] ileride invitation olarak kullanılabilir, profile değil)
   ];
 
   // Demo vehicle photos uploaded to Cloudinary so the cached-image
@@ -301,6 +304,18 @@ function reseed() {
       id: 'demo-v5', plate: '35 MNO 567', brand: 'Renault', model: 'Master',
       year: 2024, status: 'idle', color: '#F59E0B', isAtHq: true,
       photoUrl: null, currentUserId: null,
+    }),
+    // v5: elektrik araç + 4. driver (Burak) üzerinde — yeni feature örneği
+    mkVehicle({
+      id: 'demo-v6', plate: '34 PQR 890', brand: 'Renault', model: 'Trafic E-Tech',
+      year: 2025, status: 'active', color: '#10B981', isAtHq: false,
+      photoUrl: photo2, currentUserId: DEMO_DRIVER_IDS[3], // Burak üzerinde
+    }),
+    // v5: ikinci claimable araç — farklı kategori, Peugeot
+    mkVehicle({
+      id: 'demo-v7', plate: '06 STU 123', brand: 'Peugeot', model: 'Boxer',
+      year: 2023, status: 'idle', color: '#3B82F6', isAtHq: true,
+      photoUrl: photo3, currentUserId: null,
     }),
   ];
 
@@ -532,6 +547,52 @@ function reseed() {
       source: 'internal',
       createdMinutesAgo: 130,
     }),
+    // v5: Ride-source active job — Burak (demo-v6 elektrik araç) üzerinde
+    // ride app'ten gelen müşteri çağrısı, in_progress
+    mkJob('demo-j8', {
+      customer: 'Selin Müşteri (Ride)',
+      pickup: { addr: 'Galata Kulesi, Beyoğlu', lat: 41.0256, lng: 28.9742 },
+      dropoff: { addr: 'Taksim Meydanı, Beyoğlu', lat: 41.0369, lng: 28.9850 },
+      status: 'in_progress',
+      driverId: DEMO_DRIVER_IDS[3], // Burak
+      vehicleId: 'demo-v6',
+      distanceKm: 2.1,
+      etaMinutes: 8,
+      source: 'ride',
+      createdMinutesAgo: 12,
+      assignedMinutesAgo: 11,
+      startedMinutesAgo: 6,
+    }),
+    // v5: Ride-source completed — geçmiş ride, rating'li
+    mkJob('demo-j9', {
+      customer: 'Emre Aydın (Ride)',
+      pickup: { addr: 'Kadıköy İskele, Kadıköy', lat: 40.9928, lng: 29.0269 },
+      dropoff: { addr: 'Bağdat Caddesi, Suadiye', lat: 40.9614, lng: 29.0556 },
+      status: 'completed',
+      driverId: DEMO_DRIVER_IDS[2], // Ayşe
+      vehicleId: 'demo-v3',
+      distanceKm: 7.8,
+      etaMinutes: 18,
+      source: 'ride',
+      createdMinutesAgo: 240,
+      assignedMinutesAgo: 235,
+      startedMinutesAgo: 225,
+      completedMinutesAgo: 195,
+    }),
+    // v5: Driver self-request — Ahmet kendi iş açtı (yetkiyle)
+    mkJob('demo-j10', {
+      customer: 'Express Kurye',
+      pickup: { addr: 'Mecidiyeköy, Şişli', lat: 41.0668, lng: 29.0014 },
+      dropoff: { addr: 'Ataşehir Finans Merkezi', lat: 40.9923, lng: 29.1244 },
+      status: 'assigned',
+      driverId: DEMO_DRIVER_IDS[0], // Ahmet
+      vehicleId: 'demo-v1',
+      distanceKm: 17.3,
+      etaMinutes: 34,
+      source: 'driver_request',
+      createdMinutesAgo: 25,
+      assignedMinutesAgo: 22,
+    }),
   ];
 
   // Pending invitation — bir 6. kişi davet edildi ama henüz kabul etmedi
@@ -598,6 +659,40 @@ function reseed() {
       },
       read_at: hoursAgo(1),
       created_at: hoursAgo(1.5),
+    },
+    // v5: ride_completed notification — yeni ride feature örneği
+    {
+      id: 'demo-n4',
+      organization_id: DEMO_ORG_ID,
+      recipient_id: DEMO_OWNER_ID,
+      actor_id: DEMO_DRIVER_IDS[2],
+      type: 'request_approved',
+      payload: {
+        job_id: 'demo-j9',
+        customer_name: 'Emre Aydın (Ride)',
+        stars: 5,
+        source: 'ride',
+      },
+      read_at: null,
+      created_at: minutesAgo(195),
+    },
+    // v5: maintenance_overdue — auto-checkout cron sinyali örneği
+    {
+      id: 'demo-n5',
+      organization_id: DEMO_ORG_ID,
+      recipient_id: DEMO_OWNER_ID,
+      actor_id: DEMO_MANAGER_ID,
+      type: 'permission_grant',
+      payload: {
+        key: 'vehicles.approve_maintenance',
+        allowed: true,
+        member_id: DEMO_DRIVER_IDS[3],
+        label_tr: 'Bakım onaylama',
+        label_en: 'Approve maintenance',
+        is_critical: true,
+      },
+      read_at: null,
+      created_at: minutesAgo(20),
     },
   ];
 
