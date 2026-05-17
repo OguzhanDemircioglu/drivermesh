@@ -242,8 +242,8 @@ const styles = StyleSheet.create({
   // Demo App butonunun sağ tarafında ekranda yüzer.
   floatingRobot: {
     position: 'absolute',
-    bottom: 130, // daha aşağı kaydırıldı (Demo App overlay daha geniş)
-    right: 4,
+    bottom: 155, // çok az yukarı
+    right: -10,  // biraz sağa kaydır (ekran kenarına bastır)
     zIndex: 10,
   },
   floatingRobotIcon: {
