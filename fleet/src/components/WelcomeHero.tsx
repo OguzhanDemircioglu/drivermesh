@@ -1,20 +1,35 @@
 import { type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '@/theme';
+import type { AppLocale } from '@/i18n';
+
+// expo-image RN Image'ten daha güvenilir — dev mode'da require resolve cache
+// sorunu yok, WebP/PNG seamless, contentFit native. Ride pattern (AuthBackdrop).
+const HERO_TR = require('../../assets/login/loginTR.png');
+const HERO_EN = require('../../assets/login/loginEN.png');
 
 type Props = {
   topRight?: ReactNode;
   bottom?: ReactNode;
 };
 
-// Welcome layout — bg image RootLayout'tan geliyor (drivermesh-splash.webp).
-// Bu component sadece SafeArea + topRight + bottom slot iskeleti sağlar.
-// Eski dil-bazlı loginTR/EN.jpg dependency'si kaldırıldı: artık tek splash
-// görseli native splash → welcome → login arası kesintisiz görünür.
 export function WelcomeHero({ topRight, bottom }: Props) {
+  const { i18n } = useTranslation();
+  const locale = (i18n.language as AppLocale) ?? 'tr';
+  const heroSource = locale === 'en' ? HERO_EN : HERO_TR;
+
   return (
     <View style={styles.root}>
+      <Image
+        source={heroSource}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        priority="high"
+      />
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <View style={styles.topBar}>{topRight}</View>
         <View style={styles.flexFill} />

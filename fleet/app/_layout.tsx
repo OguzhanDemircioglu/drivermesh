@@ -26,7 +26,7 @@ import { theme } from '@/theme';
 // AuthGate'in Stack'i bu image'in üzerine transparent contentStyle ile binebilir,
 // böylece welcome/login arası flicker olmaz. Welcome ekranındaki WelcomeHero
 // dil-bazlı override eder (TR/EN); diğer auth ekranlarında JS root bg fallback.
-const DRIVERMESH_BG = require('../assets/drivermesh-splash.webp');
+const DRIVERMESH_BG = require('../assets/drivermesh-splash.png');
 
 // Module load — Sentry init mumkun olan en erken anda. DSN .env'de yoksa
 // silent skip (dev). Native crashlar bile yakalanir bu sekilde.
@@ -121,20 +121,16 @@ function AuthGate() {
 
   return (
     <View style={styles.root} onLayout={handleRootLayout}>
-      {/* Tam ekran bg image — native splash ile birebir aynı görsel.
-          Stack contentStyle transparent olduğu için Welcome/Login/Register
-          ekranları bu image üzerine biner; WelcomeHero kendi dil-bazlı
-          imajı ile bunu override eder. Boş frame/flicker yok. */}
       <Image
         source={DRIVERMESH_BG}
-        style={StyleSheet.absoluteFill}
+        style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]}
         resizeMode="cover"
       />
       <Stack
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: 'transparent' },
-          animation: 'none',
+          animation: 'fade',
           statusBarTranslucent: true,
         }}
       />

@@ -1,17 +1,21 @@
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { Screen } from '@/components/Screen';
-import { Logo } from '@/components/Logo';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import { useToast } from '@/components/Toast';
 import { useAuth } from '@/auth/AuthProvider';
 import { theme } from '@/theme';
+
+// Login form ekranı bg: sade splash (slogan'sız). Welcome'daki dil-bazlı
+// loginTR/EN yerine; form input'ları üstüne biner.
+const LOGIN_BG = require('../../assets/drivermesh-splash.png');
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -57,14 +61,17 @@ export default function LoginScreen() {
   });
 
   return (
-    <Screen scroll transparent contentStyle={styles.scroll}>
-      <View style={styles.header}>
-        <Logo size={84} />
-        <Text style={styles.brand}>
-          Driver<Text style={styles.brandAccent}>Mesh</Text>
-        </Text>
-        <Text style={styles.subtitle}>{t('auth.login.subtitle')}</Text>
-      </View>
+    <View style={styles.heroBg}>
+      <Image
+        source={LOGIN_BG}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        priority="high"
+      />
+      <Screen scroll transparent contentStyle={styles.scroll}>
+      {/* Üst boşluk — form ekranın alt yarısına itilir */}
+      <View style={styles.topSpacer} />
 
       <View style={styles.form}>
         <Controller
@@ -118,37 +125,33 @@ export default function LoginScreen() {
         >
           <Text style={styles.forgotText}>{t('auth.login.forgot')}</Text>
         </Pressable>
-
-        <Button title={t('auth.login.submit')} onPress={onSubmit} loading={submitting} />
       </View>
 
+      {/* Welcome ile aynı buton seti — Sign In (form submit) + Start A Fleet
+          + I Have An Invite Code. Demo App hariç. Aynı pozisyon. */}
       <View style={styles.footer}>
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>{t('auth.login.divider')}</Text>
-          <View style={styles.dividerLine} />
-        </View>
         <Button
-          title={t('auth.login.startFleet')}
+          title={t('auth.welcome.signIn')}
           variant="secondary"
-          leftIcon={<FleetIcon />}
-          onPress={() => router.push('/(auth)/register')}
+          onPress={onSubmit}
+          loading={submitting}
+          style={{ backgroundColor: 'rgb(238, 106, 29)', borderColor: 'rgb(238, 106, 29)' }}
         />
-        <Pressable
+        <Button
+          title={t('auth.welcome.startFleet')}
+          variant="secondary"
+          onPress={() => router.push('/(auth)/register')}
+          style={{ backgroundColor: 'rgb(140, 30, 200)', borderColor: 'rgb(140, 30, 200)' }}
+        />
+        <Button
+          title={t('auth.welcome.hasInvite')}
+          variant="secondary"
           onPress={() => router.push('/(auth)/redeem')}
-          hitSlop={8}
-          style={({ pressed }) => [styles.inviteRow, pressed && { opacity: 0.6 }]}
-        >
-          <Text style={styles.invite}>{t('auth.login.invitePrompt')}</Text>
-          <Text style={styles.inviteLink}>{t('auth.login.inviteLink')}</Text>
-        </Pressable>
+        />
       </View>
-    </Screen>
+      </Screen>
+    </View>
   );
-}
-
-function FleetIcon() {
-  return null; // gradient stroke icon eklenecek; şu an metin yeterli
 }
 
 function humanize(msg: string, t: (key: string) => string) {
@@ -159,29 +162,22 @@ function humanize(msg: string, t: (key: string) => string) {
 }
 
 const styles = StyleSheet.create({
-  scroll: { paddingTop: theme.spacing.xl, gap: theme.spacing.xl },
-  header: { alignItems: 'center', gap: theme.spacing.md, marginTop: theme.spacing.lg },
-  brand: {
-    fontSize: theme.font.size['3xl'],
-    fontWeight: theme.font.weight.bold,
-    color: theme.colors.text,
-    letterSpacing: -0.6,
-  },
-  brandAccent: { color: theme.colors.lavender },
-  subtitle: {
-    fontSize: theme.font.size.md,
-    color: theme.colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  form: { gap: theme.spacing.lg, marginTop: theme.spacing.xl },
+  heroBg: { flex: 1 },
+  // Scroll content alt yarıdan başlar — bg image üst yarıda DriverMesh logo'su
+  // görünür; form alt yarıda yer alır.
+  // Welcome WelcomeHero ile aynı paddingBottom: theme.spacing.sm — butonların
+  // alt sınırı Welcome ekranı ile bire bir aynı pozisyonda olur.
+  scroll: { paddingTop: theme.spacing.xl, paddingBottom: theme.spacing.sm, gap: theme.spacing.xl, flexGrow: 1, justifyContent: 'space-between' },
+  // Spacer: form'u biraz aşağı iter (text box'lar üst kısımdan uzaklaşır).
+  topSpacer: { height: 120 },
+  form: { gap: theme.spacing.lg },
   forgot: { alignSelf: 'flex-end', marginTop: -8 },
   forgotText: {
     color: theme.colors.mesh,
-    fontSize: theme.font.size.sm,
-    fontWeight: theme.font.weight.medium,
+    fontSize: theme.font.size.lg,
+    fontWeight: theme.font.weight.semibold,
   },
-  footer: { gap: theme.spacing.lg, marginTop: theme.spacing.xl },
+  footer: { gap: theme.spacing.sm, marginTop: theme.spacing.xl },
   divider: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
   dividerLine: { flex: 1, height: 1, backgroundColor: theme.colors.border },
   dividerText: {

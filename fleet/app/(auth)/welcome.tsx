@@ -143,6 +143,9 @@ const styles = StyleSheet.create({
   },
   ctaWrap: {
     gap: theme.spacing.sm,
+    // Butonlar bg image sloganından biraz daha uzakta başlasın — üstten ek
+    // boşluk ile alt yarıya daha derin oturur.
+    marginTop: 80,
   },
 
   demoCard: {
