@@ -19,6 +19,7 @@ import { Avatar } from '@/components/Avatar';
 import { JobCard } from '@/components/JobCard';
 import { BottomNav } from '@/components/BottomNav';
 import { Card } from '@/components/Card';
+import { ChatBotBadge } from '@/components/ChatBotBadge';
 import { StatusPill } from '@/components/StatusPill';
 import { useDriverActiveRide } from '../../src/hooks/useDriverActiveRide';
 import { useAuth } from '@/auth/AuthProvider';
@@ -157,6 +158,7 @@ export default function HomeScreen() {
               </View>
             </View>
             <View style={styles.headerRight}>
+              <ChatBotBadge />
               <Pressable
                 hitSlop={10}
                 onPress={() => router.push('/(app)/notifications')}
@@ -646,7 +648,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
     marginTop: 2,
   },
-  headerRight: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  headerRight: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   statusRow: { marginTop: 8 },
   driverBanner: {
     flexDirection: 'row',

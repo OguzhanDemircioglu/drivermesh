@@ -15,6 +15,8 @@ import { AuthProvider, useAuth } from '@/auth/AuthProvider';
 import { ConfirmProvider } from '@/components/ConfirmDialog';
 import { ToastProvider } from '@/components/Toast';
 import { ForceUpdateModal } from '@/components/ForceUpdateModal';
+import { OnboardingWelcome } from '@/components/OnboardingWelcome';
+import { GuidedTourOverlay } from '@/components/GuidedTourOverlay';
 import { setupI18n } from '@/i18n';
 import { initSentry } from '@/lib/sentry';
 import { checkAppVersion, type VersionCheckResult } from '@/lib/forceUpdate';
@@ -187,6 +189,12 @@ export default function RootLayout() {
                 result={versionCheck}
                 onDismiss={() => setVersionCheck(null)}
               />
+              {/* Chatbot onboarding + guided tour overlay'leri.
+                  İlk açılışta OnboardingWelcome modal'ı tetiklenir,
+                  kullanıcı "Hadi başlayalım" derse tour aktive olur ve
+                  GuidedTourOverlay sayfa sayfa açıklama yapar. */}
+              <OnboardingWelcome />
+              <GuidedTourOverlay />
             </AuthProvider>
           </ConfirmProvider>
         </ToastProvider>
