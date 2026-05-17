@@ -47,6 +47,14 @@ export default function EditVehicleScreen() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [color, setColor] = useState<string | null>(null);
+
+  // Yetki yoksa edit sayfasına hiç girilmesin — buton zaten detay
+  // sayfasında guard'lı, defensive olarak burada da geri dön.
+  useEffect(() => {
+    if (!canUpdate.allowed && !canUpdate.loading) {
+      router.back();
+    }
+  }, [canUpdate.allowed, canUpdate.loading, router]);
   // Status form'da düzenlenmez — operator kuralı: status sadece DB-side
   // (job lifecycle veya bakım toggle) ile değişir, manuel UI'dan değil.
   // photoUri: o anki gösterim. originalPhotoUrl: yüklerken kaydedilen DB değeri
@@ -177,24 +185,11 @@ export default function EditVehicleScreen() {
     }
   });
 
-  if (!canUpdate.allowed) {
-    return (
-      <Screen scroll contentStyle={styles.scroll}>
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={12}
-          style={({ pressed }) => [styles.back, pressed && { opacity: 0.6 }]}
-        >
-          <Feather name="arrow-left" size={22} color={theme.colors.text} />
-          <Text style={styles.backText}>{t('common.back')}</Text>
-        </Pressable>
-        <View style={styles.center}>
-          <Feather name="lock" size={28} color={theme.colors.warning} />
-          <Text style={styles.permTitle}>{t('common.permissionMissingTitle')}</Text>
-          <Text style={styles.permText}>{canUpdate.reason ?? t('common.permissionMissing')}</Text>
-        </View>
-      </Screen>
-    );
+  // Yetki yoksa hiçbir UI render etme — useEffect router.back() çağırır.
+  // (Daha önce "Yetki gerekli" sayfası flash oluyordu; artık detay
+  // sayfasındaki Düzenle butonu zaten guard'lı, buraya gelinmez.)
+  if (!canUpdate.allowed && !canUpdate.loading) {
+    return null;
   }
 
   return (
