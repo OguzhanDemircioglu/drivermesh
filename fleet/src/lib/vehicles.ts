@@ -6,11 +6,20 @@ import { DEMO_ORG_ID, demo, isDemoActive } from '@/demo/store';
 
 export type VehicleWithAdder = Vehicle & {
   added_by_profile: { full_name: string } | null;
+  /** Aracın şu anki sahibi (driver veya owner). vehicles_set_default_owner
+   * trigger ile hiçbir araç sahipsiz kalmaz; UI'da "Üzerinde: <ad>" badge'i
+   * için bu join'lenir. */
+  current_user_profile: { full_name: string } | null;
 };
 
 function inflate(v: Vehicle): VehicleWithAdder {
   const adder = demo.profileById(v.added_by);
-  return { ...v, added_by_profile: adder ? { full_name: adder.full_name } : null };
+  const owner = v.current_user_id ? demo.profileById(v.current_user_id) : null;
+  return {
+    ...v,
+    added_by_profile: adder ? { full_name: adder.full_name } : null,
+    current_user_profile: owner ? { full_name: owner.full_name } : null,
+  };
 }
 
 export async function listVehicles(orgId: string): Promise<VehicleWithAdder[]> {
@@ -18,7 +27,9 @@ export async function listVehicles(orgId: string): Promise<VehicleWithAdder[]> {
 
   const { data, error } = await supabase
     .from('vehicles')
-    .select('*, added_by_profile:profiles!vehicles_added_by_fkey(full_name)')
+    .select(
+      '*, added_by_profile:profiles!vehicles_added_by_fkey(full_name), current_user_profile:profiles!vehicles_current_user_id_fkey(full_name)',
+    )
     .eq('organization_id', orgId)
     .order('created_at', { ascending: false });
   if (error) throw error;

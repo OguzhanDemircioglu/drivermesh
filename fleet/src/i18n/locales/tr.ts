@@ -522,6 +522,7 @@ export const tr = {
     summaryMaintenance: 'Bakım',
     addCta: 'Yeni Araç Ekle',
     addedBy: '{{name}} Ekledi',
+    currentUser: 'Üzerinde: {{name}}',
     status: {
       active: 'Aktif',
       idle: 'Boşta',

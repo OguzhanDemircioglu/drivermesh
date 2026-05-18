@@ -39,6 +39,10 @@ type Props = {
   year: number;
   status: VehicleStatus;
   addedBy?: string | null;
+  /** Araç şu an kimin üzerinde — driver veya owner adı. Set'liyse card'da
+   * "Üzerinde: <ad>" satırı görünür (vehicles_set_default_owner trigger
+   * sonrası hiçbir araç sahipsiz kalmaz, bu yüzden hep gösterilebilir). */
+  currentUserName?: string | null;
   photoUrl?: string | null;
   /** Operator-chosen colour (hex). When set, overrides the plate-derived
    * gradient with a solid colour matching the real vehicle. */
@@ -72,6 +76,7 @@ function VehicleCardImpl({
   year,
   status,
   addedBy,
+  currentUserName,
   photoUrl,
   color,
   authenticityBadge,
@@ -116,7 +121,12 @@ function VehicleCardImpl({
             <Text style={styles.model} numberOfLines={1}>
               {brand} {model} · {year}
             </Text>
-            {addedBy ? (
+            {currentUserName ? (
+              <Text style={styles.added} numberOfLines={1}>
+                <Feather name="user-check" size={11} color={theme.colors.accent} />{' '}
+                {t('vehicles.currentUser', { name: currentUserName })}
+              </Text>
+            ) : addedBy ? (
               <Text style={styles.added} numberOfLines={1}>
                 <Feather name="user" size={11} color={theme.colors.textDim} />{' '}
                 {t('vehicles.addedBy', { name: addedBy })}

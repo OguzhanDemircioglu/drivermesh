@@ -98,6 +98,7 @@ export default function VehiclesScreen() {
               year={v.year}
               status={v.status}
               addedBy={v.added_by_profile?.full_name ?? null}
+              currentUserName={v.current_user_profile?.full_name ?? null}
               photoUrl={v.photo_url}
               color={v.color}
               authenticityBadge={badgeFromSummary({

@@ -667,36 +667,34 @@ function reseed() {
       read_at: hoursAgo(1),
       created_at: hoursAgo(1.5),
     },
-    // v5: ride_completed notification — yeni ride feature örneği
+    // v7: ride_completed — doğru tip ile (önceden request_approved fake'leniyordu)
     {
       id: 'demo-n4',
       organization_id: DEMO_ORG_ID,
       recipient_id: DEMO_OWNER_ID,
       actor_id: DEMO_DRIVER_IDS[2],
-      type: 'request_approved',
+      type: 'ride_completed' as never,
       payload: {
         job_id: 'demo-j9',
-        customer_name: 'Emre Aydın (Ride)',
+        ride_request_id: null,
+        customer_name: 'Emre Aydın',
         stars: 5,
-        source: 'ride',
       },
       read_at: null,
       created_at: minutesAgo(195),
     },
-    // v5: maintenance_overdue — auto-checkout cron sinyali örneği
+    // v7: maintenance_overdue — auto-checkout cron sinyali (önceden
+    // permission_grant fake'leniyordu)
     {
       id: 'demo-n5',
       organization_id: DEMO_ORG_ID,
       recipient_id: DEMO_OWNER_ID,
-      actor_id: DEMO_MANAGER_ID,
-      type: 'permission_grant',
+      actor_id: null,
+      type: 'maintenance_overdue' as never,
       payload: {
-        key: 'vehicles.approve_maintenance',
-        allowed: true,
-        member_id: DEMO_DRIVER_IDS[3],
-        label_tr: 'Bakım onaylama',
-        label_en: 'Approve maintenance',
-        is_critical: true,
+        vehicle_id: 'demo-v4',
+        plate: '34 JKL 234',
+        reason: 'Bakım süresi doldu, araç otomatik teslim alındı',
       },
       read_at: null,
       created_at: minutesAgo(20),

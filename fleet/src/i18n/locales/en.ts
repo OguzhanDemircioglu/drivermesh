@@ -524,6 +524,7 @@ export const en: TranslationShape = {
     summaryMaintenance: 'Maintenance',
     addCta: 'Add New Vehicle',
     addedBy: 'Added By {{name}}',
+    currentUser: 'Driver: {{name}}',
     status: {
       active: 'Active',
       idle: 'Idle',
