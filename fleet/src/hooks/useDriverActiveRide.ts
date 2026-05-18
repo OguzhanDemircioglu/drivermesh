@@ -18,6 +18,12 @@ export type DriverActiveRide = {
   duration_min: number | null;
 };
 
+/**
+ * V0.2: Supabase Realtime channel + 30sn polling fallback.
+ * Driver'a atanan ride_requests satırındaki herhangi bir change anında load()
+ * tetikler — customer çağırınca, driver_arrived/start/complete/cancel
+ * transitions cihaza milisaniyeler içinde yansır.
+ */
 export function useDriverActiveRide(driverId: string | undefined) {
   const [data, setData] = useState<DriverActiveRide | null>(null);
   const [loading, setLoading] = useState(true);
@@ -28,8 +34,7 @@ export function useDriverActiveRide(driverId: string | undefined) {
       setLoading(false);
       return;
     }
-    // Demo modunda Supabase yok — boş döndür, 3sn polling boşa
-    // çağırılmasın.
+    // Demo modunda Supabase yok — boş döndür, fetch boşa çağırılmasın.
     if (isDemoActive()) {
       setData(null);
       setLoading(false);
@@ -55,12 +60,35 @@ export function useDriverActiveRide(driverId: string | undefined) {
   }, [driverId]);
 
   useEffect(() => {
-    load();
-    if (!driverId) return;
-    const id = setInterval(() => {
+    void load();
+    if (!driverId || isDemoActive()) return;
+
+    // Realtime subscribe: bu driver'a ait herhangi bir ride_request change → reload
+    const channel = supabase
+      .channel(`driver-active-${driverId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'ride_requests',
+          filter: `driver_id=eq.${driverId}`,
+        },
+        () => {
+          void load();
+        },
+      )
+      .subscribe();
+
+    // 30sn polling fallback (Realtime bağlantı kopması durumunda safety net)
+    const intervalId = setInterval(() => {
       void load();
-    }, 3000);
-    return () => clearInterval(id);
+    }, 30000);
+
+    return () => {
+      clearInterval(intervalId);
+      void supabase.removeChannel(channel);
+    };
   }, [load, driverId]);
 
   return { data, loading, refetch: load };
