@@ -15,6 +15,7 @@ import {
   registerPushTokenForCustomer,
   requestPushPermission,
 } from '@/lib/push';
+import { deleteMyCustomerAccount } from '@/lib/db/customers';
 import { colors, radii, spacing } from '@/theme';
 
 export default function AccountScreen() {
@@ -85,6 +86,45 @@ export default function AccountScreen() {
         style: 'destructive',
         onPress: () => {
           signOut().catch(() => {});
+        },
+      },
+    ]);
+  };
+
+  // Mağaza zorunlu: in-app hesap silme akışı (Play Store + App Store).
+  // İki aşamalı onay → soft delete (30 gün retention) → sign out.
+  const onDeleteAccount = () => {
+    Alert.alert(t('account.deleteConfirmTitle'), t('account.deleteConfirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.continue'),
+        style: 'destructive',
+        onPress: () => {
+          Alert.alert(
+            t('account.deleteFinalConfirmTitle'),
+            t('account.deleteFinalConfirmBody'),
+            [
+              { text: t('common.cancel'), style: 'cancel' },
+              {
+                text: t('account.deleteAccount'),
+                style: 'destructive',
+                onPress: async () => {
+                  try {
+                    await deleteMyCustomerAccount();
+                    toast.show('success', t('account.deleteSuccessTitle'));
+                    // Sign out kapatır → AuthGate welcome'a yönlendirir.
+                    await signOut().catch(() => {});
+                  } catch (e) {
+                    const msg = (e as Error).message;
+                    const friendly = msg.includes('active_ride')
+                      ? t('account.deleteErrorActiveRide')
+                      : t('account.deleteErrorGeneric');
+                    toast.show('error', friendly);
+                  }
+                },
+              },
+            ],
+          );
         },
       },
     ]);
@@ -185,6 +225,18 @@ export default function AccountScreen() {
         >
           <Feather name="log-out" size={16} color={colors.danger} />
           <Text style={styles.logoutText}>{t('common.logout')}</Text>
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={onDeleteAccount}
+          style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.7 }]}
+        >
+          <Feather name="user-x" size={14} color={colors.textMuted} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.deleteText}>{t('account.deleteAccount')}</Text>
+            <Text style={styles.deleteHint}>{t('account.deleteAccountHint')}</Text>
+          </View>
         </Pressable>
       </ScrollView>
     </Screen>
@@ -300,4 +352,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dangerMuted,
   },
   logoutText: { color: colors.danger, fontWeight: '700', fontSize: 15 },
+  deleteBtn: {
+    marginTop: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.md,
+    backgroundColor: 'transparent',
+  },
+  deleteText: { color: colors.textMuted, fontSize: 13, fontWeight: '500' },
+  deleteHint: { color: colors.textDim, fontSize: 11, marginTop: 2 },
 });

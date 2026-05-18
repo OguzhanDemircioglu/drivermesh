@@ -11,7 +11,27 @@ type LocaleShape = {
   tabs: { home: string; vehicles: string; account: string };
   home: { greetingMorning: string; greetingAfternoon: string; greetingEvening: string; statsTotalRides: string; statsTotalKm: string; lastTrip: string; callCta: string; pendingRating: string };
   vehicles: { title: string; cityLabel: string; callBtn: string; callPhone: string; emptyTitle: string; emptyBody: string; permissionRequired: string; permissionBody: string; permissionOpenSettings: string; refresh: string };
-  account: { title: string; editProfile: string; language: string; notifications: string; help: string; legal: string; version: string; logoutConfirmTitle: string; logoutConfirmBody: string };
+  account: {
+    title: string;
+    editProfile: string;
+    language: string;
+    notifications: string;
+    help: string;
+    legal: string;
+    version: string;
+    logoutConfirmTitle: string;
+    logoutConfirmBody: string;
+    deleteAccount: string;
+    deleteAccountHint: string;
+    deleteConfirmTitle: string;
+    deleteConfirmBody: string;
+    deleteFinalConfirmTitle: string;
+    deleteFinalConfirmBody: string;
+    deleteSuccessTitle: string;
+    deleteSuccessBody: string;
+    deleteErrorActiveRide: string;
+    deleteErrorGeneric: string;
+  };
   call: { title: string; pickupLabel: string; pickupLoading: string; cta: string; waitingTitle: string; waitingBody: string; cancelBtn: string; timeoutTitle: string; timeoutBody: string };
   active: { statusAssigned: string; statusArrived: string; statusInProgress: string; callDriver: string; cancelTrip: string; cancelConfirmTitle: string; cancelConfirmBody: string };
   rating: { title: string; starLabel1: string; starLabel2: string; starLabel3: string; starLabel4: string; starLabel5: string; commentLabel: string; commentPlaceholder: string; cta: string; thanks: string };
@@ -111,6 +131,16 @@ export const tr: LocaleShape = {
     version: 'Sürüm',
     logoutConfirmTitle: 'Çıkış yap',
     logoutConfirmBody: 'Oturumunu kapatmak istediğine emin misin?',
+    deleteAccount: 'Hesabımı sil',
+    deleteAccountHint: '30 gün içinde geri dönebilirsin',
+    deleteConfirmTitle: 'Hesabını silmek üzeresin',
+    deleteConfirmBody: 'Profilin ve geçmiş yolculukların 30 gün içinde geri alınabilir kalır. 30 gün sonra kalıcı olarak silinir.',
+    deleteFinalConfirmTitle: 'Emin misin?',
+    deleteFinalConfirmBody: 'Bu işlemi onayladığında çıkış yapılacak ve hesabın 30 günlük geri-dönüş bekleme süresine girer.',
+    deleteSuccessTitle: 'Hesabın silinmek üzere',
+    deleteSuccessBody: 'Kaydın 30 gün içinde geri alınabilir. Bu süre sonunda kalıcı silinir.',
+    deleteErrorActiveRide: 'Önce mevcut yolculuğunu tamamla veya iptal et.',
+    deleteErrorGeneric: 'Hesap silme sırasında bir sorun oldu. Tekrar dene.',
   },
   call: {
     title: 'Bu aracı çağır',
