@@ -1,11 +1,15 @@
-// Google Gemini Flash 1.5 client
+// Google Gemini Flash client
 //
-// Endpoint: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent
+// Endpoint: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent
 // Free tier: 15 RPM, 1500 RPD, 1M tokens/day
 // Auth: API key (query string)
+//
+// Note: gemini-1.5-flash-latest 2025'te deprecate edildi (404 v1beta).
+// Gemini 2.5 family default. 2.5-flash hız+kalite dengesi, 2.5-pro daha
+// kaliteli ama yavaş + free tier'da daha düşük RPM.
 
 const GEMINI_ENDPOINT =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 interface GeminiContent {
   role: 'user' | 'model';
