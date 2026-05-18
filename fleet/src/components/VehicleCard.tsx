@@ -51,6 +51,10 @@ type Props = {
    * altinda kucuk bir flag gosterir — Patron araclar listesinde supheli
    * foto'lari bir bakista ayirt edebilsin. */
   authenticityBadge?: 'wrong_content' | 'ai_generated' | 'exif_missing' | 'exif_stale' | null;
+  /** Set'liyse card altında "Üzerine Al" inline buton görünür.
+   * vehicles_set_default_owner sonrası driver başka birinin üzerindeki idle
+   * aracı kendi üzerine alabilir (claim_vehicle RPC). */
+  onClaim?: (() => void) | null;
   onPress?: () => void;
 };
 
@@ -80,6 +84,7 @@ function VehicleCardImpl({
   photoUrl,
   color,
   authenticityBadge,
+  onClaim,
   onPress,
 }: Props) {
   const { t } = useTranslation();
@@ -142,6 +147,21 @@ function VehicleCardImpl({
             {authenticityBadge ? <AuthenticityFlag kind={authenticityBadge} /> : null}
           </View>
         </View>
+        {onClaim ? (
+          <Pressable
+            onPress={(e) => {
+              e.stopPropagation?.();
+              onClaim();
+            }}
+            style={({ pressed }) => [
+              styles.claimBtn,
+              pressed && { opacity: 0.85 },
+            ]}
+          >
+            <Feather name="user-check" size={14} color={theme.colors.accent} />
+            <Text style={styles.claimBtnText}>{t('vehicles.claim')}</Text>
+          </Pressable>
+        ) : null}
       </Card>
     </Pressable>
   );
@@ -199,6 +219,23 @@ const styles = StyleSheet.create({
   },
   model: { color: theme.colors.textMuted, fontSize: theme.font.size.sm },
   added: { color: theme.colors.textDim, fontSize: theme.font.size.xs, marginTop: 2 },
+  claimBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 10,
+    paddingVertical: 8,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.accentMuted,
+    borderWidth: 1,
+    borderColor: 'rgba(255,122,26,0.32)',
+  },
+  claimBtnText: {
+    color: theme.colors.accent,
+    fontSize: theme.font.size.sm,
+    fontWeight: theme.font.weight.semibold,
+  },
   badge: {
     paddingVertical: 4,
     paddingHorizontal: 10,

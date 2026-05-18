@@ -525,6 +525,7 @@ export const en: TranslationShape = {
     addCta: 'Add New Vehicle',
     addedBy: 'Added By {{name}}',
     currentUser: 'Driver: {{name}}',
+    claim: 'Claim',
     status: {
       active: 'Active',
       idle: 'Idle',
@@ -1031,5 +1032,11 @@ export const en: TranslationShape = {
       ctaTapTarget: 'Tap the highlighted area to continue',
       welcomeDemoHint: '👉 Tap the "Demo App" button and let us explore the app',
     },
+  },
+  rideHistory: {
+    title: 'My Ride History',
+    emptyTitle: 'No rides yet',
+    emptyText: 'Your completed ride-source trips will appear here.',
+    menuLabel: 'My Ride History',
   },
 };

@@ -396,6 +396,11 @@ export default function AccountScreen() {
           <Card>
             <Text style={styles.sectionTitle}>{t('account.help')}</Text>
             <Action
+              icon="map"
+              label={t('rideHistory.menuLabel')}
+              onPress={() => router.push('/(app)/ride-history')}
+            />
+            <Action
               icon="help-circle"
               label={t('account.actionSupport')}
               onPress={() => router.push('/(app)/account/support')}

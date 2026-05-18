@@ -523,6 +523,7 @@ export const tr = {
     addCta: 'Yeni Araç Ekle',
     addedBy: '{{name}} Ekledi',
     currentUser: 'Üzerinde: {{name}}',
+    claim: 'Üzerine Al',
     status: {
       active: 'Aktif',
       idle: 'Boşta',
@@ -1029,6 +1030,12 @@ export const tr = {
       ctaTapTarget: 'Devam etmek için işaretli bölgeye dokun',
       welcomeDemoHint: '👉 “Demo App” butonuna dokun ve uygulamayı keşfedelim',
     },
+  },
+  rideHistory: {
+    title: 'Yolculuk Geçmişim',
+    emptyTitle: 'Henüz yolculuk yok',
+    emptyText: 'Tamamladığın ride-source yolculuklar burada listelenir.',
+    menuLabel: 'Yolculuk Geçmişim',
   },
 };
 

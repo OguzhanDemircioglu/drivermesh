@@ -42,7 +42,7 @@ type Props = {
 export function StatusPill({ expanded = false }: Props = {}) {
   const { t } = useTranslation();
   const { profile, refreshProfile } = useAuth();
-  const status = ((profile as unknown as { status?: Status })?.status ?? 'off_duty') as Status;
+  const status: Status = (profile?.status as Status) ?? 'off_duty';
   const meta = STATUS_META[status];
   const isOnTrip = status === 'on_trip';
   const [sheetOpen, setSheetOpen] = useState(false);

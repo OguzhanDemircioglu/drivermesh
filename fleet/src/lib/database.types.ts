@@ -53,6 +53,120 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          role: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "chat_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string
+          organization_id: string | null
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          organization_id?: string | null
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          organization_id?: string | null
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_notifications: {
+        Row: {
+          body: string
+          created_at: string | null
+          customer_id: string
+          id: string
+          payload: Json
+          read_at: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          body: string
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          payload?: Json
+          read_at?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          body?: string
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          payload?: Json
+          read_at?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_notifications_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           auth_user_id: string
@@ -755,10 +869,15 @@ export type Database = {
           manager_id: string | null
           organization_id: string | null
           phone: string | null
+          pre_trip_status:
+            | Database["public"]["Enums"]["user_availability_status"]
+            | null
           push_platform: string | null
           push_token: string | null
           push_token_updated_at: string | null
           role: Database["public"]["Enums"]["user_role"]
+          status: Database["public"]["Enums"]["user_availability_status"]
+          status_updated_at: string
         }
         Insert: {
           avatar_url?: string | null
@@ -769,10 +888,15 @@ export type Database = {
           manager_id?: string | null
           organization_id?: string | null
           phone?: string | null
+          pre_trip_status?:
+            | Database["public"]["Enums"]["user_availability_status"]
+            | null
           push_platform?: string | null
           push_token?: string | null
           push_token_updated_at?: string | null
           role: Database["public"]["Enums"]["user_role"]
+          status?: Database["public"]["Enums"]["user_availability_status"]
+          status_updated_at?: string
         }
         Update: {
           avatar_url?: string | null
@@ -783,10 +907,15 @@ export type Database = {
           manager_id?: string | null
           organization_id?: string | null
           phone?: string | null
+          pre_trip_status?:
+            | Database["public"]["Enums"]["user_availability_status"]
+            | null
           push_platform?: string | null
           push_token?: string | null
           push_token_updated_at?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          status?: Database["public"]["Enums"]["user_availability_status"]
+          status_updated_at?: string
         }
         Relationships: [
           {
@@ -933,10 +1062,10 @@ export type Database = {
           customer_id: string
           distance_km: number | null
           driver_id: string | null
-          dropoff_address: string
+          dropoff_address: string | null
           dropoff_point: unknown
           duration_min: number | null
-          fare_estimate: number
+          fare_estimate: number | null
           fare_final: number | null
           id: string
           job_id: string | null
@@ -963,10 +1092,10 @@ export type Database = {
           customer_id: string
           distance_km?: number | null
           driver_id?: string | null
-          dropoff_address: string
-          dropoff_point: unknown
+          dropoff_address?: string | null
+          dropoff_point?: unknown
           duration_min?: number | null
-          fare_estimate: number
+          fare_estimate?: number | null
           fare_final?: number | null
           id?: string
           job_id?: string | null
@@ -993,10 +1122,10 @@ export type Database = {
           customer_id?: string
           distance_km?: number | null
           driver_id?: string | null
-          dropoff_address?: string
+          dropoff_address?: string | null
           dropoff_point?: unknown
           duration_min?: number | null
-          fare_estimate?: number
+          fare_estimate?: number | null
           fare_final?: number | null
           id?: string
           job_id?: string | null
@@ -1443,6 +1572,10 @@ export type Database = {
             }
             Returns: string
           }
+      cancel_ride: {
+        Args: { p_reason?: string; p_ride_id: string }
+        Returns: undefined
+      }
       change_member_role: {
         Args: {
           p_member_id: string
@@ -1454,7 +1587,20 @@ export type Database = {
         Args: { p_reason?: string; p_vehicle_id: string }
         Returns: undefined
       }
+      claim_vehicle_for_ride: {
+        Args: { p_vehicle_id: string }
+        Returns: string
+      }
       cloudinary_public_id_from_url: { Args: { url: string }; Returns: string }
+      complete_ride: {
+        Args: {
+          p_distance_km?: number
+          p_duration_min?: number
+          p_fare_final?: number
+          p_ride_id: string
+        }
+        Returns: Database["public"]["Enums"]["ride_status"]
+      }
       current_user_org_id: { Args: never; Returns: string }
       current_user_role: {
         Args: never
@@ -1462,6 +1608,10 @@ export type Database = {
       }
       delete_fleet: { Args: never; Returns: undefined }
       disablelongtransactions: { Args: never; Returns: string }
+      driver_arrived: {
+        Args: { p_ride_id: string }
+        Returns: Database["public"]["Enums"]["ride_status"]
+      }
       dropgeometrycolumn:
         | {
             Args: {
@@ -1598,6 +1748,10 @@ export type Database = {
         Args: { p_key: string; p_user_id: string }
         Returns: boolean
       }
+      is_fleet_open: {
+        Args: { p_at?: string; p_org_id: string }
+        Returns: boolean
+      }
       list_member_permissions: {
         Args: { p_member_id: string }
         Returns: {
@@ -1676,6 +1830,59 @@ export type Database = {
       release_vehicle: { Args: { p_vehicle_id: string }; Returns: undefined }
       remove_org_member: { Args: { p_member_id: string }; Returns: undefined }
       request_account_deletion: { Args: never; Returns: Json }
+      request_ride: {
+        Args: {
+          p_pickup_address: string
+          p_pickup_lat: number
+          p_pickup_lng: number
+          p_vehicle_id: string
+        }
+        Returns: string
+      }
+      ride_active_driver_info: {
+        Args: { p_ride_id: string }
+        Returns: {
+          brand: string
+          color: string
+          driver_avatar_url: string
+          driver_id: string
+          driver_name: string
+          driver_phone: string
+          hq_lat: number
+          hq_lng: number
+          model: string
+          photo_url: string
+          plate: string
+          vehicle_id: string
+        }[]
+      }
+      ride_search_vehicles: {
+        Args: { p_lat: number; p_lng: number; p_radius_km?: number }
+        Returns: {
+          brand: string
+          color: string
+          distance_km: number
+          driver_avatar_url: string
+          driver_id: string
+          driver_name: string
+          driver_phone: string
+          hq_address: string
+          hq_lat: number
+          hq_lng: number
+          model: string
+          organization_id: string
+          photo_url: string
+          plate: string
+          vehicle_id: string
+          year: number
+        }[]
+      }
+      set_my_status: {
+        Args: {
+          p_status: Database["public"]["Enums"]["user_availability_status"]
+        }
+        Returns: Database["public"]["Enums"]["user_availability_status"]
+      }
       set_permission_override: {
         Args: { p_allowed: boolean; p_key: string; p_member_id: string }
         Returns: undefined
@@ -2266,6 +2473,18 @@ export type Database = {
         Args: { geom: unknown; move: number; wrap: number }
         Returns: unknown
       }
+      start_ride: {
+        Args: { p_ride_id: string }
+        Returns: Database["public"]["Enums"]["ride_status"]
+      }
+      submit_driver_rating: {
+        Args: { p_comment?: string; p_ride_id: string; p_stars: number }
+        Returns: string
+      }
+      submit_rating: {
+        Args: { p_comment?: string; p_ride_id: string; p_stars: number }
+        Returns: string
+      }
       transfer_ownership: {
         Args: { target_user_id: string }
         Returns: undefined
@@ -2317,6 +2536,12 @@ export type Database = {
         | "cancelled_by_driver"
         | "cancelled_by_system"
       ride_vehicle_type: "standard" | "comfort" | "xl" | "taxi"
+      user_availability_status:
+        | "active"
+        | "break"
+        | "off_duty"
+        | "on_trip"
+        | "unavailable"
       user_role: "owner" | "manager" | "driver"
       vehicle_status: "active" | "maintenance" | "idle"
     }
@@ -2492,6 +2717,13 @@ export const Constants = {
         "cancelled_by_system",
       ],
       ride_vehicle_type: ["standard", "comfort", "xl", "taxi"],
+      user_availability_status: [
+        "active",
+        "break",
+        "off_duty",
+        "on_trip",
+        "unavailable",
+      ],
       user_role: ["owner", "manager", "driver"],
       vehicle_status: ["active", "maintenance", "idle"],
     },
@@ -2501,19 +2733,18 @@ export const Constants = {
 // ---------------------------------------------------------------------------
 // Named exports — fleet kod tabanı bu kısa isimleri kullanıyor.
 // Supabase CLI auto-gen sadece Database tipini export eder; aşağıdaki kısa
-// aliaslar `npm run gen:types` sonrası elle korunur. Yeni tablo/enum eklenirse
+// aliaslar gen:types sonrası elle korunur. Yeni tablo/enum eklenirse
 // burayı da güncelle.
 // ---------------------------------------------------------------------------
-export type Job = Database['public']['Tables']['jobs']['Row']
-export type JobStatus = Database['public']['Enums']['job_status']
-export type JobSource = Database['public']['Enums']['job_source']
-export type Profile = Database['public']['Tables']['profiles']['Row']
-export type Vehicle = Database['public']['Tables']['vehicles']['Row']
-export type VehicleStatus = Database['public']['Enums']['vehicle_status']
+export type Job = Database["public"]["Tables"]["jobs"]["Row"]
+export type JobStatus = Database["public"]["Enums"]["job_status"]
+export type JobSource = Database["public"]["Enums"]["job_source"]
+export type Profile = Database["public"]["Tables"]["profiles"]["Row"]
+export type Vehicle = Database["public"]["Tables"]["vehicles"]["Row"]
+export type VehicleStatus = Database["public"]["Enums"]["vehicle_status"]
 export type MaintenanceRequest =
-  Database['public']['Tables']['maintenance_requests']['Row']
-export type UserRole = Database['public']['Enums']['user_role']
-export type Invitation = Database['public']['Tables']['invitations']['Row']
-export type Organization = Database['public']['Tables']['organizations']['Row']
-export type Notification = Database['public']['Tables']['notifications']['Row']
-
+  Database["public"]["Tables"]["maintenance_requests"]["Row"]
+export type UserRole = Database["public"]["Enums"]["user_role"]
+export type Invitation = Database["public"]["Tables"]["invitations"]["Row"]
+export type Organization = Database["public"]["Tables"]["organizations"]["Row"]
+export type Notification = Database["public"]["Tables"]["notifications"]["Row"]

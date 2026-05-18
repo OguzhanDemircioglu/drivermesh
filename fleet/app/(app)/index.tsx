@@ -190,9 +190,13 @@ export default function HomeScreen() {
           {/* Status row — bildirim + dil seçici satırının ALTINDA, full-width
               comfortable tap target. Driver için ride'da görünürlüğü,
               owner/manager için takım visibility'sini etkiler. */}
-          <View style={styles.statusRow}>
-            <StatusPill expanded />
-          </View>
+          {/* Status pill sadece driver için — owner/manager filo özetini
+              "Filo Ritmi" kartından zaten görür. */}
+          {isDriver ? (
+            <View style={styles.statusRow}>
+              <StatusPill expanded />
+            </View>
+          ) : null}
 
           {/* Driver active-ride banner — şoför aktif yolculuktayken anasayfa kısayolu */}
           {isDriver && driverActive.data ? (

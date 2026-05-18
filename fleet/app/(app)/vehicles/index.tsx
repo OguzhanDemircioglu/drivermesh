@@ -20,16 +20,38 @@ import { VehicleCard } from '@/components/VehicleCard';
 import { useAuth } from '@/auth/AuthProvider';
 import { listVehicles, type VehicleWithAdder } from '@/lib/vehicles';
 import { badgeFromSummary } from '@/lib/photoAuthenticity';
+import { claimVehicle } from '@/lib/vehicleClaim';
+import { useToast } from '@/components/Toast';
 import { theme } from '@/theme';
 import { useTranslation } from 'react-i18next';
 
 export default function VehiclesScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
+  const toast = useToast();
   const [vehicles, setVehicles] = useState<VehicleWithAdder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [claiming, setClaiming] = useState<string | null>(null);
+
+  const onClaim = useCallback(
+    async (vehicleId: string) => {
+      if (!session?.user.id || claiming) return;
+      setClaiming(vehicleId);
+      try {
+        await claimVehicle(vehicleId, session.user.id, 'manual');
+        toast.success(t('vehicleClaim.successClaim'));
+        await load();
+      } catch (e) {
+        toast.error(t('vehicleClaim.errorTitle'), (e as Error).message);
+      } finally {
+        setClaiming(null);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [session?.user.id, claiming, t, toast],
+  );
 
   const load = useCallback(async () => {
     if (!profile?.organization_id) {
@@ -99,6 +121,16 @@ export default function VehiclesScreen() {
               status={v.status}
               addedBy={v.added_by_profile?.full_name ?? null}
               currentUserName={v.current_user_profile?.full_name ?? null}
+              onClaim={
+                // Driver/manager kendi üzerinde olmayan idle aracı alabilir.
+                // Owner için button gerek yok (her şey zaten üzerinde).
+                profile?.role !== 'owner' &&
+                v.status === 'idle' &&
+                v.current_user_id !== session?.user.id &&
+                !v.maintenance_started_at
+                  ? () => onClaim(v.id)
+                  : null
+              }
               photoUrl={v.photo_url}
               color={v.color}
               authenticityBadge={badgeFromSummary({

@@ -50,14 +50,14 @@ export default function RideSettingsScreen() {
       return;
     }
     const { data, error } = await supabase
-      .from('fleets_visibility' as never)
+      .from('fleets_visibility')
       .select('organization_id, ride_enabled, operating_hours')
       .eq('organization_id', profile.organization_id)
       .maybeSingle();
     if (error) {
       console.warn('[ride-settings] load failed', error.message);
-    } else {
-      setData(data as never);
+    } else if (data) {
+      setData(data);
     }
     setLoading(false);
   }, [profile?.organization_id]);
@@ -76,8 +76,8 @@ export default function RideSettingsScreen() {
         return;
       }
       const { error } = await supabase
-        .from('fleets_visibility' as never)
-        .update({ ride_enabled: next } as never)
+        .from('fleets_visibility')
+        .update({ ride_enabled: next })
         .eq('organization_id', profile.organization_id);
       if (error) throw new Error(error.message);
       setData((d) => (d ? { ...d, ride_enabled: next } : d));
