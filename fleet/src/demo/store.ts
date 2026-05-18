@@ -35,11 +35,14 @@ import type { MemberPermission } from '@/lib/permissions';
 // v3: vehicle seed gucleristirildi (maintenance state dolu, current_user_id
 // claim ornekleri) + maintenanceRequests history seed (5 status with
 // 3 authenticity scenarios in v4).
-// v5 (2026-05-18): seed zenginleştirildi — 7 araç (2 yeni: Renault Trafic
-// elektrik + Peugeot Boxer claimable), 10 iş (3 yeni: 2 ride-source +
-// 1 driver_request), 6 profile (yeni driver Burak), 5 notification (2 yeni:
-// ride_completed + maintenance_overdue). Eski v4 state otomatik invalidate.
-const DEMO_STATE_KEY = 'drivermesh.demo.state.v5';
+// v5 (2026-05-18): seed zenginleştirildi — 7 araç, 10 iş, 6 profile,
+// 5 notification.
+// v6 (2026-05-18): iş kuralına uyum — vehicles_set_default_owner trigger'a
+// göre HİÇBİR araç sahipsiz kalmaz (idle olsa bile current_user_id =
+// owner). Demo'da idle iki araç (demo-v5 Renault Master + demo-v7 Peugeot
+// Boxer) artık Demo Patron üzerinde. "Üzerine Al" akışı için yine başka
+// driver kendine alabilir.
+const DEMO_STATE_KEY = 'drivermesh.demo.state.v6';
 
 // ---------- IDs ----------
 
@@ -299,11 +302,12 @@ function reseed() {
       maintenanceUntil: hoursAgo(-2), // 2 saat sonra biter
       maintenancePhotoUrls: [maintenancePhoto1],
     }),
-    // Claimable arac — fotosuz (empty-state branch) + acik sarı renk (kontrast test)
+    // v6: idle araç ama patron üzerinde — vehicles_set_default_owner trigger'a
+    // göre hiçbir araç sahipsiz kalmaz. Driver "Üzerine Al" ile alabilir.
     mkVehicle({
       id: 'demo-v5', plate: '35 MNO 567', brand: 'Renault', model: 'Master',
       year: 2024, status: 'idle', color: '#F59E0B', isAtHq: true,
-      photoUrl: null, currentUserId: null,
+      photoUrl: null, currentUserId: DEMO_OWNER_ID,
     }),
     // v5: elektrik araç + 4. driver (Burak) üzerinde — yeni feature örneği
     mkVehicle({
@@ -311,11 +315,11 @@ function reseed() {
       year: 2025, status: 'active', color: '#10B981', isAtHq: false,
       photoUrl: photo2, currentUserId: DEMO_DRIVER_IDS[3], // Burak üzerinde
     }),
-    // v5: ikinci claimable araç — farklı kategori, Peugeot
+    // v6: idle araç ama patron üzerinde
     mkVehicle({
       id: 'demo-v7', plate: '06 STU 123', brand: 'Peugeot', model: 'Boxer',
       year: 2023, status: 'idle', color: '#3B82F6', isAtHq: true,
-      photoUrl: photo3, currentUserId: null,
+      photoUrl: photo3, currentUserId: DEMO_OWNER_ID,
     }),
   ];
 
