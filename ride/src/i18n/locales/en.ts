@@ -94,6 +94,8 @@ export const en: TranslationKeys = {
     deleteSuccessBody: 'Your data is recoverable for 30 days. After that it is permanently removed.',
     deleteErrorActiveRide: 'Finish or cancel your active trip first.',
     deleteErrorGeneric: 'Something went wrong while deleting. Please try again.',
+    privacyPolicy: 'Privacy Policy',
+    termsOfService: 'Terms of Service',
   },
   call: {
     title: 'Call this vehicle',

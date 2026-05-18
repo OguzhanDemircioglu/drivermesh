@@ -209,6 +209,16 @@ export default function AccountScreen() {
             label={t('account.notifications')}
             onPress={onNotificationsPress}
           />
+          <MenuLink
+            icon="shield"
+            label={t('account.privacyPolicy')}
+            onPress={() => Linking.openURL('https://drivermesh.com/privacy.html').catch(() => {})}
+          />
+          <MenuLink
+            icon="file-text"
+            label={t('account.termsOfService')}
+            onPress={() => Linking.openURL('https://drivermesh.com/terms.html').catch(() => {})}
+          />
         </View>
 
         <View style={styles.versionRow}>

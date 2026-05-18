@@ -31,6 +31,8 @@ type LocaleShape = {
     deleteSuccessBody: string;
     deleteErrorActiveRide: string;
     deleteErrorGeneric: string;
+    privacyPolicy: string;
+    termsOfService: string;
   };
   call: { title: string; pickupLabel: string; pickupLoading: string; cta: string; waitingTitle: string; waitingBody: string; cancelBtn: string; timeoutTitle: string; timeoutBody: string };
   active: { statusAssigned: string; statusArrived: string; statusInProgress: string; callDriver: string; cancelTrip: string; cancelConfirmTitle: string; cancelConfirmBody: string };
@@ -141,6 +143,8 @@ export const tr: LocaleShape = {
     deleteSuccessBody: 'Kaydın 30 gün içinde geri alınabilir. Bu süre sonunda kalıcı silinir.',
     deleteErrorActiveRide: 'Önce mevcut yolculuğunu tamamla veya iptal et.',
     deleteErrorGeneric: 'Hesap silme sırasında bir sorun oldu. Tekrar dene.',
+    privacyPolicy: 'Gizlilik Politikası',
+    termsOfService: 'Kullanım Koşulları',
   },
   call: {
     title: 'Bu aracı çağır',

@@ -406,6 +406,20 @@ export default function AccountScreen() {
               onPress={() => router.push('/(app)/account/support')}
             />
             <Action
+              icon="shield"
+              label={t('account.privacyPolicy')}
+              onPress={() =>
+                Linking.openURL('https://drivermesh.com/privacy.html').catch(() => {})
+              }
+            />
+            <Action
+              icon="file-text"
+              label={t('account.termsOfService')}
+              onPress={() =>
+                Linking.openURL('https://drivermesh.com/terms.html').catch(() => {})
+              }
+            />
+            <Action
               icon="info"
               label={t('account.actionAbout')}
               hint={t('account.aboutHint')}
