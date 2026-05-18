@@ -4,12 +4,12 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="theme-color" content="#0A0E1F" />
-<title>DriverMesh — Patron, Yönetici ve Şoför tek ekranda</title>
-<meta name="description" content="DriverMesh — küçük-orta ölçekli filo operasyonları için. Patron, yönetici ve şoförler tek mobil uygulamada: araç envanteri, iş atama, bakım yönetimi, canlı filo haritası." />
+<title>DriverMesh — Filo + Yolcu uygulaması, tek ekosistem</title>
+<meta name="description" content="DriverMesh — küçük-orta ölçekli filo operasyonları için. Patron, yönetici ve şoförler tek mobil uygulamada: araç envanteri, iş atama, bakım yönetimi, canlı filo haritası, AI yardım asistanı. Ayrı yolcu uygulaması (Drivermesh Ride) ile müşteri çağrılarını da kabul edersin." />
 
 <meta property="og:title" content="DriverMesh" />
-<meta property="og:description" content="Patron, Yönetici ve Şoför tek ekranda buluşur." />
-<meta property="og:image" content="/assets/hero-tr.jpg" />
+<meta property="og:description" content="Filo + Yolcu uygulaması, tek ekosistem. Patron, yönetici, şoför ve müşteri buluşur." />
+<meta property="og:image" content="/assets/loginTR.webp" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://drivermesh.com" />
 
@@ -553,6 +553,8 @@
     </a>
     <nav class="nav-links">
       <a href="#features" data-tr="Özellikler" data-en="Features">Özellikler</a>
+      <a href="#ride" data-tr="Yolcu Uygulaması" data-en="Passenger App">Yolcu Uygulaması</a>
+      <a href="#chatbot" data-tr="AI Asistan" data-en="AI Assistant">AI Asistan</a>
       <a href="#how" data-tr="Nasıl çalışır" data-en="How it works">Nasıl çalışır</a>
       <a href="#contact" data-tr="İletişim" data-en="Contact">İletişim</a>
     </nav>
@@ -586,7 +588,7 @@
     </div>
     <div class="hero-image">
       <div class="phone-frame">
-        <img id="hero-img" src="/assets/hero-tr.jpg" alt="DriverMesh app screenshot" />
+        <img id="hero-img" src="/assets/loginTR.webp" alt="DriverMesh login screen" />
       </div>
     </div>
   </section>
@@ -622,8 +624,8 @@
         </div>
         <div class="feature-card">
           <div class="feature-icon">👥</div>
-          <h3 data-tr="Hiyerarşi" data-en="Hierarchy">Hiyerarşi</h3>
-          <p data-tr="Patron → Yönetici → Şoför yapısı. Owner yetkileri verir, manager kendi takımını yönetir, driver işleri kabul eder." data-en="Owner → Manager → Driver hierarchy. Owner grants permissions, manager runs their team, driver accepts jobs.">Patron → Yönetici → Şoför yapısı. Owner yetkileri verir, manager kendi takımını yönetir, driver işleri kabul eder.</p>
+          <h3 data-tr="Hiyerarşi + Yetki Kapsamı" data-en="Hierarchy + Permission Scope">Hiyerarşi + Yetki Kapsamı</h3>
+          <p data-tr="Patron → Yönetici → Şoför yapısı. Manager sadece kendi şoförlerini görür — başka yöneticinin ekibine sızıntı yok (Row-Level Security ile sunucu tarafında zorlanır)." data-en="Owner → Manager → Driver hierarchy. A manager only sees their own drivers — zero leakage to another manager's team (enforced server-side via Row-Level Security).">Patron → Yönetici → Şoför yapısı. Manager sadece kendi şoförlerini görür — başka yöneticinin ekibine sızıntı yok (Row-Level Security ile sunucu tarafında zorlanır).</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">🎯</div>
@@ -701,6 +703,110 @@
     </div>
   </section>
 
+  <!-- RIDE APP — Yolcu (B2C) entegrasyonu -->
+  <section id="ride">
+    <div class="container">
+      <div class="section-title">
+        <small data-tr="Yolcu Uygulaması" data-en="Passenger App">Yolcu Uygulaması</small>
+        <h2 data-tr="Drivermesh Ride: müşteri çağrılarını al" data-en="Drivermesh Ride: accept customer calls">Drivermesh Ride: müşteri çağrılarını al</h2>
+        <p data-tr="İkinci bir mobil uygulama (Drivermesh Ride) müşterilerin senin filondan araç çağırmasını sağlar. İki app aynı backend'i paylaşır — kurulum yok, anında entegre." data-en="A second mobile app (Drivermesh Ride) lets customers call a vehicle from your fleet. Both apps share the same backend — zero setup, instant integration.">İkinci bir mobil uygulama (Drivermesh Ride) müşterilerin senin filondan araç çağırmasını sağlar. İki app aynı backend'i paylaşır — kurulum yok, anında entegre.</p>
+      </div>
+
+      <div class="map-showcase">
+        <div class="map-copy">
+          <ul class="map-bullets">
+            <li>
+              <span class="bullet-dot" style="background:#FF7A1A"></span>
+              <div>
+                <strong data-tr="Anlık eşleştirme" data-en="Instant matching">Anlık eşleştirme</strong>
+                <span data-tr="Müşteri pickup konumunu seçer; servis alanı + mesai saati + araç müsaitliği RPC'lerle filtrelenir, sadece uygun şoförler listelenir." data-en="The customer picks a pickup point; service area + operating hours + vehicle availability are filtered via RPCs, only eligible drivers are shown.">Müşteri pickup konumunu seçer; servis alanı + mesai saati + araç müsaitliği RPC'lerle filtrelenir, sadece uygun şoförler listelenir.</span>
+              </div>
+            </li>
+            <li>
+              <span class="bullet-dot" style="background:#5B7FFF"></span>
+              <div>
+                <strong data-tr="Realtime yaşam döngüsü" data-en="Realtime lifecycle">Realtime yaşam döngüsü</strong>
+                <span data-tr="assigned → driver_arrived → in_progress → completed — her geçiş Supabase Realtime ile sub-sn yansır. Polling değil, anında bildirim." data-en="assigned → driver_arrived → in_progress → completed — every transition propagates via Supabase Realtime in sub-second. No polling, instant update.">assigned → driver_arrived → in_progress → completed — her geçiş Supabase Realtime ile sub-sn yansır. Polling değil, anında bildirim.</span>
+              </div>
+            </li>
+            <li>
+              <span class="bullet-dot" style="background:#C4B5FD"></span>
+              <div>
+                <strong data-tr="Çift yönlü puan" data-en="Two-way rating">Çift yönlü puan</strong>
+                <span data-tr="Yolculuk biter bitmez hem müşteri hem şoför birbirini puanlar. Idempotent UNIQUE constraint ile çift kayıt engelli." data-en="Right after completion, both customer and driver rate each other. Duplicate ratings prevented by a UNIQUE constraint.">Yolculuk biter bitmez hem müşteri hem şoför birbirini puanlar. Idempotent UNIQUE constraint ile çift kayıt engelli.</span>
+              </div>
+            </li>
+            <li>
+              <span class="bullet-dot" style="background:#22C55E"></span>
+              <div>
+                <strong data-tr="Filo kontrolü sende" data-en="Fleet stays in control">Filo kontrolü sende</strong>
+                <span data-tr="Hesap → Ride Ayarları'ndan ride entegrasyonunu tek dokunuşla aç/kapat. Mesai saatleri, servis alanı yarıçapı senin kontrolünde." data-en="Toggle ride integration on/off from Account → Ride Settings. Operating hours, service area radius — all under your control.">Hesap → Ride Ayarları'ndan ride entegrasyonunu tek dokunuşla aç/kapat. Mesai saatleri, servis alanı yarıçapı senin kontrolünde.</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <div class="map-phone">
+          <div class="phone-frame phone-frame-lg">
+            <img id="ride-img" src="/assets/loginTR.webp" alt="Drivermesh Ride app screen"
+                 style="width:100%; height:100%; object-fit:cover; border-radius:32px; display:block;" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI CHATBOT — V0.1 yardım asistanı -->
+  <section id="chatbot">
+    <div class="container">
+      <div class="section-title">
+        <small data-tr="AI Asistan" data-en="AI Assistant">AI Asistan</small>
+        <h2 data-tr="Bilmediğini AI'a sor" data-en="Ask AI when you don't know">Bilmediğini AI'a sor</h2>
+        <p data-tr="Uygulama içi yardım asistanı; Gemini 2.5 Flash ile cevaplar, Cloudflare Workers AI fallback'i ile asla cevapsız kalmazsın. Filo dokümantasyonu prompt'a embed edilmiş — adım adım, halüsinasyonsuz." data-en="In-app help assistant; powered by Gemini 2.5 Flash with Cloudflare Workers AI fallback so you never get an empty answer. Fleet docs embedded into the prompt — step-by-step, no hallucination.">Uygulama içi yardım asistanı; Gemini 2.5 Flash ile cevaplar, Cloudflare Workers AI fallback'i ile asla cevapsız kalmazsın. Filo dokümantasyonu prompt'a embed edilmiş — adım adım, halüsinasyonsuz.</p>
+      </div>
+
+      <div class="map-showcase">
+        <div class="map-phone">
+          <div class="phone-frame phone-frame-lg" style="background: linear-gradient(180deg, #131732, #0A0E1F); display: flex; align-items: center; justify-content: center;">
+            <img src="/assets/chatbot.webp" alt="DriverMesh AI Asistan"
+                 style="width: 65%; height: auto; border-radius: 16px;" />
+          </div>
+        </div>
+        <div class="map-copy">
+          <ul class="map-bullets">
+            <li>
+              <span class="bullet-dot" style="background:#FF7A1A"></span>
+              <div>
+                <strong data-tr="Adım adım rehber" data-en="Step-by-step guide">Adım adım rehber</strong>
+                <span data-tr="Araç ekle, iş ata, şoför davet et — net madde-madde talimat. Uydurma menü/buton ismi yok; sadece gerçek uygulama akışları." data-en="Add a vehicle, dispatch a job, invite a driver — clear bullet-by-bullet instructions. No made-up menu/button names; only real app flows.">Araç ekle, iş ata, şoför davet et — net madde-madde talimat. Uydurma menü/buton ismi yok; sadece gerçek uygulama akışları.</span>
+              </div>
+            </li>
+            <li>
+              <span class="bullet-dot" style="background:#5B7FFF"></span>
+              <div>
+                <strong data-tr="Rol-bilinçli cevap" data-en="Role-aware reply">Rol-bilinçli cevap</strong>
+                <span data-tr="Patron, yönetici, şoför — kim soruyorsa cevap onun yetkilerine göre. Driver'a "owner ekranı" anlatılmaz." data-en="Owner, manager, driver — answers are scoped to who's asking. A driver won't get an owner-only screen explained.">Patron, yönetici, şoför — kim soruyorsa cevap onun yetkilerine göre. Driver'a "owner ekranı" anlatılmaz.</span>
+              </div>
+            </li>
+            <li>
+              <span class="bullet-dot" style="background:#C4B5FD"></span>
+              <div>
+                <strong data-tr="Asla cevapsız bırakmaz" data-en="Never leaves you unanswered">Asla cevapsız bırakmaz</strong>
+                <span data-tr="Gemini timeout/error olursa Cloudflare Workers AI fallback devreye girer; o da fail olursa destek formuna yönlendiren güvenli mesaj." data-en="On Gemini timeout/error the Cloudflare Workers AI fallback kicks in; if that also fails, a safe message points to the support form.">Gemini timeout/error olursa Cloudflare Workers AI fallback devreye girer; o da fail olursa destek formuna yönlendiren güvenli mesaj.</span>
+              </div>
+            </li>
+            <li>
+              <span class="bullet-dot" style="background:#22C55E"></span>
+              <div>
+                <strong data-tr="Sohbet geçmişi" data-en="Conversation history">Sohbet geçmişi</strong>
+                <span data-tr="Tüm konuşmalar profiline bağlı saklanır (Row-Level Security ile sadece sana özel). 10-mesajlık context AI'a beslenir." data-en="All chats are stored against your profile (only yours via Row-Level Security). A 10-message context window is fed to the AI.">Tüm konuşmalar profiline bağlı saklanır (Row-Level Security ile sadece sana özel). 10-mesajlık context AI'a beslenir.</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- HOW IT WORKS -->
   <section id="how">
     <div class="container">
@@ -724,6 +830,11 @@
           <h3 data-tr="Operasyona Başla" data-en="Start Operating">Operasyona Başla</h3>
           <p data-tr="Araçları ekle, işleri ata, haritada izle. Bakım, bildirim ve raporlar otomatik akışa girer." data-en="Add vehicles, dispatch jobs, watch the map. Maintenance, notifications and reports flow automatically.">Araçları ekle, işleri ata, haritada izle. Bakım, bildirim ve raporlar otomatik akışa girer.</p>
         </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <h3 data-tr="Müşteri Çağrılarını Aç" data-en="Open to Customer Calls">Müşteri Çağrılarını Aç</h3>
+          <p data-tr="Opsiyonel: Hesap → Ride Ayarları'ndan ride entegrasyonunu aç. Aynı filo Drivermesh Ride üzerinden müşteri çağrılarını alır." data-en="Optional: enable ride integration from Account → Ride Settings. The same fleet starts taking customer calls via Drivermesh Ride.">Opsiyonel: Hesap → Ride Ayarları'ndan ride entegrasyonunu aç. Aynı filo Drivermesh Ride üzerinden müşteri çağrılarını alır.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -733,7 +844,7 @@
     <div class="container">
       <div class="cta-final">
         <h2 data-tr="Yakında mağazalarda." data-en="Coming soon to stores.">Yakında mağazalarda.</h2>
-        <p data-tr="Lansman gününde haberin olması için bizimle iletişime geç." data-en="Get in touch with us to be notified on launch day.">Lansman gününde haberin olması için bizimle iletişime geç.</p>
+        <p data-tr="İki app aynı anda: Drivermesh (filo yönetimi) + Drivermesh Ride (yolcu). Lansman gününde haberin olması için bizimle iletişime geç." data-en="Two apps at once: Drivermesh (fleet management) + Drivermesh Ride (passenger). Get in touch to be notified on launch day.">İki app aynı anda: Drivermesh (filo yönetimi) + Drivermesh Ride (yolcu). Lansman gününde haberin olması için bizimle iletişime geç.</p>
         <div class="store-row" style="margin-top: 24px;">
           <span class="store-badge coming-soon" aria-disabled="true" title="Coming soon">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
@@ -806,7 +917,7 @@
 
 <footer>
   <div class="container footer-row">
-    <span>© 2026 DriverMesh — <span data-tr="Tüm hakları saklıdır." data-en="All rights reserved.">Tüm hakları saklıdır.</span></span>
+    <span>© 2026 DriverMesh v1.0 — <span data-tr="Tüm hakları saklıdır." data-en="All rights reserved.">Tüm hakları saklıdır.</span></span>
     <div class="footer-links">
       <a href="/privacy.html" data-tr="Gizlilik" data-en="Privacy">Gizlilik</a>
       <a href="/terms.html" data-tr="Kullanım" data-en="Terms">Kullanım</a>
@@ -819,13 +930,15 @@
   (function () {
     const STORAGE_KEY = 'drivermesh.web.lang';
     const heroImg = document.getElementById('hero-img');
+    const rideImg = document.getElementById('ride-img');
     const buttons = document.querySelectorAll('.lang-pill button');
     const html = document.documentElement;
 
     function applyLang(lang) {
       const isEN = lang === 'en';
       html.lang = isEN ? 'en' : 'tr';
-      heroImg.src = isEN ? '/assets/hero-en.jpg' : '/assets/hero-tr.jpg';
+      heroImg.src = isEN ? '/assets/loginEN.webp' : '/assets/loginTR.webp';
+      if (rideImg) rideImg.src = isEN ? '/assets/loginEN.webp' : '/assets/loginTR.webp';
       document.querySelectorAll('[data-tr]').forEach((el) => {
         const text = isEN ? el.getAttribute('data-en') : el.getAttribute('data-tr');
         if (text != null) el.textContent = text;
