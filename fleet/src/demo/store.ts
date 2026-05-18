@@ -884,7 +884,10 @@ export const demo = {
 
   updateProfile(
     id: string,
-    patch: Partial<Pick<Profile, 'full_name' | 'phone' | 'avatar_url'>>,
+    // status field Profile tipinde yok (manuel cast'le kullanılıyor), o yüzden
+    // patch'i Record olarak gevşek tutuyoruz — full_name/phone/avatar_url/status
+    // hepsi geçer.
+    patch: Partial<Pick<Profile, 'full_name' | 'phone' | 'avatar_url'>> & { status?: string },
   ) {
     const i = state.profiles.findIndex((p) => p.id === id);
     if (i < 0) return;

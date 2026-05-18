@@ -12,6 +12,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
+import { demo, isDemoActive } from '@/demo/store';
 import { theme } from '@/theme';
 
 type Status = 'active' | 'break' | 'off_duty' | 'on_trip' | 'unavailable';
@@ -59,6 +60,14 @@ export function StatusPill({ expanded = false }: Props = {}) {
     if (busy) return;
     setBusy(next);
     try {
+      // Demo modunda Supabase yok — RPC çağırma, doğrudan demo store'a yaz.
+      // Kullanıcı alert görmesin, status rahatça değişsin.
+      if (isDemoActive() && profile?.id) {
+        demo.updateProfile(profile.id, { status: next });
+        await refreshProfile();
+        setSheetOpen(false);
+        return;
+      }
       const { error } = await (
         supabase as unknown as {
           rpc: (
