@@ -135,8 +135,11 @@ export default function ChatBotScreen() {
 
         <KeyboardAvoidingView
           style={styles.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={insets.top + 8}
+          // padding her iki platformda da güvenli. Header SafeAreaView içinde,
+          // KAV onun altında — offset=0 → klavye geldiğinde input klavyenin
+          // tam üstüne gelir, ekstra boşluk bırakmaz.
+          behavior="padding"
+          keyboardVerticalOffset={0}
         >
           <FlatList
             ref={listRef}
@@ -162,11 +165,25 @@ export default function ChatBotScreen() {
             }
           />
 
-          {/* Input bar */}
-          <View style={[styles.inputBar, { paddingBottom: insets.bottom + 8 }]}>
+          {/* Input bar — paddingBottom sadece insets.bottom (gesture navigation);
+              klavye açıkken KAV view'ı yukarı iter, ekstra boşluk gerek yok. */}
+          <View style={[styles.inputBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
             <TextInput
               value={input}
-              onChangeText={setInput}
+              // Multiline TextInput'ta Android'de Enter newline insert eder
+              // (RN davranışı, onSubmitEditing çağrılmaz). Burada her platformda
+              // newline-ending input'u yakalayıp send tetikleyerek "Enter = gönder"
+              // davranışını sağlıyoruz. Shift+Enter newline web'de native çalışır
+              // (ama biz son karakter detect ile basit tutuyoruz).
+              onChangeText={(text) => {
+                if (text.endsWith('\n')) {
+                  const clean = text.replace(/\n+$/, '');
+                  setInput('');
+                  if (clean.trim()) handleSend(clean);
+                  return;
+                }
+                setInput(text);
+              }}
               placeholder={t('chatbot.inputPlaceholder')}
               placeholderTextColor={theme.colors.textMuted}
               style={styles.input}
