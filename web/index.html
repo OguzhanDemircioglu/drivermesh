@@ -429,6 +429,80 @@
     .map-bullets { gap: 18px; }
   }
 
+  /* ===== Bot showcase — phone-frame'siz büyük floating AI ikon ===== */
+  .bot-showcase {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    min-height: 420px;
+  }
+  .bot-showcase::before {
+    content: '';
+    position: absolute;
+    width: 360px;
+    height: 360px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(124, 58, 237, 0.35), transparent 70%);
+    filter: blur(40px);
+    z-index: 0;
+    animation: bot-pulse 6s ease-in-out infinite;
+  }
+  .bot-img {
+    position: relative;
+    z-index: 1;
+    width: 320px;
+    height: auto;
+    max-width: 90%;
+    filter: drop-shadow(0 20px 60px rgba(124, 58, 237, 0.5));
+    animation: bot-float 5s ease-in-out infinite;
+  }
+  @keyframes bot-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-14px); }
+  }
+  @keyframes bot-pulse {
+    0%, 100% { transform: scale(0.95); opacity: 0.8; }
+    50% { transform: scale(1.08); opacity: 1; }
+  }
+  @media (max-width: 860px) {
+    .bot-showcase { min-height: 320px; }
+    .bot-showcase::before { width: 260px; height: 260px; }
+    .bot-img { width: 220px; }
+  }
+
+  /* ===== Stat strip — "neden DriverMesh?" mini sayı satırı ===== */
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+    margin: 24px auto 0;
+    max-width: 1000px;
+  }
+  .stat-card {
+    text-align: center;
+    padding: 24px 16px;
+    background: linear-gradient(180deg, rgba(255, 122, 26, 0.08), rgba(124, 58, 237, 0.06));
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+  .stat-card .num {
+    display: block;
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1;
+    background: linear-gradient(135deg, #FF7A1A, #C084FC);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 8px;
+  }
+  .stat-card .label {
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 500;
+  }
+
   /* ===== CONTACT FORM ===== */
   .contact-form {
     max-width: 640px;
@@ -573,9 +647,27 @@
         <span data-tr="Patron, Yönetici ve Şoför" data-en="Boss, Manager, and Driver">Patron, Yönetici ve Şoför</span><br>
         <span class="gradient" data-tr="tek ekranda buluşur." data-en="all on one screen.">tek ekranda buluşur.</span>
       </h1>
-      <p data-tr="DriverMesh, küçük-orta ölçekli filolar için tek mobil uygulamada araç envanteri, iş atama, bakım yönetimi ve canlı filo haritası sağlar. Türkiye'de şehir-içi lojistik, kurye ve nakliye operasyonları için tasarlandı." data-en="DriverMesh gives small-to-medium fleets a single mobile app for vehicle inventory, job dispatch, maintenance management and live fleet map. Designed for urban logistics, courier and freight operations.">
-        DriverMesh, küçük-orta ölçekli filolar için tek mobil uygulamada araç envanteri, iş atama, bakım yönetimi ve canlı filo haritası sağlar. Türkiye'de şehir-içi lojistik, kurye ve nakliye operasyonları için tasarlandı.
+      <p data-tr="Filonu tek uygulamada yönet, müşterilerini ikinci uygulamadan al. WhatsApp grubu kaosunu bırak — araç, iş ve şoför artık tek ekranda." data-en="Manage your fleet from one app, take customer calls from a second. Quit the WhatsApp-group chaos — vehicles, jobs and drivers, finally on one screen.">
+        Filonu tek uygulamada yönet, müşterilerini ikinci uygulamadan al. WhatsApp grubu kaosunu bırak — araç, iş ve şoför artık tek ekranda.
       </p>
+      <div class="stat-strip">
+        <div class="stat-card">
+          <span class="num">2</span>
+          <span class="label" data-tr="Mobil uygulama" data-en="Mobile apps">Mobil uygulama</span>
+        </div>
+        <div class="stat-card">
+          <span class="num">4</span>
+          <span class="label" data-tr="Rol: Patron · Yönetici · Şoför · Müşteri" data-en="Roles: Owner · Manager · Driver · Customer">Rol: Patron · Yönetici · Şoför · Müşteri</span>
+        </div>
+        <div class="stat-card">
+          <span class="num">&lt;1s</span>
+          <span class="label" data-tr="Yolculuk durumu güncellemesi" data-en="Ride status update">Yolculuk durumu güncellemesi</span>
+        </div>
+        <div class="stat-card">
+          <span class="num">AI</span>
+          <span class="label" data-tr="Yardım asistanı (Gemini 2.5)" data-en="Help assistant (Gemini 2.5)">Yardım asistanı (Gemini 2.5)</span>
+        </div>
+      </div>
       <div class="cta-row">
         <a href="#download" class="btn btn-primary">
           <span data-tr="Erken Erişim" data-en="Early Access">Erken Erişim</span>
@@ -708,8 +800,8 @@
     <div class="container">
       <div class="section-title">
         <small data-tr="Yolcu Uygulaması" data-en="Passenger App">Yolcu Uygulaması</small>
-        <h2 data-tr="Drivermesh Ride: müşteri çağrılarını al" data-en="Drivermesh Ride: accept customer calls">Drivermesh Ride: müşteri çağrılarını al</h2>
-        <p data-tr="İkinci bir mobil uygulama (Drivermesh Ride) müşterilerin senin filondan araç çağırmasını sağlar. İki app aynı backend'i paylaşır — kurulum yok, anında entegre." data-en="A second mobile app (Drivermesh Ride) lets customers call a vehicle from your fleet. Both apps share the same backend — zero setup, instant integration.">İkinci bir mobil uygulama (Drivermesh Ride) müşterilerin senin filondan araç çağırmasını sağlar. İki app aynı backend'i paylaşır — kurulum yok, anında entegre.</p>
+        <h2 data-tr="Müşterin sana, sen şoförüne — tek dokunuş" data-en="Customer → you → driver — one tap each">Müşterin sana, sen şoförüne — tek dokunuş</h2>
+        <p data-tr="Müşterin Drivermesh Ride'dan araç çağırır, şoförün anında bildirim alır. Çağrı merkezi yok, telsiz yok, &quot;ben hangi araçtayım?&quot; sorusu yok." data-en="Your customer calls a vehicle from Drivermesh Ride, your driver gets an instant push. No call center, no radio, no &quot;which van am I in?&quot;.">Müşterin Drivermesh Ride'dan araç çağırır, şoförün anında bildirim alır. Çağrı merkezi yok, telsiz yok, "ben hangi araçtayım?" sorusu yok.</p>
       </div>
 
       <div class="map-showcase">
@@ -747,7 +839,7 @@
         </div>
         <div class="map-phone">
           <div class="phone-frame phone-frame-lg">
-            <img id="ride-img" src="/assets/loginTR.webp" alt="Drivermesh Ride app screen"
+            <img id="ride-img" src="/assets/ride-login.jpeg" alt="Drivermesh Ride app screen"
                  style="width:100%; height:100%; object-fit:cover; border-radius:32px; display:block;" />
           </div>
         </div>
@@ -760,16 +852,13 @@
     <div class="container">
       <div class="section-title">
         <small data-tr="AI Asistan" data-en="AI Assistant">AI Asistan</small>
-        <h2 data-tr="Bilmediğini AI'a sor" data-en="Ask AI when you don't know">Bilmediğini AI'a sor</h2>
-        <p data-tr="Uygulama içi yardım asistanı; Gemini 2.5 Flash ile cevaplar, Cloudflare Workers AI fallback'i ile asla cevapsız kalmazsın. Filo dokümantasyonu prompt'a embed edilmiş — adım adım, halüsinasyonsuz." data-en="In-app help assistant; powered by Gemini 2.5 Flash with Cloudflare Workers AI fallback so you never get an empty answer. Fleet docs embedded into the prompt — step-by-step, no hallucination.">Uygulama içi yardım asistanı; Gemini 2.5 Flash ile cevaplar, Cloudflare Workers AI fallback'i ile asla cevapsız kalmazsın. Filo dokümantasyonu prompt'a embed edilmiş — adım adım, halüsinasyonsuz.</p>
+        <h2 data-tr="Sıkıştığın yerde, parmağının ucunda bir uzman" data-en="An expert at your fingertips when you're stuck">Sıkıştığın yerde, parmağının ucunda bir uzman</h2>
+        <p data-tr="Hangi butona basacağını bilmiyor musun? Sor. Yardım dokümanı taraman gerekmez — uygulama içi AI senin için zaten okudu. Türkçe ve İngilizce, 24/7." data-en="Don't know which button to press? Ask. No need to scroll through docs — the in-app AI already read them for you. Turkish & English, 24/7.">Hangi butona basacağını bilmiyor musun? Sor. Yardım dokümanı taraman gerekmez — uygulama içi AI senin için zaten okudu. Türkçe ve İngilizce, 24/7.</p>
       </div>
 
       <div class="map-showcase">
-        <div class="map-phone">
-          <div class="phone-frame phone-frame-lg" style="background: linear-gradient(180deg, #131732, #0A0E1F); display: flex; align-items: center; justify-content: center;">
-            <img src="/assets/chatbot.png" alt="DriverMesh AI Asistan"
-                 style="width: 65%; height: auto; border-radius: 16px;" />
-          </div>
+        <div class="bot-showcase">
+          <img src="/assets/chatbot.png" alt="DriverMesh AI Asistan" class="bot-img" />
         </div>
         <div class="map-copy">
           <ul class="map-bullets">
@@ -938,7 +1027,7 @@
       const isEN = lang === 'en';
       html.lang = isEN ? 'en' : 'tr';
       heroImg.src = isEN ? '/assets/loginEN.webp' : '/assets/loginTR.webp';
-      if (rideImg) rideImg.src = isEN ? '/assets/loginEN.webp' : '/assets/loginTR.webp';
+      // Ride app login görseli tek dil-bağımsız (ride-login.jpeg) — swap yok
       document.querySelectorAll('[data-tr]').forEach((el) => {
         const text = isEN ? el.getAttribute('data-en') : el.getAttribute('data-tr');
         if (text != null) el.textContent = text;
