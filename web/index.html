@@ -429,84 +429,6 @@
     .map-bullets { gap: 18px; }
   }
 
-  /* ===== Ride slider — phone-frame içinde 3 slide auto-rotating ===== */
-  .ride-slider {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    border-radius: 32px;
-  }
-  .ride-slide {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    animation: ride-cycle 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .ride-slide img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-  .ride-slide:nth-child(1) { animation-delay: 0s; }
-  .ride-slide:nth-child(2) { animation-delay: 5s; }
-  .ride-slide:nth-child(3) { animation-delay: 10s; }
-  @keyframes ride-cycle {
-    0%, 28% { opacity: 1; transform: scale(1); }
-    33%, 95% { opacity: 0; transform: scale(1.05); }
-    100% { opacity: 0; transform: scale(1); }
-  }
-  /* Slide caption — açıklayıcı yazı her slide üzerinde */
-  .ride-slide .caption {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 24px 20px 28px;
-    background: linear-gradient(180deg, transparent, rgba(10, 14, 31, 0.92) 60%);
-    color: var(--text);
-    z-index: 2;
-  }
-  .ride-slide .caption strong {
-    display: block;
-    font-size: 16px;
-    font-weight: 700;
-    margin-bottom: 4px;
-    color: var(--accent);
-    letter-spacing: 0.3px;
-  }
-  .ride-slide .caption span {
-    display: block;
-    font-size: 13px;
-    color: var(--text-muted);
-    line-height: 1.45;
-  }
-  /* Slide indicator dots */
-  .ride-dots {
-    position: absolute;
-    bottom: -28px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 8px;
-    z-index: 3;
-  }
-  .ride-dots span {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    animation: dot-cycle 15s infinite;
-  }
-  .ride-dots span:nth-child(1) { animation-delay: 0s; }
-  .ride-dots span:nth-child(2) { animation-delay: 5s; }
-  .ride-dots span:nth-child(3) { animation-delay: 10s; }
-  @keyframes dot-cycle {
-    0%, 33% { background: var(--accent); width: 24px; border-radius: 4px; }
-    34%, 100% { background: rgba(255, 255, 255, 0.2); width: 8px; border-radius: 50%; }
-  }
-
   /* ===== Bot showcase — phone-frame'siz büyük floating AI ikon ===== */
   .bot-showcase {
     display: flex;
@@ -743,7 +665,7 @@
         </div>
         <div class="stat-card">
           <span class="num">AI</span>
-          <span class="label" data-tr="Yardım asistanı (Gemini 2.5)" data-en="Help assistant (Gemini 2.5)">Yardım asistanı (Gemini 2.5)</span>
+          <span class="label" data-tr="Uygulama içi yardım asistanı" data-en="In-app help assistant">Uygulama içi yardım asistanı</span>
         </div>
       </div>
       <div class="cta-row">
@@ -774,43 +696,43 @@
       <div class="features-grid">
         <div class="feature-card">
           <div class="feature-icon">🚐</div>
-          <h3 data-tr="Filo Envanteri" data-en="Fleet Inventory">Filo Envanteri</h3>
-          <p data-tr="Plakalı araç kartları, foto, durum (aktif/boşta/bakımda) ve şu an kullanan kişi tek bakışta." data-en="Plate-tagged vehicle cards with photo, status (active/idle/maintenance) and current user — all at a glance.">Plakalı araç kartları, foto, durum (aktif/boşta/bakımda) ve şu an kullanan kişi tek bakışta.</p>
+          <h3 data-tr="Araç envanteri" data-en="Vehicle inventory">Araç envanteri</h3>
+          <p data-tr="Plakalı kartlar, durum + şu an kim kullanıyor." data-en="Plate-tagged cards, status + current user.">Plakalı kartlar, durum + şu an kim kullanıyor.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">🗺️</div>
-          <h3 data-tr="Canlı Filo Haritası" data-en="Live Fleet Map">Canlı Filo Haritası</h3>
-          <p data-tr="Tüm araçlar haritada plakalı pill'lerle görünür. Pickup-dropoff rotaları, HQ pini, vehicle renk kodlu polyline'lar." data-en="All vehicles on a map with plate pills. Pickup-dropoff routes, HQ pin, color-coded vehicle polylines.">Tüm araçlar haritada plakalı pill'lerle görünür. Pickup-dropoff rotaları, HQ pini, vehicle renk kodlu polyline'lar.</p>
+          <h3 data-tr="Canlı harita" data-en="Live map">Canlı harita</h3>
+          <p data-tr="Her araç haritada, rotaları ekranda." data-en="Every vehicle on the map with its route.">Her araç haritada, rotaları ekranda.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">🔧</div>
-          <h3 data-tr="Bakım Yönetimi" data-en="Maintenance Management">Bakım Yönetimi</h3>
-          <p data-tr="Şoför bakım talebi açar, yönetici onaylar veya reddeder. Otomatik süre dolma + foto kanıtlama + 5 farklı durum." data-en="Drivers raise maintenance requests, managers approve or reject. Auto-checkout + photo evidence + 5 distinct statuses.">Şoför bakım talebi açar, yönetici onaylar veya reddeder. Otomatik süre dolma + foto kanıtlama + 5 farklı durum.</p>
+          <h3 data-tr="Bakım akışı" data-en="Maintenance flow">Bakım akışı</h3>
+          <p data-tr="Talep, onay, foto kanıt — tek akış." data-en="Request, approval, photo proof — one flow.">Talep, onay, foto kanıt — tek akış.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">📨</div>
-          <h3 data-tr="Akıllı Bildirimler" data-en="Smart Notifications">Akıllı Bildirimler</h3>
-          <p data-tr="İş ataması, bakım onayı, müşteri geri bildirimi — uygulama açık değilken bile push olarak. Email ve Telegram entegrasyonu." data-en="Job assignments, maintenance approvals, customer feedback — push notifications even when app is closed. Email and Telegram integrations.">İş ataması, bakım onayı, müşteri geri bildirimi — uygulama açık değilken bile push olarak. Email ve Telegram entegrasyonu.</p>
+          <h3 data-tr="Anında bildirim" data-en="Instant alerts">Anında bildirim</h3>
+          <p data-tr="İş, bakım, müşteri — anında push." data-en="Jobs, maintenance, customers — instant push.">İş, bakım, müşteri — anında push.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">👥</div>
-          <h3 data-tr="Hiyerarşi + Yetki Kapsamı" data-en="Hierarchy + Permission Scope">Hiyerarşi + Yetki Kapsamı</h3>
-          <p data-tr="Patron → Yönetici → Şoför yapısı. Manager sadece kendi şoförlerini görür — başka yöneticinin ekibine sızıntı yok (Row-Level Security ile sunucu tarafında zorlanır)." data-en="Owner → Manager → Driver hierarchy. A manager only sees their own drivers — zero leakage to another manager's team (enforced server-side via Row-Level Security).">Patron → Yönetici → Şoför yapısı. Manager sadece kendi şoförlerini görür — başka yöneticinin ekibine sızıntı yok (Row-Level Security ile sunucu tarafında zorlanır).</p>
+          <h3 data-tr="Net hiyerarşi" data-en="Clear hierarchy">Net hiyerarşi</h3>
+          <p data-tr="Manager kendi şoförünü görür, fazlasını değil." data-en="A manager sees their own drivers, nothing else.">Manager kendi şoförünü görür, fazlasını değil.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">🎯</div>
-          <h3 data-tr="İş Lifecycle'i" data-en="Job Lifecycle">İş Lifecycle'i</h3>
-          <p data-tr="Open → Assigned → In-progress → Completed/Failed. Şoför self-request açabilir, owner approve/reject ile yönlendirir." data-en="Open → Assigned → In-progress → Completed/Failed. Drivers can self-request, owners approve/reject and dispatch.">Open → Assigned → In-progress → Completed/Failed. Şoför self-request açabilir, owner approve/reject ile yönlendirir.</p>
+          <h3 data-tr="İş akışı" data-en="Job flow">İş akışı</h3>
+          <p data-tr="Aç → Ata → Devam → Tamam. Her adımda iz." data-en="Open → Assign → Progress → Done. Tracked at each step.">Aç → Ata → Devam → Tamam. Her adımda iz.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">🛡️</div>
-          <h3 data-tr="Sahte Foto Tespiti" data-en="Photo Authenticity Check">Sahte Foto Tespiti</h3>
-          <p data-tr="Şoför internetten indirdiği fotoyu yükleyemez, AI ile üretilmiş foto fark edilir, EXIF metadata kontrolü ile eski/sahte fotolar Patron'a flag'lenir. 4 farklı şüpheli durum etiketi: AI suphesi, yanlış içerik, EXIF eksik, EXIF tarihi eski." data-en="Drivers cannot upload photos found online — AI-generated images are detected, EXIF metadata is checked, and stale/forged photos are flagged for the owner. Four suspicion labels: AI-generated, wrong content, EXIF missing, EXIF stale.">Şoför internetten indirdiği fotoyu yükleyemez, AI ile üretilmiş foto fark edilir, EXIF metadata kontrolü ile eski/sahte fotolar Patron'a flag'lenir. 4 farklı şüpheli durum etiketi: AI suphesi, yanlış içerik, EXIF eksik, EXIF tarihi eski.</p>
+          <h3 data-tr="Sahte foto tespiti" data-en="Photo authenticity">Sahte foto tespiti</h3>
+          <p data-tr="AI ile üretilmiş ve eski fotolar otomatik flag'lenir." data-en="AI-generated and stale photos are auto-flagged.">AI ile üretilmiş ve eski fotolar otomatik flag'lenir.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">🚖</div>
-          <h3 data-tr="Araç Üstüne Alma" data-en="Vehicle Claim/Release">Araç Üstüne Alma</h3>
-          <p data-tr="Şoför aracı üstüne alır, başka iş alıp boştaki başka aracı üstüne aldığında öncekini bırakır. Aktif işin olduğu araç başkasına geçmez — çakışma yok, aşağılayıcı 'kim hangi araçta?' soruları biter." data-en="Drivers claim a vehicle; switching to another idle one auto-releases the previous. Vehicles with active jobs can't be claimed away — no conflicts, no more 'who's driving what?' questions.">Şoför aracı üstüne alır, başka iş alıp boştaki başka aracı üstüne aldığında öncekini bırakır. Aktif işin olduğu araç başkasına geçmez — çakışma yok, aşağılayıcı 'kim hangi araçta?' soruları biter.</p>
+          <h3 data-tr="Araç üstüne alma" data-en="Vehicle claim">Araç üstüne alma</h3>
+          <p data-tr="Aktif iş varsa araç kimseye geçmez — çakışma yok." data-en="Active-job vehicles can't switch hands — zero conflicts.">Aktif iş varsa araç kimseye geçmez — çakışma yok.</p>
         </div>
       </div>
     </div>
@@ -915,34 +837,9 @@
             </li>
           </ul>
         </div>
-        <div class="map-phone" style="position: relative;">
-          <div class="phone-frame phone-frame-lg">
-            <div class="ride-slider">
-              <div class="ride-slide">
-                <img src="/assets/ride-login.jpeg" alt="Drivermesh Ride welcome" />
-                <div class="caption">
-                  <strong data-tr="1. Uygulamayı aç" data-en="1. Open the app">1. Uygulamayı aç</strong>
-                  <span data-tr="Müşterin Drivermesh Ride'ı açar, anlık konum + mesai içi filolar görünür." data-en="The customer opens Drivermesh Ride; real-time location + on-shift fleets appear.">Müşterin Drivermesh Ride'ı açar, anlık konum + mesai içi filolar görünür.</span>
-                </div>
-              </div>
-              <div class="ride-slide">
-                <img src="/assets/ride-home.png" alt="Yakındaki araçlar" />
-                <div class="caption">
-                  <strong data-tr="2. Yakındaki aracı seç" data-en="2. Pick a nearby vehicle">2. Yakındaki aracı seç</strong>
-                  <span data-tr="Mesafe + şoför + araç tipi tek kartta. Tek dokunuşla çağrı." data-en="Distance + driver + vehicle type on one card. One-tap call.">Mesafe + şoför + araç tipi tek kartta. Tek dokunuşla çağrı.</span>
-                </div>
-              </div>
-              <div class="ride-slide">
-                <img src="/assets/ride-vito.png" alt="Mercedes Vito" />
-                <div class="caption">
-                  <strong data-tr="3. Araç yola çıktı" data-en="3. Vehicle is on its way">3. Araç yola çıktı</strong>
-                  <span data-tr="Şoför kabul ettiği anda bildirim. Durum geçişleri ekrana saniyeler içinde yansır." data-en="A push the moment the driver accepts. Status transitions land on screen in seconds.">Şoför kabul ettiği anda bildirim. Durum geçişleri ekrana saniyeler içinde yansır.</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="ride-dots" aria-hidden="true">
-            <span></span><span></span><span></span>
+        <div class="map-phone">
+          <div class="phone-frame">
+            <img src="/assets/ride-login.jpeg" alt="Drivermesh Ride" />
           </div>
         </div>
       </div>
@@ -954,8 +851,8 @@
     <div class="container">
       <div class="section-title">
         <small data-tr="AI Asistan" data-en="AI Assistant">AI Asistan</small>
-        <h2 data-tr="Sıkıştığın yerde, parmağının ucunda bir uzman" data-en="An expert at your fingertips when you're stuck">Sıkıştığın yerde, parmağının ucunda bir uzman</h2>
-        <p data-tr="Hangi butona basacağını bilmiyor musun? Sor. Yardım dokümanı taraman gerekmez — uygulama içi AI senin için zaten okudu. Türkçe ve İngilizce, 24/7." data-en="Don't know which button to press? Ask. No need to scroll through docs — the in-app AI already read them for you. Turkish & English, 24/7.">Hangi butona basacağını bilmiyor musun? Sor. Yardım dokümanı taraman gerekmez — uygulama içi AI senin için zaten okudu. Türkçe ve İngilizce, 24/7.</p>
+        <h2 data-tr="Parmağının ucunda bir uzman" data-en="An expert at your fingertips">Parmağının ucunda bir uzman</h2>
+        <p data-tr="Uygulama içi AI senin için zaten okudu. Türkçe ve İngilizce, 24/7." data-en="The in-app AI already read everything for you. Turkish &amp; English, 24/7.">Uygulama içi AI senin için zaten okudu. Türkçe ve İngilizce, 24/7.</p>
       </div>
 
       <div class="map-showcase">
