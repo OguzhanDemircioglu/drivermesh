@@ -429,6 +429,84 @@
     .map-bullets { gap: 18px; }
   }
 
+  /* ===== Ride slider — phone-frame içinde 3 slide auto-rotating ===== */
+  .ride-slider {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 32px;
+  }
+  .ride-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    animation: ride-cycle 15s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .ride-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .ride-slide:nth-child(1) { animation-delay: 0s; }
+  .ride-slide:nth-child(2) { animation-delay: 5s; }
+  .ride-slide:nth-child(3) { animation-delay: 10s; }
+  @keyframes ride-cycle {
+    0%, 28% { opacity: 1; transform: scale(1); }
+    33%, 95% { opacity: 0; transform: scale(1.05); }
+    100% { opacity: 0; transform: scale(1); }
+  }
+  /* Slide caption — açıklayıcı yazı her slide üzerinde */
+  .ride-slide .caption {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 24px 20px 28px;
+    background: linear-gradient(180deg, transparent, rgba(10, 14, 31, 0.92) 60%);
+    color: var(--text);
+    z-index: 2;
+  }
+  .ride-slide .caption strong {
+    display: block;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--accent);
+    letter-spacing: 0.3px;
+  }
+  .ride-slide .caption span {
+    display: block;
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.45;
+  }
+  /* Slide indicator dots */
+  .ride-dots {
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 3;
+  }
+  .ride-dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    animation: dot-cycle 15s infinite;
+  }
+  .ride-dots span:nth-child(1) { animation-delay: 0s; }
+  .ride-dots span:nth-child(2) { animation-delay: 5s; }
+  .ride-dots span:nth-child(3) { animation-delay: 10s; }
+  @keyframes dot-cycle {
+    0%, 33% { background: var(--accent); width: 24px; border-radius: 4px; }
+    34%, 100% { background: rgba(255, 255, 255, 0.2); width: 8px; border-radius: 50%; }
+  }
+
   /* ===== Bot showcase — phone-frame'siz büyük floating AI ikon ===== */
   .bot-showcase {
     display: flex;
@@ -837,10 +915,34 @@
             </li>
           </ul>
         </div>
-        <div class="map-phone">
+        <div class="map-phone" style="position: relative;">
           <div class="phone-frame phone-frame-lg">
-            <img id="ride-img" src="/assets/ride-login.jpeg" alt="Drivermesh Ride app screen"
-                 style="width:100%; height:100%; object-fit:cover; border-radius:32px; display:block;" />
+            <div class="ride-slider">
+              <div class="ride-slide">
+                <img src="/assets/ride-login.jpeg" alt="Drivermesh Ride welcome" />
+                <div class="caption">
+                  <strong data-tr="1. Uygulamayı aç" data-en="1. Open the app">1. Uygulamayı aç</strong>
+                  <span data-tr="Müşterin Drivermesh Ride'ı açar, anlık konum + mesai içi filolar görünür." data-en="The customer opens Drivermesh Ride; real-time location + on-shift fleets appear.">Müşterin Drivermesh Ride'ı açar, anlık konum + mesai içi filolar görünür.</span>
+                </div>
+              </div>
+              <div class="ride-slide">
+                <img src="/assets/ride-home.png" alt="Yakındaki araçlar" />
+                <div class="caption">
+                  <strong data-tr="2. Yakındaki aracı seç" data-en="2. Pick a nearby vehicle">2. Yakındaki aracı seç</strong>
+                  <span data-tr="Mesafe + şoför + araç tipi tek kartta. Tek dokunuşla çağrı." data-en="Distance + driver + vehicle type on one card. One-tap call.">Mesafe + şoför + araç tipi tek kartta. Tek dokunuşla çağrı.</span>
+                </div>
+              </div>
+              <div class="ride-slide">
+                <img src="/assets/ride-vito.png" alt="Mercedes Vito" />
+                <div class="caption">
+                  <strong data-tr="3. Araç yola çıktı" data-en="3. Vehicle is on its way">3. Araç yola çıktı</strong>
+                  <span data-tr="Şoför kabul ettiği anda bildirim. Durum geçişleri ekrana saniyeler içinde yansır." data-en="A push the moment the driver accepts. Status transitions land on screen in seconds.">Şoför kabul ettiği anda bildirim. Durum geçişleri ekrana saniyeler içinde yansır.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="ride-dots" aria-hidden="true">
+            <span></span><span></span><span></span>
           </div>
         </div>
       </div>
