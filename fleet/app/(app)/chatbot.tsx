@@ -31,7 +31,7 @@ import { theme } from '@/theme';
 import { sendMessage, getOrCreateLatestSession, getMessages } from '@/chatbot/client';
 import type { ChatMessage } from '@/chatbot/types';
 
-const BOT_ICON = require('../../assets/chatbot.webp');
+const BOT_ICON = require('../../assets/chatbot.png');
 
 export default function ChatBotScreen() {
   const insets = useSafeAreaInsets();

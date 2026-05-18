@@ -15,7 +15,7 @@ import { TOUR_STEPS, type TourStep } from '@/chatbot/tour';
 import { TOUR_ACTIVE_KEY, TOUR_COMPLETED_KEY } from '@/chatbot/keys';
 import { useAuth } from '@/auth/AuthProvider';
 
-const BOT_ICON = require('../../assets/chatbot.webp');
+const BOT_ICON = require('../../assets/chatbot.png');
 
 export function GuidedTourOverlay() {
   const [active, setActive] = useState(false);
