@@ -1,4 +1,4 @@
-// ChatBotBadge — Anasayfada absolute positioned robot ikonu.
+// ChatBotBadge — Anasayfa "Hızlı Aksiyon" başlığının sağ ucuna inline yerleşir.
 //
 // Robot resmi + sol tarafında "Bana Sor" speech bubble (her demo açılışında
 // görünür, × ile kapatılabilir — kapatma sadece bu session için, sonraki
@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { theme } from '@/theme';
 
-const BOT_ICON = require('../../assets/chatbot.webp');
+const BOT_ICON = require('../../assets/chatbot.png');
 
 export function ChatBotBadge() {
   const router = useRouter();
@@ -23,15 +23,7 @@ export function ChatBotBadge() {
   const [bubbleVisible, setBubbleVisible] = useState(true);
 
   return (
-    <View style={styles.wrap} pointerEvents="box-none">
-      <Pressable
-        testID="chatbot-badge"
-        hitSlop={10}
-        onPress={() => router.push('/(app)/chatbot')}
-        style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-      >
-        <Image source={BOT_ICON} style={styles.icon} resizeMode="contain" />
-      </Pressable>
+    <View style={styles.row} pointerEvents="box-none">
       {bubbleVisible ? (
         <View style={styles.bubble}>
           <Text style={styles.bubbleText}>Bana Sor</Text>
@@ -44,32 +36,45 @@ export function ChatBotBadge() {
           </Pressable>
         </View>
       ) : null}
+      <Pressable
+        testID="chatbot-badge"
+        hitSlop={10}
+        onPress={() => router.push('/(app)/chatbot')}
+        style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+      >
+        <Image source={BOT_ICON} style={styles.icon} resizeMode="contain" />
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
+  row: {
     position: 'absolute',
-    top: 410,
-    right: -4, // biraz daha sağa (ekran kenarından az taşar)
+    // Başlık ("Hızlı Aksiyon") dikey ortası ile robot dikey ortası hizalansın.
+    // Robot 120px tall, başlık ~22px → top = -(120-22)/2 = -49.
+    top: -49,
+    // Section'ın xl paddingHorizontal'ı içinde olduğumuz için negatif right
+    // ile robot'u ekran sağ kenarına iyice yaklaştır.
+    right: -28,
+    flexDirection: 'column',
     alignItems: 'flex-end',
+    gap: 0,
     zIndex: 10,
     elevation: 10,
   },
   bubble: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
     gap: 6,
     paddingVertical: 6,
     paddingHorizontal: 10,
-    marginTop: -48, // bana sor az daha yukarı
-    marginRight: 85, // bubble az daha sağa (robot'a yaklaş, hâlâ overlap yok)
     borderRadius: 16,
     backgroundColor: theme.colors.bgElevated,
     borderWidth: 1,
     borderColor: theme.colors.accent,
+    marginBottom: -14,
+    zIndex: 2,
   },
   bubbleText: {
     color: theme.colors.text,

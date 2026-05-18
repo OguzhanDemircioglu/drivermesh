@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
+  Alert,
   BackHandler,
   InteractionManager,
   Pressable,
@@ -184,6 +185,32 @@ export default function HomeScreen() {
               >
                 <Feather name="bell" size={28} color={theme.colors.text} />
               </Pressable>
+              <Pressable
+                hitSlop={10}
+                onPress={() =>
+                  Alert.alert(
+                    t('account.signOutTitle', { defaultValue: 'Çıkış yap' }),
+                    t('account.signOutConfirm', {
+                      defaultValue: 'Hesabından çıkış yapmak istediğine emin misin?',
+                    }),
+                    [
+                      { text: t('common.cancel', { defaultValue: 'İptal' }), style: 'cancel' },
+                      {
+                        text: t('account.signOut', { defaultValue: 'Çıkış' }),
+                        style: 'destructive',
+                        onPress: () => {
+                          signOut().catch(() => {
+                            /* AuthGate redirect zaten yapar */
+                          });
+                        },
+                      },
+                    ],
+                  )
+                }
+                style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.7 }]}
+              >
+                <Feather name="log-out" size={26} color={theme.colors.text} />
+              </Pressable>
             </View>
           </View>
 
@@ -244,6 +271,7 @@ export default function HomeScreen() {
           {/* Quick actions */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('home.quickActions')}</Text>
+            <ChatBotBadge />
             <View style={styles.quickRow}>
               <QuickAction
                 label={canAdd ? t('home.quickNew') : t('home.quickMyJobs')}
@@ -314,8 +342,6 @@ export default function HomeScreen() {
       </SafeAreaView>
 
       <BottomNav active={tab} onChange={onTabChange} />
-      {/* AI robot — absolute positioned, header'ın üzerinde sağ tarafta yüzer */}
-      <ChatBotBadge />
     </View>
   );
 }
