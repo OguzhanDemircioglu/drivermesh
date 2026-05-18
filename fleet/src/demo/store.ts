@@ -42,7 +42,10 @@ import type { MemberPermission } from '@/lib/permissions';
 // owner). Demo'da idle iki araç (demo-v5 Renault Master + demo-v7 Peugeot
 // Boxer) artık Demo Patron üzerinde. "Üzerine Al" akışı için yine başka
 // driver kendine alabilir.
-const DEMO_STATE_KEY = 'drivermesh.demo.state.v6';
+// v7 (2026-05-18): profile.status enum demo'da seed edildi — Ahmet/Burak
+// on_trip, Mehmet break, Ayşe active, owner+manager active. StatusPill
+// pill ve ride_search_vehicles filter'ları için artık zengin data var.
+const DEMO_STATE_KEY = 'drivermesh.demo.state.v7';
 
 // ---------- IDs ----------
 
@@ -249,13 +252,13 @@ function reseed() {
   // cache yapar, kullanıcı bir kere açtıktan sonra ağ olmadan da görünür.
   const AVATAR = (id: number) => `https://i.pravatar.cc/200?img=${id}`;
   state.profiles = [
-    mkProfile(DEMO_OWNER_ID, 'Demo Patron', 'patron@demo.drivermesh', 'owner', 30, AVATAR(12)),
-    mkProfile(DEMO_MANAGER_ID, 'Selin Yöneten', 'selin@demo.drivermesh', 'manager', 28, AVATAR(47)),
-    mkProfile(DEMO_DRIVER_IDS[0], 'Ahmet Şoför', 'ahmet@demo.drivermesh', 'driver', 25, AVATAR(33), DEMO_MANAGER_ID),
-    mkProfile(DEMO_DRIVER_IDS[1], 'Mehmet Yıldız', 'mehmet@demo.drivermesh', 'driver', 24, AVATAR(11), DEMO_MANAGER_ID),
-    mkProfile(DEMO_DRIVER_IDS[2], 'Ayşe Demir', 'ayse@demo.drivermesh', 'driver', 20, AVATAR(44), DEMO_MANAGER_ID),
-    // v5: yeni şoför Burak — 4. araç (Renault Trafic) onun üzerinde
-    mkProfile(DEMO_DRIVER_IDS[3], 'Burak Çelik', 'burak@demo.drivermesh', 'driver', 12, AVATAR(15), DEMO_MANAGER_ID),
+    mkProfile(DEMO_OWNER_ID, 'Demo Patron', 'patron@demo.drivermesh', 'owner', 30, AVATAR(12), null, 'active'),
+    mkProfile(DEMO_MANAGER_ID, 'Selin Yöneten', 'selin@demo.drivermesh', 'manager', 28, AVATAR(47), null, 'active'),
+    // v7: her driver için farklı status — demo'da çeşitlilik göster
+    mkProfile(DEMO_DRIVER_IDS[0], 'Ahmet Şoför', 'ahmet@demo.drivermesh', 'driver', 25, AVATAR(33), DEMO_MANAGER_ID, 'on_trip'),
+    mkProfile(DEMO_DRIVER_IDS[1], 'Mehmet Yıldız', 'mehmet@demo.drivermesh', 'driver', 24, AVATAR(11), DEMO_MANAGER_ID, 'break'),
+    mkProfile(DEMO_DRIVER_IDS[2], 'Ayşe Demir', 'ayse@demo.drivermesh', 'driver', 20, AVATAR(44), DEMO_MANAGER_ID, 'active'),
+    mkProfile(DEMO_DRIVER_IDS[3], 'Burak Çelik', 'burak@demo.drivermesh', 'driver', 12, AVATAR(15), DEMO_MANAGER_ID, 'on_trip'),
     // (DEMO_DRIVER_IDS[4] ileride invitation olarak kullanılabilir, profile değil)
   ];
 
@@ -710,6 +713,8 @@ function reseed() {
 
 // ---------- Factories ----------
 
+type ProfileStatus = 'active' | 'break' | 'off_duty' | 'on_trip' | 'unavailable';
+
 function mkProfile(
   id: string,
   fullName: string,
@@ -718,6 +723,7 @@ function mkProfile(
   daysAgo: number,
   avatarUrl: string | null = null,
   managerId: string | null = null,
+  status: ProfileStatus = 'off_duty',
 ): Profile {
   return {
     id,
@@ -732,7 +738,11 @@ function mkProfile(
     push_platform: null,
     push_token_updated_at: null,
     created_at: new Date(Date.now() - daysAgo * 86_400_000).toISOString(),
-  };
+    // status: Profile type'ında yok (DB migration sonrası types regen
+    // edilmedi); runtime'da StatusPill ve filter'lar bu field'ı bekliyor.
+    status,
+    status_updated_at: new Date(Date.now() - daysAgo * 86_400_000).toISOString(),
+  } as Profile & { status: ProfileStatus; status_updated_at: string };
 }
 
 type VehicleSpec = {

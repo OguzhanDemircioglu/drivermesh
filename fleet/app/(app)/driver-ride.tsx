@@ -20,6 +20,7 @@ import { useToast } from '@/components/Toast';
 import { useAuth } from '@/auth/AuthProvider';
 import { useDriverActiveRide } from '../../src/hooks/useDriverActiveRide';
 import { supabase } from '@/lib/supabase';
+import { isDemoActive } from '@/demo/store';
 import { theme } from '@/theme';
 
 export default function DriverRideScreen() {
@@ -47,6 +48,12 @@ export default function DriverRideScreen() {
   ): Promise<void> => {
     setBusy(true);
     try {
+      // Demo modunda backend yok — toast ile ilerleme hissi ver.
+      if (isDemoActive()) {
+        toast.info(t('common.done'), '');
+        setBusy(false);
+        return;
+      }
       const { error } = await (
         supabase as unknown as {
           rpc: (
@@ -65,7 +72,7 @@ export default function DriverRideScreen() {
       }
       await refetch();
     } catch (e) {
-      Alert.alert('Hata', e instanceof Error ? e.message : 'Bilinmeyen');
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : t('errors.unknown'));
     } finally {
       setBusy(false);
     }
@@ -75,6 +82,13 @@ export default function DriverRideScreen() {
     if (!pendingRatingRideId || ratingStars < 1 || ratingStars > 5) return;
     setRatingBusy(true);
     try {
+      // Demo modunda backend yok — başarılı rating gibi davran.
+      if (isDemoActive()) {
+        toast.success(t('driverRide.ratingSent'), '');
+        setPendingRatingRideId(null);
+        setRatingBusy(false);
+        return;
+      }
       const { error } = await (
         supabase as unknown as {
           rpc: (
@@ -91,7 +105,7 @@ export default function DriverRideScreen() {
       toast.success(t('driverRide.ratingSent'), '');
       setPendingRatingRideId(null);
     } catch (e) {
-      Alert.alert('Hata', e instanceof Error ? e.message : 'Bilinmeyen');
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : t('errors.unknown'));
     } finally {
       setRatingBusy(false);
     }

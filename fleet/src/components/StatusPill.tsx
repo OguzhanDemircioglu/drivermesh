@@ -80,7 +80,7 @@ export function StatusPill({ expanded = false }: Props = {}) {
       await refreshProfile();
       setSheetOpen(false);
     } catch (e) {
-      Alert.alert('Hata', e instanceof Error ? e.message : t('errors.unknown'));
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : t('errors.unknown'));
     } finally {
       setBusy(null);
     }

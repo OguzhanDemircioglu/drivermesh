@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { isDemoActive } from '@/demo/store';
 
 export type DriverActiveRide = {
   id: string;
@@ -23,6 +24,13 @@ export function useDriverActiveRide(driverId: string | undefined) {
 
   const load = useCallback(async () => {
     if (!driverId) {
+      setData(null);
+      setLoading(false);
+      return;
+    }
+    // Demo modunda Supabase yok — boş döndür, 3sn polling boşa
+    // çağırılmasın.
+    if (isDemoActive()) {
       setData(null);
       setLoading(false);
       return;

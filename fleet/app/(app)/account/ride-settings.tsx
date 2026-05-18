@@ -16,6 +16,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Card } from '@/components/Card';
 import { useAuth } from '@/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
+import { isDemoActive } from '@/demo/store';
 import { theme } from '@/theme';
 
 type Visibility = {
@@ -35,6 +36,16 @@ export default function RideSettingsScreen() {
 
   const load = useCallback(async () => {
     if (!profile?.organization_id) {
+      setLoading(false);
+      return;
+    }
+    // Demo modunda Supabase yok — varsayılan açık + 7/24 mesai göster.
+    if (isDemoActive()) {
+      setData({
+        organization_id: profile.organization_id,
+        ride_enabled: true,
+        operating_hours: null,
+      });
       setLoading(false);
       return;
     }
@@ -59,6 +70,11 @@ export default function RideSettingsScreen() {
     if (!profile?.organization_id || saving) return;
     setSaving(true);
     try {
+      // Demo modunda Supabase yok — sadece local state güncelle.
+      if (isDemoActive()) {
+        setData((d) => (d ? { ...d, ride_enabled: next } : d));
+        return;
+      }
       const { error } = await supabase
         .from('fleets_visibility' as never)
         .update({ ride_enabled: next } as never)
@@ -66,7 +82,7 @@ export default function RideSettingsScreen() {
       if (error) throw new Error(error.message);
       setData((d) => (d ? { ...d, ride_enabled: next } : d));
     } catch (e) {
-      Alert.alert('Hata', e instanceof Error ? e.message : 'Bilinmeyen');
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : t('errors.unknown'));
     } finally {
       setSaving(false);
     }
