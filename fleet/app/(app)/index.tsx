@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
+  BackHandler,
   InteractionManager,
   Pressable,
   RefreshControl,
@@ -9,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { isDemoActive } from '@/demo/store';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -43,7 +45,24 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t } = useTranslation();
-  const { session, profile } = useAuth();
+  const { session, profile, signOut } = useAuth();
+
+  // Demo'da Android hardware back tuşu → uygulamadan çıkma yerine demo'dan
+  // çık + welcome ekranına dön. Sadece home odakta iken intercept eder.
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (isDemoActive()) {
+          signOut().catch(() => {
+            /* signOut hatası → AuthGate yine de welcome'a redirect eder */
+          });
+          return true; // back event consume edildi
+        }
+        return false; // gerçek user → default davranış (app exit)
+      });
+      return () => sub.remove();
+    }, [signOut]),
+  );
 
   // Saat dilimine göre selamlama. JavaScript `new Date().getHours()` cihazın
   // sistem timezone'unu kullanır → kullanıcı hangi ülkedeyse o yerel saatte
