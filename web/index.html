@@ -839,7 +839,7 @@
         </div>
         <div class="map-phone">
           <div class="phone-frame">
-            <img src="/assets/ride-login.jpeg" alt="Drivermesh Ride" />
+            <img src="/assets/rideweb.png" alt="Drivermesh Ride app home" />
           </div>
         </div>
       </div>
@@ -1026,7 +1026,7 @@
       const isEN = lang === 'en';
       html.lang = isEN ? 'en' : 'tr';
       heroImg.src = isEN ? '/assets/loginEN.webp' : '/assets/loginTR.webp';
-      // Ride app login görseli tek dil-bağımsız (ride-login.jpeg) — swap yok
+      // Ride app görseli (rideweb.png) dil-bağımsız — swap yok
       document.querySelectorAll('[data-tr]').forEach((el) => {
         const text = isEN ? el.getAttribute('data-en') : el.getAttribute('data-tr');
         if (text != null) el.textContent = text;
