@@ -18,14 +18,6 @@ import { useToast } from '@/components/Toast';
 import { supabase } from '@/lib/supabase';
 import { colors, radii, spacing } from '@/theme';
 
-const FAQ_KEYS = [
-  { q: 'Şoförüm gelmedi, ne yapmalıyım?', a: 'Yolculuğunu iptal edip yakındaki başka bir aracı çağırabilirsin. Şoför iletişim için aktif yolculuk sırasında "Ara" butonunu kullan.' },
-  { q: 'Ücret yanlış mı?', a: 'Tahmini ücret mesafe ve süreye göre hesaplanır. Kapıda nakit ödüyorsan şoförle anlaşma kesindir. İtirazını destek formundan iletebilirsin.' },
-  { q: 'Eşyamı arabada unuttum', a: 'Aktif yolculuğun ekranındaki "Ara" butonu ile şoföre direkt ulaş. Yolculuk geçmişinden de detaya ulaşabilirsin.' },
-  { q: 'Hesabımı silmek istiyorum', a: 'Destek formundan ileterek hesabın silinme talebini başlatabilirsin. 7 gün içinde geri dönüş yaparız.' },
-  { q: 'Telefon numaramı değiştirmek istiyorum', a: 'Şu anda telefon numarası değiştirme self-service mevcut değil. Destek formuyla bize ulaş.' },
-];
-
 type Subject = 'general' | 'ride_complaint' | 'payment' | 'other';
 
 export default function HelpScreen() {
@@ -76,7 +68,7 @@ export default function HelpScreen() {
           </View>
 
           <View style={styles.faqGroup}>
-            {FAQ_KEYS.map((item, i) => {
+            {(t('help.faq', { returnObjects: true }) as Array<{ q: string; a: string }>).map((item, i) => {
               const open = openIdx === i;
               return (
                 <View key={i} style={styles.faqItem}>
@@ -97,7 +89,7 @@ export default function HelpScreen() {
             })}
           </View>
 
-          <Text style={styles.formTitle}>Mesaj gönder</Text>
+          <Text style={styles.formTitle}>{t('help.formTitle')}</Text>
 
           <View style={styles.subjectRow}>
             {(['general', 'ride_complaint', 'payment', 'other'] as Subject[]).map((s) => (
@@ -108,19 +100,19 @@ export default function HelpScreen() {
               >
                 <Text style={[styles.subjectText, subject === s && styles.subjectTextActive]}>
                   {s === 'general'
-                    ? 'Genel'
+                    ? t('help.subjectGeneral')
                     : s === 'ride_complaint'
-                      ? 'Yolculuk'
+                      ? t('help.subjectRide')
                       : s === 'payment'
-                        ? 'Ödeme'
-                        : 'Diğer'}
+                        ? t('help.subjectPayment')
+                        : t('help.subjectOther')}
                 </Text>
               </Pressable>
             ))}
           </View>
 
           <TextField
-            placeholder="Sorununu yaz..."
+            placeholder={t('help.messagePlaceholder')}
             value={message}
             onChangeText={setMessage}
             multiline

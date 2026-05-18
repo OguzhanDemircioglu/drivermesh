@@ -23,15 +23,15 @@ export default function TripDetailScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12}>
           <Feather name="chevron-left" size={28} color={colors.text} />
         </Pressable>
-        <Text style={styles.title}>Yolculuk Detayı</Text>
+        <Text style={styles.title}>{t('tripDetail.title')}</Text>
         <View style={{ width: 28 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
         {query.isLoading ? (
-          <Text style={styles.dim}>Yükleniyor…</Text>
+          <Text style={styles.dim}>{t('tripDetail.loading')}</Text>
         ) : !query.data ? (
-          <Text style={styles.dim}>Yolculuk bulunamadı</Text>
+          <Text style={styles.dim}>{t('tripDetail.notFound')}</Text>
         ) : (
           <>
             <View style={styles.statusCard}>
@@ -57,7 +57,7 @@ export default function TripDetailScreen() {
                 <View style={styles.row}>
                   <Feather name="flag" size={16} color={colors.textDim} />
                   <Text style={[styles.rowText, { color: colors.textDim }]}>
-                    Şoför yolda alındı
+                    {t('tripDetail.pickedUpOnRoute')}
                   </Text>
                 </View>
               )}
@@ -79,7 +79,7 @@ export default function TripDetailScreen() {
               <View style={styles.row}>
                 <Feather name="credit-card" size={16} color={colors.textMuted} />
                 <Text style={styles.rowText}>
-                  {query.data.payment_method === 'cash' ? 'Kapıda nakit' : query.data.payment_method}
+                  {query.data.payment_method === 'cash' ? t('complete.paymentMethodCash') : query.data.payment_method}
                 </Text>
               </View>
             </View>

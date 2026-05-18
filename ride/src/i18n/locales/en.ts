@@ -22,6 +22,7 @@ export const en: TranslationKeys = {
   welcome: {
     cta: 'Continue with phone',
     subtitle: 'PASSENGER APP',
+    devSignIn: 'dev: mock sign-in',
   },
   phone: {
     title: 'Your phone number',
@@ -96,6 +97,10 @@ export const en: TranslationKeys = {
     deleteErrorGeneric: 'Something went wrong while deleting. Please try again.',
     privacyPolicy: 'Privacy Policy',
     termsOfService: 'Terms of Service',
+    notificationsEnabled: 'Notifications enabled',
+    notificationsDeniedTitle: 'Notifications disabled',
+    notificationsDeniedBody: 'You can enable from system settings.',
+    openSettings: 'Open settings',
   },
   call: {
     title: 'Call this vehicle',
@@ -133,6 +138,14 @@ export const en: TranslationKeys = {
     title: 'Trip completed',
     paymentReminder: "Don't forget cash payment at the door",
     rateDriver: 'Rate the driver',
+    paymentMethodCash: 'Cash on delivery',
+    paymentMethodOther: 'Other',
+  },
+  tripDetail: {
+    title: 'Trip Detail',
+    loading: 'Loading…',
+    notFound: 'Trip not found',
+    pickedUpOnRoute: 'Picked up on the way',
   },
   help: {
     title: 'Help',
@@ -140,6 +153,19 @@ export const en: TranslationKeys = {
     heroBody: 'We respond within 24 hours.',
     sendCta: 'Send',
     sent: 'Message sent 📩',
+    formTitle: 'Send a message',
+    subjectGeneral: 'General',
+    subjectRide: 'Ride',
+    subjectPayment: 'Payment',
+    subjectOther: 'Other',
+    messagePlaceholder: 'Describe your issue...',
+    faq: [
+      { q: 'My driver didn\'t arrive, what should I do?', a: 'Cancel your ride and call another vehicle nearby. To contact the driver during an active ride, use the "Call" button.' },
+      { q: 'Is the fare wrong?', a: 'Estimated fare is calculated based on distance and time. If you pay cash on delivery, the amount agreed with the driver is final. Submit objections via the support form.' },
+      { q: 'I left something in the car', a: 'Use the "Call" button on your active ride screen to reach the driver directly. You can also access details from ride history.' },
+      { q: 'I want to delete my account', a: 'You can start the process from Account → Delete my account. It is recoverable for 30 days, then permanently deleted.' },
+      { q: 'I want to change my phone number', a: 'Self-service phone number change is not currently available. Contact us via the support form.' },
+    ],
   },
   errors: {
     T1: 'Enter a valid phone number.',
@@ -152,6 +178,8 @@ export const en: TranslationKeys = {
     network: 'No internet connection.',
     networkRestored: 'Connection restored',
     unknown: 'Something went wrong. Try again.',
+    boundaryTitle: 'Something went wrong',
+    boundaryFallback: 'An unexpected error occurred.',
   },
   forceUpdate: {
     title: 'New version required',

@@ -53,7 +53,7 @@ export default function WelcomeScreen() {
               }}
               style={styles.devBtn}
             >
-              <Text style={styles.devBtnText}>dev: mock giriş</Text>
+              <Text style={styles.devBtnText}>{t('welcome.devSignIn')}</Text>
             </Pressable>
           ) : null}
         </Animated.View>

@@ -1,6 +1,7 @@
 import { Component, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import i18n from '@/i18n';
 import { Button } from './Button';
 import { colors, spacing } from '@/theme';
 
@@ -33,11 +34,11 @@ export class ErrorBoundary extends Component<Props, State> {
     if (!this.state.hasError) return this.props.children;
     return (
       <View style={styles.root}>
-        <Text style={styles.title}>Bir şeyler ters gitti</Text>
+        <Text style={styles.title}>{i18n.t('errors.boundaryTitle')}</Text>
         <Text style={styles.body}>
-          {this.state.message ?? 'Beklenmeyen bir hata oluştu.'}
+          {this.state.message ?? i18n.t('errors.boundaryFallback')}
         </Text>
-        <Button title="Tekrar dene" onPress={this.reset} />
+        <Button title={i18n.t('common.retry')} onPress={this.reset} />
       </View>
     );
   }

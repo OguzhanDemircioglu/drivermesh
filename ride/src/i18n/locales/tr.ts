@@ -4,7 +4,7 @@ type LocaleShape = {
     'continue' | 'cancel' | 'save' | 'send' | 'later' | 'retry' | 'confirm' | 'back' | 'close' | 'edit' | 'logout' | 'yes' | 'no',
     string
   >;
-  welcome: { cta: string; subtitle: string };
+  welcome: { cta: string; subtitle: string; devSignIn: string };
   phone: { title: string; subtitle: string; label: string; placeholder: string; cta: string; errorInvalid: string };
   otp: { title: string; subtitle: string; placeholder: string; cta: string; resendActive: string; resendCountdown: string; errorInvalid: string };
   profileSetup: { title: string; subtitle: string; label: string; placeholder: string; cta: string };
@@ -33,14 +33,32 @@ type LocaleShape = {
     deleteErrorGeneric: string;
     privacyPolicy: string;
     termsOfService: string;
+    notificationsEnabled: string;
+    notificationsDeniedTitle: string;
+    notificationsDeniedBody: string;
+    openSettings: string;
   };
   call: { title: string; pickupLabel: string; pickupLoading: string; cta: string; waitingTitle: string; waitingBody: string; cancelBtn: string; timeoutTitle: string; timeoutBody: string };
   active: { statusAssigned: string; statusArrived: string; statusInProgress: string; callDriver: string; cancelTrip: string; cancelConfirmTitle: string; cancelConfirmBody: string };
   rating: { title: string; starLabel1: string; starLabel2: string; starLabel3: string; starLabel4: string; starLabel5: string; commentLabel: string; commentPlaceholder: string; cta: string; thanks: string };
-  complete: { title: string; paymentReminder: string; rateDriver: string };
-  help: { title: string; heroTitle: string; heroBody: string; sendCta: string; sent: string };
+  complete: { title: string; paymentReminder: string; rateDriver: string; paymentMethodCash: string; paymentMethodOther: string };
+  tripDetail: { title: string; loading: string; notFound: string; pickedUpOnRoute: string };
+  help: {
+    title: string;
+    heroTitle: string;
+    heroBody: string;
+    sendCta: string;
+    sent: string;
+    formTitle: string;
+    subjectGeneral: string;
+    subjectRide: string;
+    subjectPayment: string;
+    subjectOther: string;
+    messagePlaceholder: string;
+    faq: Array<{ q: string; a: string }>;
+  };
   errors: Record<
-    'T1' | 'T2' | 'T3' | 'T4' | 'T5' | 'T6' | 'T7' | 'network' | 'networkRestored' | 'unknown',
+    'T1' | 'T2' | 'T3' | 'T4' | 'T5' | 'T6' | 'T7' | 'network' | 'networkRestored' | 'unknown' | 'boundaryTitle' | 'boundaryFallback',
     string
   >;
   forceUpdate: { title: string; body: string; cta: string };
@@ -71,6 +89,7 @@ export const tr: LocaleShape = {
   welcome: {
     cta: 'Telefonla başla',
     subtitle: 'YOLCU UYGULAMASI',
+    devSignIn: 'dev: mock giriş',
   },
   phone: {
     title: 'Telefon numaran',
@@ -145,6 +164,10 @@ export const tr: LocaleShape = {
     deleteErrorGeneric: 'Hesap silme sırasında bir sorun oldu. Tekrar dene.',
     privacyPolicy: 'Gizlilik Politikası',
     termsOfService: 'Kullanım Koşulları',
+    notificationsEnabled: 'Bildirimler açık',
+    notificationsDeniedTitle: 'Bildirimler kapalı',
+    notificationsDeniedBody: 'Sistem ayarlarından açabilirsin.',
+    openSettings: 'Ayarları aç',
   },
   call: {
     title: 'Bu aracı çağır',
@@ -182,6 +205,14 @@ export const tr: LocaleShape = {
     title: 'Yolculuğun tamamlandı',
     paymentReminder: 'Kapıda nakit ödemeyi unutma',
     rateDriver: 'Şoförü değerlendir',
+    paymentMethodCash: 'Kapıda nakit',
+    paymentMethodOther: 'Diğer',
+  },
+  tripDetail: {
+    title: 'Yolculuk Detayı',
+    loading: 'Yükleniyor…',
+    notFound: 'Yolculuk bulunamadı',
+    pickedUpOnRoute: 'Şoför yolda alındı',
   },
   help: {
     title: 'Yardım',
@@ -189,6 +220,19 @@ export const tr: LocaleShape = {
     heroBody: 'Sorularına 24 saat içinde dönüş yaparız.',
     sendCta: 'Gönder',
     sent: 'Mesajın iletildi 📩',
+    formTitle: 'Mesaj gönder',
+    subjectGeneral: 'Genel',
+    subjectRide: 'Yolculuk',
+    subjectPayment: 'Ödeme',
+    subjectOther: 'Diğer',
+    messagePlaceholder: 'Sorununu yaz...',
+    faq: [
+      { q: 'Şoförüm gelmedi, ne yapmalıyım?', a: 'Yolculuğunu iptal edip yakındaki başka bir aracı çağırabilirsin. Şoför iletişim için aktif yolculuk sırasında "Ara" butonunu kullan.' },
+      { q: 'Ücret yanlış mı?', a: 'Tahmini ücret mesafe ve süreye göre hesaplanır. Kapıda nakit ödüyorsan şoförle anlaşma kesindir. İtirazını destek formundan iletebilirsin.' },
+      { q: 'Eşyamı arabada unuttum', a: 'Aktif yolculuğun ekranındaki "Ara" butonu ile şoföre direkt ulaş. Yolculuk geçmişinden de detaya ulaşabilirsin.' },
+      { q: 'Hesabımı silmek istiyorum', a: 'Hesap → Hesabımı sil ile başlatabilirsin. 30 gün içinde geri dönülebilir, sonra kalıcı silinir.' },
+      { q: 'Telefon numaramı değiştirmek istiyorum', a: 'Şu anda telefon numarası değiştirme self-service mevcut değil. Destek formuyla bize ulaş.' },
+    ],
   },
   errors: {
     T1: 'Geçerli bir telefon numarası gir.',
@@ -201,6 +245,8 @@ export const tr: LocaleShape = {
     network: 'İnternet bağlantın yok.',
     networkRestored: 'Bağlantı kuruldu',
     unknown: 'Bir şeyler ters gitti. Tekrar dene.',
+    boundaryTitle: 'Bir şeyler ters gitti',
+    boundaryFallback: 'Beklenmeyen bir hata oluştu.',
   },
   forceUpdate: {
     title: 'Yeni sürüm gerekli',

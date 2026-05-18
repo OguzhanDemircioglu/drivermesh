@@ -34,16 +34,16 @@ export default function AccountScreen() {
       const cur = await getPushPermission();
       if (cur === 'granted') {
         await registerPushTokenForCustomer(customer.id).catch(() => {});
-        toast.show('success', 'Bildirimler açık');
+        toast.show('success', t('account.notificationsEnabled'));
         return;
       }
       if (cur === 'denied') {
         Alert.alert(
-          'Bildirimler kapalı',
-          'Sistem ayarlarından açabilirsin.',
+          t('account.notificationsDeniedTitle'),
+          t('account.notificationsDeniedBody'),
           [
-            { text: 'İptal', style: 'cancel' },
-            { text: 'Ayarları aç', onPress: () => Linking.openSettings() },
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('account.openSettings'), onPress: () => Linking.openSettings() },
           ],
         );
         return;
@@ -52,7 +52,7 @@ export default function AccountScreen() {
       const next = await requestPushPermission();
       if (next === 'granted') {
         await registerPushTokenForCustomer(customer.id).catch(() => {});
-        toast.show('success', 'Bildirimler açık');
+        toast.show('success', t('account.notificationsEnabled'));
       } else {
         toast.show('warning', t('permissions.pushDeny'));
       }
