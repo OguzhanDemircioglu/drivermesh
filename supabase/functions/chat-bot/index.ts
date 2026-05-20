@@ -17,7 +17,7 @@
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { KB, searchKB } from './kb.ts';
+import { searchKB } from './kb.ts';
 import { callGemini } from './gemini.ts';
 import { callCloudflare } from './cloudflare.ts';
 
@@ -116,8 +116,8 @@ serve(async (req) => {
       .limit(10);
     const history = (historyRaw ?? []).reverse() as Array<{ role: string; content: string }>;
 
-    // 6. KB chunks (keyword RAG)
-    const kbChunks = searchKB(KB, body.message, 3);
+    // 6. KB chunks (semantic vector RAG — V0.3)
+    const kbChunks = await searchKB(supabase, body.message, 3);
 
     // 7. Insert user message
     await supabase.from('chat_messages').insert({
