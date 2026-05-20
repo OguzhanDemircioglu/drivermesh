@@ -64,6 +64,14 @@
 - ✅ Migration'lar: [supabase/migrations/20260520164900_security_hardening_anon_revoke_search_path.sql](../supabase/migrations/20260520164900_security_hardening_anon_revoke_search_path.sql), [supabase/migrations/20260520165200_security_revoke_public_execute.sql](../supabase/migrations/20260520165200_security_revoke_public_execute.sql)
 - ✅ Advisor toplam security: **97 → 84**
 
+### Launch-E. RLS multiple_permissive_policies konsolidasyonu ✅
+- ✅ 12 tablo+cmd kombinasyonunda 2+ permissive policy çakışması kaldırıldı. Üç pattern:
+  - **Pattern A** (6 tablo): `*_write` FOR ALL + `*_select` FOR SELECT çakışması → write'i 3 ayrı INSERT/UPDATE/DELETE policy'ye böl, select tek başına SELECT'i yönet. chat_thread_members, garages, shifts, vehicle_assignments, vehicle_maintenance, vehicles.
+  - **Pattern B** (4 tablo): İki+ SELECT-only policy → tek policy OR. audit_logs, users, ride_offers, ride_requests.
+  - **Pattern C** (1 tablo): UPDATE çakışması → tek policy USING+WITH CHECK OR. leave_requests.
+- ✅ Migration: [supabase/migrations/20260520170000_rls_consolidate_permissive_policies.sql](../supabase/migrations/20260520170000_rls_consolidate_permissive_policies.sql)
+- ✅ Advisor `multiple_permissive_policies`: **20 → 0**
+
 ---
 
 ## Açık iş kalemleri
@@ -96,17 +104,18 @@
 - Sentry source map upload doğrulama (release sonrası — yeni eas.json fix sonrası ilk release tag'inde test edilecek).
 - WCAG kontrast audit (V0.3+).
 
-### Üretim sonrasına bırakılan advisor kalemleri (kabul edilebilir) ⏳
+### Kapatılamayan advisor kalemleri (teknik kısıt veya pre-production false-positive) ⏳
 
-| Lint | Sayı | Karar |
+Her birinin **net gerekçesi** var; ileri tarihe bırakılan keyfi bir kalem yok.
+
+| Lint | Sayı | Neden açık |
 |---|---|---|
-| `authenticated_security_definer_function_executable` | 71 | Supabase'in standart RPC pattern'i — kasıtlı, advisor false-positive. Kapatma planı yok. |
-| `multiple_permissive_policies` | 20 | 12 RLS policy konsolidasyonu manuel review gerektirir; üretim öncesi prematür. V0.4. |
-| `extension_in_public` | 2 (`postgis`, `vector`) | Dedicated schema'ya taşıma RPC'leri ve `kb_chunks`'ı etkiler. V0.4 schema move planı. |
-| `rls_disabled_in_public` `spatial_ref_sys` | 1 | PostGIS extension'ın sistem tablosu, postgres role owner değil → `ALTER TABLE permission denied`. Supabase bilinen istisna. |
-| `auth_leaked_password_protection` | 1 | Dashboard → Auth → Settings → HaveIBeenPwned check aç (manuel). |
-| `unused_index` | 94 | Yeni FK indeksleri henüz kullanılmamış sayılır; üretim trafiği başlayınca azalır. Erken silmek riskli. V0.4 audit. |
-| Anon-executable kalan 9 RPC | 9 | `is_fleet_open`, `redeem_invitation_lookup`, `preview_invitation`, sign-up trigger'ları, PostGIS `st_estimatedextent` — hepsi anon erişim gerektirir. |
+| `authenticated_security_definer_function_executable` | 71 | **TEKNİK İMKANSIZ.** Supabase'in PostgREST'i tüm RPC çağrılarını `authenticated` role'üyle yapar — bu yetkiyi kapatmak demek tüm RPC'lerin 401 dönmesi demek. Supabase'in tasarım kararı, advisor false-positive. |
+| `extension_in_public` `postgis` + `vector` | 2 | **PRODUKSIYON VERİYİ KIRMA RİSKİ.** PostGIS taşıma `geometry`/`geography` kolonu olan tüm tablo+RPC'leri (`ride_search_vehicles`, `fleets_visibility.service_area`, vs.) kırar. pgvector taşıma `kb_chunks.embedding` (39 ingested chunk) ve RAG search'ü kırar. Mevcut extension'ı taşımak yerine V0.4'te (sıfırdan) dedicated schema'ya kurulum gerek. |
+| `rls_disabled_in_public` `spatial_ref_sys` | 1 | **TEKNİK İMKANSIZ.** Tablonun sahibi `supabase_admin`; bizim postgres rolümüzün `ALTER TABLE` yetkisi yok. PostGIS extension'ın sistem tablosu, salt-okunur reference data (zone tanımları). Güvenlik riski yok. |
+| `unused_index` | 94 (42 yeni FK + 52 eski) | **PRE-PRODUCTION FALSE-POSITIVE.** Henüz hiç üretim trafiği yok, doğal olarak hiçbir indeks "kullanılmadı" görünüyor. 42'si yeni eklediğimiz FK indeksleri; 52'si auth lookup (phone, email, token), soft delete filter, status filter, geo GIST — hepsi üretimde yoğun kullanılacak. Şimdi silmek demek üretim sonrası seq-scan'e dönmek demek. **Üretim trafiği başladıktan 1 hafta sonra gerçek audit yapılacak.** |
+| Anon-executable kalan 9 RPC | 9 | `is_fleet_open`, `redeem_invitation_lookup`, `preview_invitation` (sign-up + invitation pre-auth flow); `create_*_on_signup`, `sync_driver_status_on_ride_change` (auth trigger fonksiyonları); `st_estimatedextent` x3 (PostGIS internal). Hepsi **bilinçli anon-erişim** gerektirir. |
+| `auth_leaked_password_protection` | 1 | Dashboard → Auth → Providers → Email → "Prevent use of leaked passwords" aç (manuel UI; SQL'le tetiklenemez). |
 
 ---
 
