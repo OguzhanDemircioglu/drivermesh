@@ -16,9 +16,11 @@ import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useTranslation } from 'react-i18next';
+import { BottomNav } from '@/components/BottomNav';
 import { MeshBackground } from '@/components/MeshBackground';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
+import { useBottomNavRouter } from '@/hooks/useBottomNavRouter';
 import { JobCard } from '@/components/JobCard';
 import { useToast } from '@/components/Toast';
 import { useAuth } from '@/auth/AuthProvider';
@@ -40,6 +42,7 @@ export default function JobsScreen() {
   const { t } = useTranslation();
   const { profile, session } = useAuth();
   const toast = useToast();
+  const nav = useBottomNavRouter('jobs');
   const [jobs, setJobs] = useState<JobWithRefs[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -200,6 +203,7 @@ export default function JobsScreen() {
           />
         )}
       </SafeAreaView>
+      <BottomNav {...nav} />
     </View>
   );
 }

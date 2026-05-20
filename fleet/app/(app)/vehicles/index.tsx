@@ -13,7 +13,9 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { BottomNav } from '@/components/BottomNav';
 import { MeshBackground } from '@/components/MeshBackground';
+import { useBottomNavRouter } from '@/hooks/useBottomNavRouter';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { VehicleCard } from '@/components/VehicleCard';
@@ -26,6 +28,7 @@ import { theme } from '@/theme';
 import { useTranslation } from 'react-i18next';
 
 export default function VehiclesScreen() {
+  const nav = useBottomNavRouter('fleet');
   const router = useRouter();
   const { t } = useTranslation();
   const { profile, session } = useAuth();
@@ -212,6 +215,7 @@ export default function VehiclesScreen() {
           }
         />
       </SafeAreaView>
+      <BottomNav {...nav} />
     </View>
   );
 }

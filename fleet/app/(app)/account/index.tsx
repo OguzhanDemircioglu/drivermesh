@@ -6,7 +6,9 @@ import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useTranslation } from 'react-i18next';
+import { BottomNav } from '@/components/BottomNav';
 import { MeshBackground } from '@/components/MeshBackground';
+import { useBottomNavRouter } from '@/hooks/useBottomNavRouter';
 import { Avatar } from '@/components/Avatar';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -32,6 +34,7 @@ const ROLE_COLOR: Record<UserRole, string> = {
 };
 
 export default function AccountScreen() {
+  const nav = useBottomNavRouter('account');
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { profile, session, signOut, refreshProfile } = useAuth();
@@ -460,6 +463,7 @@ export default function AccountScreen() {
           />
         </ScrollView>
       </SafeAreaView>
+      <BottomNav {...nav} />
     </View>
   );
 }
