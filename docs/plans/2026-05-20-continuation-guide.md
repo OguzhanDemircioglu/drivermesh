@@ -1,7 +1,7 @@
 # DriverMesh — Devam Rehberi (2026-05-20)
 
-> **Önceki rehber:** [2026-05-18-continuation-guide.md](2026-05-18-continuation-guide.md) — bu dosya günceldir, 2026-05-18 versiyonu artık stale.
-> **Master HEAD:** `1eee641`
+> **Önceki rehber:** [2026-05-18-continuation-guide.md](2026-05-18-continuation-guide.md) — stale.
+> **Master HEAD:** Bu konuşma 9 commit ile master'ı ileri taşıdı (Phase 2 RLS, baseline, i18n, cron PASS, continuation guide, cancel grace UI, bot function calling). Son tag: `v1.0.2` + `ride-v0.1.3`.
 
 ---
 
@@ -87,10 +87,11 @@ Kalan TR karakter occurrence'ları yorum / demo data / fallback messageTr (zaten
 |---|---|---|
 | ~~HIGH~~ | Hierarchy Phase 2 RLS | ✅ Done (2026-05-20) |
 | ~~MEDIUM~~ | Driver ETA canlı update | ✅ Done (commit `d3ffbf3`, useDriverActiveRide realtime + 30s fallback) |
-| MEDIUM | Cancel grace period UI | Ride iptal akışı var (`cancel_ride` RPC + ActiveRideView), grace timer + fee UI yok |
-| MEDIUM | Bot function calling | Gemini/Claude tool use — fleet sorgu/aksiyon |
+| ~~MEDIUM~~ | Cancel grace period UI | ✅ Done (commit `5338b99`, 2dk grace + countdown + fee uyarı) |
+| ~~MEDIUM~~ | Bot function calling | ✅ Done (3 read-only tool: get_fleet_stats, list_open_jobs, list_vehicles_in_maintenance) — edge function chat-bot v11. Test PASS 3/4 (Cloudflare fallback path için 1 hallucination, acceptable) |
 | LOW | Embedding RAG (pgvector) | `chat-bot/kb.ts` keyword → embedding |
 | LOW | Ride session listesi (chatbot) | Şu an tek aktif session — geçmiş sohbetler UI |
+| LOW | Driver-side RLS daraltma | Defense-in-depth: `org_read_jobs/vehicles` driver'a tüm org SELECT izni veriyor (kod tarafında `listMyJobs(driverId)` filtreliyor ama RLS değil) |
 
 ---
 
