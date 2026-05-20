@@ -165,6 +165,7 @@ serve(async (req) => {
         provider: aiResult.provider,
         latency_ms: Date.now() - start,
         tool_calls: aiResult.toolCalls,
+        kb_hits: kbChunks.length,
       },
     });
 
@@ -173,6 +174,7 @@ serve(async (req) => {
       reply: aiResult.text,
       provider: aiResult.provider,
       toolCalls: aiResult.toolCalls,
+      kbHits: kbChunks.length,
     }, 200);
   } catch (e) {
     console.error('[chat-bot] unhandled error:', e);
