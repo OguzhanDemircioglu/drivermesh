@@ -13,6 +13,8 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { demo, isDemoActive } from '@/demo/store';
+import { enqueue } from '@/lib/offlineQueue';
+import { useOnline } from '@/hooks/useOnline';
 import { theme } from '@/theme';
 
 type Status = 'active' | 'break' | 'off_duty' | 'on_trip' | 'unavailable';
@@ -42,6 +44,7 @@ type Props = {
 export function StatusPill({ expanded = false }: Props = {}) {
   const { t } = useTranslation();
   const { profile, refreshProfile } = useAuth();
+  const online = useOnline();
   const status: Status = (profile?.status as Status) ?? 'off_duty';
   const meta = STATUS_META[status];
   const isOnTrip = status === 'on_trip';
@@ -68,6 +71,20 @@ export function StatusPill({ expanded = false }: Props = {}) {
         setSheetOpen(false);
         return;
       }
+
+      // Offline → kuyruğa al, online dönüşte otomatik flush (useOnlineSync).
+      if (!online) {
+        await enqueue('set_my_status', { p_status: next });
+        setSheetOpen(false);
+        Alert.alert(
+          t('status.queuedTitle', { defaultValue: 'Kuyruğa alındı' }),
+          t('status.queuedBody', {
+            defaultValue: 'Çevrimdışı olduğun için bu değişiklik bağlantı geri gelince eşzamanlanacak.',
+          }),
+        );
+        return;
+      }
+
       const { error } = await (
         supabase as unknown as {
           rpc: (
@@ -76,7 +93,22 @@ export function StatusPill({ expanded = false }: Props = {}) {
           ) => Promise<{ error: { message: string } | null }>;
         }
       ).rpc('set_my_status', { p_status: next });
-      if (error) throw new Error(error.message);
+      if (error) {
+        // Network error olabilir — kuyruğa al + flush bir sonraki online'da.
+        const isNetwork = /network|fetch|timeout|TypeError/i.test(error.message);
+        if (isNetwork) {
+          await enqueue('set_my_status', { p_status: next });
+          setSheetOpen(false);
+          Alert.alert(
+            t('status.queuedTitle', { defaultValue: 'Kuyruğa alındı' }),
+            t('status.queuedBody', {
+              defaultValue: 'Bağlantı sorunu — değişiklik geri gelince eşzamanlanacak.',
+            }),
+          );
+          return;
+        }
+        throw new Error(error.message);
+      }
       await refreshProfile();
       setSheetOpen(false);
     } catch (e) {

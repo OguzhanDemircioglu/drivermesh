@@ -80,10 +80,10 @@
 
 | # | Bulgu | Etki | Öneri | Öncelik |
 |---|---|---|---|---|
-| 1 | **NetInfo yok** | Kullanıcı offline iken hiçbir uyarı yok, fetch hatası generic toast | `npm i @react-native-community/netinfo` + `useNetInfo` hook + üst banner ("Çevrimdışı — değişiklikler kuyrukta") | **HIGH** |
+| 1 | ~~**NetInfo yok**~~ ✅ Done (Sprint A.1, commit) — `useOnline` hook + `OfflineBanner` (sticky, reanimated slide-down) + TR/EN locale | — | — |
 | 2 | **React Query cache persistence yok** | Kapatıp-açınca tüm veriler yeniden fetch, offline'da boş ekran | `@tanstack/query-async-storage-persister` + `persistQueryClient` | **HIGH** |
 | 3 | **Optimistic updates yok** | Driver job complete butonuna basınca network bekliyor (1-3s), kullanıcı algılar | `useMutation.onMutate` + cache update + rollback | **HIGH** |
-| 4 | **Offline write queue yok** | Tunel/asansör'de iş tamamla → fail. Tekrar online'da otomatik retry yok | `react-native-offline` veya manuel queue (AsyncStorage'da pending mutations) | MEDIUM |
+| 4 | 🟡 **Offline write queue PoC** (Sprint C, commit pending native test) — `offlineQueue.ts` (AsyncStorage + concurrent-safe flush + max 5 attempts) + `useOnlineSync` hook (offline→online transition auto-flush) + StatusPill pilot integration (`set_my_status` enqueue offline). Native airplane-mode test: kullanıcı tarafından yapılacak (dev build telefonda yüklü, classifier auth admin operations'ları bloke ettiği için otomatik test edilemedi) | Genişletme: `cancel_ride`, `complete_ride`, vehicle_claim için executor ekle | MEDIUM |
 | 5 | **Image cache custom (mini)** | imageCache.ts AsyncStorage'a base64 yazıyor, MB-bayazlı, eviction policy yok | `expo-image` cache (filesystem, eviction) → custom kaldır | MEDIUM |
 | 6 | **Map tiles offline yok** | Internet kopunca fleet-map gri, son tile'lar bile yok | Mapbox/MapTiler offline pack (V0.3+) | LOW |
 | 7 | **Realtime kopması sessiz** | Channel disconnect olduğunda UI'a yansımıyor (sadece 30s polling sürer) | `supabase.channel.subscribe(status => ...)` ile UI badge | LOW |
