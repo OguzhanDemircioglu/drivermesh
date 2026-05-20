@@ -1,7 +1,7 @@
 # DriverMesh — Proje Sağlık Raporu
 
-> **Yapı:** workspace altında iki bağımsız Expo uygulaması (`fleet/`, `ride/`), bir Cloudflare landing (`web/`), bir Supabase backend (97 migration, 1 edge function: `chat-bot`).
-> **Son güncelleme:** 2026-05-20 — health audit sonrası temizlik dalgası (#A-G).
+> **Yapı:** workspace altında iki bağımsız Expo uygulaması (`fleet/`, `ride/`), bir Cloudflare landing (`web/`), bir Supabase backend (100 migration, 13 edge function).
+> **Son güncelleme:** 2026-05-20 — production launch öncesi 2 dalga: (i) infra/test health audit (A-G), (ii) launch-prep DB & config sıkılaştırma (A-D).
 > Bu dosya **gözden geçirilmemiş**, **eksik** veya **ileride sorun çıkarabilecek** alanları takip eder. Çözülenler "DONE" işaretiyle ✅, açık kalanlar ⏳ ile.
 
 ---
@@ -37,6 +37,35 @@
 
 ---
 
+## Çözülen (2026-05-20 launch-prep dalgası A-D)
+
+### Launch-A. Config + DML ✅
+- ✅ `fleet/eas.json` + `ride/eas.json` production env'den `SENTRY_DISABLE_AUTO_UPLOAD=true` kaldırıldı → Sentry source map upload aktif, crash'ler symbolicate edilir.
+- ✅ `fleet/.env.example` tam revize: eski Telegram pattern çıkarıldı (artık edge function secret), Sentry DSN/token, APP_ENV, iOS Maps key vs. eklendi.
+- ✅ `app_versions` tablosu git tag'lere senkron: fleet 1.0.0 → 1.0.2, ride 0.1.0 → 0.1.3, `min_supported_version` = `latest_version` (ilk launch, schema cohesive).
+- ✅ iOS `app_versions` row'ları silindi (Android-only launch; iOS pipeline Apple Developer üyeliği sonrası tekrar INSERT edilecek).
+
+### Launch-B. RLS auth_rls_initplan optimization ✅
+- ✅ 72 RLS policy `auth.uid()`/`auth.role()` → `(SELECT auth.X())` wrap edildi. PostgreSQL initplan optimization devreye girer → fonksiyon tüm satır seti için tek call.
+- ✅ Etki: jobs (6), ride_requests (5), notifications (4), chat_messages (4), customers (3), 30+ tablo. 100 satırlık `jobs` listesi öncesi 100× call → şimdi 1× call.
+- ✅ Tooling: [scripts/build_rls_initplan_migration.py](../scripts/build_rls_initplan_migration.py) — pg_policies'den çek, regex fix, DROP+CREATE migration üret. Tekrarlanabilir.
+- ✅ Migration: [supabase/migrations/20260520163424_rls_auth_uid_initplan_optimization.sql](../supabase/migrations/20260520163424_rls_auth_uid_initplan_optimization.sql)
+- ✅ Advisor `auth_rls_initplan`: **72 → 0**
+
+### Launch-C. FK covering indexes ✅
+- ✅ 42 FK kolonu için `CREATE INDEX IF NOT EXISTS` (filoLocal 22 + public 20). JOIN + cascade DELETE artık sequential scan değil.
+- ✅ Tooling: [scripts/build_fk_index_migration.py](../scripts/build_fk_index_migration.py) — advisor JSON dump'ından FK adlarını parse eder, sadece flag'lenenlere indeks açar. Tüm 105 FK'ye açmak gereksiz storage + write overhead.
+- ✅ Migration: [supabase/migrations/20260520164321_fk_covering_indexes.sql](../supabase/migrations/20260520164321_fk_covering_indexes.sql)
+- ✅ Advisor `unindexed_foreign_keys`: **42 → 0**
+
+### Launch-D. Security hardening ✅
+- ✅ `function_search_path_mutable`: `kb_chunks_set_updated_at` + `prevent_vehicle_reassign_during_active_ride` → `ALTER FUNCTION ... SET search_path = public, pg_catalog`. Advisor: **2 → 0**.
+- ✅ `anon_security_definer_function_executable`: 11 RPC anon EXECUTE kapatıldı. İlk migration `FROM anon` yetersizdi (grant PUBLIC inheritance), ikinci migration `FROM PUBLIC` ile gerçek kapatma. Advisor: **20 → 9** (kalan 9 anon-OK: trigger fonksiyonları, sign-up pre-auth, PostGIS internal, invitation lookup).
+- ✅ Migration'lar: [supabase/migrations/20260520164900_security_hardening_anon_revoke_search_path.sql](../supabase/migrations/20260520164900_security_hardening_anon_revoke_search_path.sql), [supabase/migrations/20260520165200_security_revoke_public_execute.sql](../supabase/migrations/20260520165200_security_revoke_public_execute.sql)
+- ✅ Advisor toplam security: **97 → 84**
+
+---
+
 ## Açık iş kalemleri
 
 ### D-7. Google Cloud Maps billing ⏳
@@ -64,8 +93,20 @@
 ### Play Console ⏳
 - Data Safety formu doldurulmadı.
 - Screenshots, app description, age rating eksik.
-- Sentry source map upload doğrulama (release sonrası).
+- Sentry source map upload doğrulama (release sonrası — yeni eas.json fix sonrası ilk release tag'inde test edilecek).
 - WCAG kontrast audit (V0.3+).
+
+### Üretim sonrasına bırakılan advisor kalemleri (kabul edilebilir) ⏳
+
+| Lint | Sayı | Karar |
+|---|---|---|
+| `authenticated_security_definer_function_executable` | 71 | Supabase'in standart RPC pattern'i — kasıtlı, advisor false-positive. Kapatma planı yok. |
+| `multiple_permissive_policies` | 20 | 12 RLS policy konsolidasyonu manuel review gerektirir; üretim öncesi prematür. V0.4. |
+| `extension_in_public` | 2 (`postgis`, `vector`) | Dedicated schema'ya taşıma RPC'leri ve `kb_chunks`'ı etkiler. V0.4 schema move planı. |
+| `rls_disabled_in_public` `spatial_ref_sys` | 1 | PostGIS extension'ın sistem tablosu, postgres role owner değil → `ALTER TABLE permission denied`. Supabase bilinen istisna. |
+| `auth_leaked_password_protection` | 1 | Dashboard → Auth → Settings → HaveIBeenPwned check aç (manuel). |
+| `unused_index` | 94 | Yeni FK indeksleri henüz kullanılmamış sayılır; üretim trafiği başlayınca azalır. Erken silmek riskli. V0.4 audit. |
+| Anon-executable kalan 9 RPC | 9 | `is_fleet_open`, `redeem_invitation_lookup`, `preview_invitation`, sign-up trigger'ları, PostGIS `st_estimatedextent` — hepsi anon erişim gerektirir. |
 
 ---
 
