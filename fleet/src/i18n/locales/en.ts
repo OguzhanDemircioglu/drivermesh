@@ -51,6 +51,9 @@ export const en: TranslationShape = {
     statusOff: 'Your fleet is hidden from customers. Toggling on adds it back instantly.',
     note: 'For a vehicle to appear in ride: assigned to driver + driver status Active + not in maintenance + within operating hours + not on an active ride.',
   },
+  offline: {
+    banner: 'Offline — will sync when reconnected',
+  },
   common: {
     appName: 'DriverMesh',
     loading: 'Loading...',

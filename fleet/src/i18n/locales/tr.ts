@@ -49,6 +49,9 @@ export const tr = {
     statusOff: 'Filonuz müşteri tarafından görünmez. Açtığında anında listeye eklenir.',
     note: 'Bir araç ride\'da görünmek için: şoför üstünde + şoför durumu Aktif + bakımda değil + mesai içi + aktif yolculukta değil.',
   },
+  offline: {
+    banner: 'Çevrimdışı — bağlantı geri gelince eşzamanlanır',
+  },
   common: {
     appName: 'DriverMesh',
     loading: 'Yükleniyor...',
