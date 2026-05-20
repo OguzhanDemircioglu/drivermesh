@@ -39,7 +39,7 @@ type LocaleShape = {
     openSettings: string;
   };
   call: { title: string; pickupLabel: string; pickupLoading: string; cta: string; waitingTitle: string; waitingBody: string; cancelBtn: string; timeoutTitle: string; timeoutBody: string };
-  active: { statusAssigned: string; statusArrived: string; statusInProgress: string; callDriver: string; cancelTrip: string; cancelConfirmTitle: string; cancelConfirmBody: string };
+  active: { statusAssigned: string; statusArrived: string; statusInProgress: string; callDriver: string; cancelTrip: string; cancelConfirmTitle: string; cancelConfirmBody: string; cancelConfirmBodyFee: string; cancelGraceCountdown: string };
   rating: { title: string; starLabel1: string; starLabel2: string; starLabel3: string; starLabel4: string; starLabel5: string; commentLabel: string; commentPlaceholder: string; cta: string; thanks: string };
   complete: { title: string; paymentReminder: string; rateDriver: string; paymentMethodCash: string; paymentMethodOther: string };
   tripDetail: { title: string; loading: string; notFound: string; pickedUpOnRoute: string };
@@ -187,7 +187,9 @@ export const tr: LocaleShape = {
     callDriver: 'Ara',
     cancelTrip: 'İptal',
     cancelConfirmTitle: 'Yolculuğu iptal et',
-    cancelConfirmBody: 'Şoför yola çıktı. Yine de iptal etmek istiyor musun?',
+    cancelConfirmBody: 'Yolculuğu iptal etmek istiyor musun? İlk 2 dakika içinde ücretsiz.',
+    cancelConfirmBodyFee: 'Şoför zaten yola çıktı. Şimdi iptal edersen iptal ücreti uygulanabilir. Yine de iptal et?',
+    cancelGraceCountdown: 'Ücretsiz iptal: {{time}} kaldı',
   },
   rating: {
     title: 'Yolculuğu değerlendir',

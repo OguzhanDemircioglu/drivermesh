@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -74,6 +74,29 @@ export function ActiveRideView({ ride, customerId }: Props) {
 
   const statusLabel = useMemo(() => t(statusKey(ride.status)), [ride.status, t]);
 
+  // Cancel grace period — assigned_at + 2 minutes
+  const graceDeadlineMs = useMemo(
+    () => (ride.assigned_at ? new Date(ride.assigned_at).getTime() + 2 * 60 * 1000 : null),
+    [ride.assigned_at],
+  );
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const remainingSec = useMemo(() => {
+    if (!graceDeadlineMs) return null;
+    return Math.max(0, Math.floor((graceDeadlineMs - nowMs) / 1000));
+  }, [graceDeadlineMs, nowMs]);
+  const inGrace = ride.status === 'assigned' && remainingSec !== null && remainingSec > 0;
+  useEffect(() => {
+    if (!inGrace) return;
+    const id = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [inGrace]);
+  const graceCountdown = useMemo(() => {
+    if (remainingSec === null) return null;
+    const m = Math.floor(remainingSec / 60);
+    const s = String(remainingSec % 60).padStart(2, '0');
+    return `${m}:${s}`;
+  }, [remainingSec]);
+
   const onCall = () => {
     if (!driver.data?.driver_phone) {
       toast.show('warning', t('errors.unknown'));
@@ -83,14 +106,15 @@ export function ActiveRideView({ ride, customerId }: Props) {
   };
 
   const onCancel = () => {
-    Alert.alert(t('active.cancelConfirmTitle'), t('active.cancelConfirmBody'), [
+    const bodyKey = inGrace ? 'active.cancelConfirmBody' : 'active.cancelConfirmBodyFee';
+    Alert.alert(t('active.cancelConfirmTitle'), t(bodyKey), [
       { text: t('common.no'), style: 'cancel' },
       {
         text: t('common.yes'),
         style: 'destructive',
         onPress: async () => {
           try {
-            await cancelRide(ride.id, 'customer_cancelled');
+            await cancelRide(ride.id, inGrace ? 'customer_cancelled_free' : 'customer_cancelled_after_grace');
             await qc.invalidateQueries({ queryKey: ['ride', 'active', customerId] });
           } catch (e) {
             toast.show('error', e instanceof Error ? e.message : t('errors.unknown'));
@@ -133,6 +157,11 @@ export function ActiveRideView({ ride, customerId }: Props) {
           ) : (
             <Text style={styles.bannerDriver}>{t('call.waitingBody')}</Text>
           )}
+          {inGrace && graceCountdown ? (
+            <Text style={styles.graceText} testID="cancel-grace-countdown">
+              {t('active.cancelGraceCountdown', { time: graceCountdown })}
+            </Text>
+          ) : null}
         </View>
       </View>
 
@@ -250,6 +279,12 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     overflow: 'hidden',
     minHeight: 340,
+  },
+  graceText: {
+    marginTop: spacing.xs,
+    fontSize: 12,
+    color: colors.accent,
+    fontVariant: ['tabular-nums'],
   },
   gridLine: {
     position: 'absolute',

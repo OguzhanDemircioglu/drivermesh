@@ -120,7 +120,9 @@ export const en: TranslationKeys = {
     callDriver: 'Call',
     cancelTrip: 'Cancel',
     cancelConfirmTitle: 'Cancel trip',
-    cancelConfirmBody: 'The driver is on the way. Cancel anyway?',
+    cancelConfirmBody: 'Cancel this trip? Free within the first 2 minutes.',
+    cancelConfirmBodyFee: 'The driver is already on the way. Cancelling now may incur a cancellation fee. Cancel anyway?',
+    cancelGraceCountdown: 'Free cancel: {{time}} left',
   },
   rating: {
     title: 'Rate the trip',
