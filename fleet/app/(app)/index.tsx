@@ -24,7 +24,7 @@ import { BottomNav } from '@/components/BottomNav';
 import { Card } from '@/components/Card';
 import { ChatBotBadge } from '@/components/ChatBotBadge';
 import { StatusPill } from '@/components/StatusPill';
-import { useDriverActiveRide } from '../../src/hooks/useDriverActiveRide';
+import { useDriverActiveRide } from '@/hooks/useDriverActiveRide';
 import { useAuth } from '@/auth/AuthProvider';
 import { fetchHomeStats, type HomeStats } from '@/lib/queries';
 import { theme } from '@/theme';

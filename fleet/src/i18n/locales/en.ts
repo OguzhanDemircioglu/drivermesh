@@ -54,6 +54,12 @@ export const en: TranslationShape = {
   offline: {
     banner: 'Offline — will sync when reconnected',
   },
+  tabs: {
+    home: 'Home',
+    jobs: 'Jobs',
+    vehicles: 'Fleet',
+    account: 'Account',
+  },
   common: {
     appName: 'DriverMesh',
     loading: 'Loading...',

@@ -27,7 +27,7 @@
 
 | # | Bulgu | Öneri | Öncelik |
 |---|---|---|---|
-| 1 | **Bottom tab bar yok** (fleet) — Home/Jobs/Vehicles/Account arasında her geçişte push+back gerekli. Ride app'te tab var, fleet'te yok | Expo Router `(tabs)` grup ekle, hızlı geçiş + iOS/Android native UX | **HIGH** UX |
+| 1 | **Bottom tab bar tutarsız** (fleet) — `BottomNav` custom component **sadece home'da** render, jobs/vehicles/account sayfalarında yok. Ride app'te Expo Router `Tabs` var. Hibrid pattern → her tab geçişinde back+push gerekiyor. **Düzeltme denemesi 2026-05-20:** Expo Router `(tabs)` route group eklendi ama mevcut `BottomNav` ile çakıştı (iki tab bar). Rollback yapıldı. Doğru yol: ya BottomNav'ı 4 üst sayfaya yay, ya da BottomNav'ı kaldır + Tabs ile değiştir | **A:** BottomNav'ı jobs/vehicles/account'a da ekle (1 saat); **B:** Tabs migration + BottomNav retire (yarım gün) | **HIGH** UX |
 | 2 | **Deep linking test eksik** — `push payload routeForPushPayload` var, ama URL-based (`drivermesh://job/123`) test edilmemiş | E2E deep-link test + cold-start handling | MEDIUM |
 | 3 | **Scrollview deep nesting** — bazı sayfalarda ScrollView + ScrollView (jobs detay, account) | FlatList virtualization veya tek scroll seviye | LOW |
 | 4 | **Modal vs full-screen tutarsız** — `chatbot.tsx`, `notifications.tsx` full-screen back-stack push, modal `presentation` kullanılmamış | Action modallarına `presentation: 'modal'` (slide up) | LOW |

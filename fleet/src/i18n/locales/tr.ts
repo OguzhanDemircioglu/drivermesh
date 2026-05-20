@@ -52,6 +52,12 @@ export const tr = {
   offline: {
     banner: 'Çevrimdışı — bağlantı geri gelince eşzamanlanır',
   },
+  tabs: {
+    home: 'Ana sayfa',
+    jobs: 'İşler',
+    vehicles: 'Filo',
+    account: 'Hesap',
+  },
   common: {
     appName: 'DriverMesh',
     loading: 'Yükleniyor...',
