@@ -15,6 +15,7 @@ import {
   FlatList,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -28,8 +29,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar';
 import { useTranslation } from 'react-i18next';
 import { theme } from '@/theme';
-import { sendMessage, getOrCreateLatestSession, getMessages } from '@/chatbot/client';
-import type { ChatMessage } from '@/chatbot/types';
+import { sendMessage, getOrCreateLatestSession, getMessages, listSessions } from '@/chatbot/client';
+import type { ChatMessage, ChatSession } from '@/chatbot/types';
 
 const BOT_ICON = require('../../assets/chatbot.png');
 
@@ -42,7 +43,28 @@ export default function ChatBotScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const listRef = useRef<FlatList<ChatMessage>>(null);
+
+  const openHistory = useCallback(async () => {
+    setHistoryOpen(true);
+    setHistoryLoading(true);
+    try {
+      const list = await listSessions();
+      setSessions(list);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  const pickSession = useCallback(async (sid: string) => {
+    setHistoryOpen(false);
+    setSessionId(sid);
+    const msgs = await getMessages(sid);
+    setMessages(msgs);
+  }, []);
 
   // Load last session on mount
   useEffect(() => {
@@ -128,9 +150,14 @@ export default function ChatBotScreen() {
             <Image source={BOT_ICON} style={styles.topBarAvatar} />
             <Text style={styles.topBarTitle}>{t('chatbot.title')}</Text>
           </View>
-          <Pressable onPress={startNewChat} hitSlop={10} style={styles.topBarBtn}>
-            <Feather name="edit-3" size={20} color={theme.colors.textMuted} />
-          </Pressable>
+          <View style={styles.topBarActions}>
+            <Pressable onPress={openHistory} hitSlop={10} style={styles.topBarBtn} accessibilityLabel={t('chatbot.historyTitle', { defaultValue: 'Geçmiş sohbetler' })}>
+              <Feather name="clock" size={20} color={theme.colors.textMuted} />
+            </Pressable>
+            <Pressable onPress={startNewChat} hitSlop={10} style={styles.topBarBtn} accessibilityLabel={t('chatbot.newChat', { defaultValue: 'Yeni sohbet' })}>
+              <Feather name="edit-3" size={20} color={theme.colors.textMuted} />
+            </Pressable>
+          </View>
         </View>
 
         <KeyboardAvoidingView
@@ -208,6 +235,58 @@ export default function ChatBotScreen() {
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
+
+      <Modal
+        visible={historyOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setHistoryOpen(false)}
+      >
+        <Pressable style={styles.historyBackdrop} onPress={() => setHistoryOpen(false)} />
+        <View style={[styles.historySheet, { paddingBottom: insets.bottom + 12 }]}>
+          <View style={styles.historyHeader}>
+            <Text style={styles.historyTitle}>
+              {t('chatbot.historyTitle', { defaultValue: 'Geçmiş sohbetler' })}
+            </Text>
+            <Pressable onPress={() => setHistoryOpen(false)} hitSlop={10}>
+              <Feather name="x" size={22} color={theme.colors.textMuted} />
+            </Pressable>
+          </View>
+          {historyLoading ? (
+            <Text style={styles.historyEmpty}>{t('common.loading')}</Text>
+          ) : sessions.length === 0 ? (
+            <Text style={styles.historyEmpty}>
+              {t('chatbot.historyEmpty', { defaultValue: 'Henüz sohbet geçmişin yok.' })}
+            </Text>
+          ) : (
+            <FlatList
+              data={sessions}
+              keyExtractor={(s) => s.id}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => pickSession(item.id)}
+                  style={({ pressed }) => [
+                    styles.historyRow,
+                    item.id === sessionId && styles.historyRowActive,
+                    pressed && { opacity: 0.7 },
+                  ]}
+                >
+                  <Feather name="message-circle" size={16} color={theme.colors.accent} />
+                  <View style={styles.historyRowText}>
+                    <Text numberOfLines={1} style={styles.historyRowTitle}>
+                      {item.title || t('chatbot.untitledSession', { defaultValue: 'Sohbet' })}
+                    </Text>
+                    <Text style={styles.historyRowDate}>
+                      {new Date((item.last_message_at as string) ?? item.created_at).toLocaleString()}
+                    </Text>
+                  </View>
+                </Pressable>
+              )}
+              ItemSeparatorComponent={() => <View style={styles.historySeparator} />}
+            />
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -322,6 +401,62 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border,
   },
   topBarBtn: { padding: 6, minWidth: 32 },
+  topBarActions: { flexDirection: 'row', gap: 4 },
+  historyBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  historySheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    maxHeight: '70%',
+    backgroundColor: theme.colors.bgElevated,
+    borderTopLeftRadius: theme.radius['2xl'],
+    borderTopRightRadius: theme.radius['2xl'],
+    paddingTop: 16,
+    paddingHorizontal: theme.spacing.lg,
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
+  },
+  historyTitle: {
+    color: theme.colors.text,
+    fontSize: 17,
+    fontWeight: theme.font.weight.semibold,
+  },
+  historyEmpty: {
+    color: theme.colors.textMuted,
+    textAlign: 'center',
+    paddingVertical: 24,
+    fontSize: 14,
+  },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+  },
+  historyRowActive: { opacity: 0.5 },
+  historyRowText: { flex: 1, gap: 2 },
+  historyRowTitle: {
+    color: theme.colors.text,
+    fontSize: 14,
+    fontWeight: theme.font.weight.medium,
+  },
+  historyRowDate: { color: theme.colors.textMuted, fontSize: 12 },
+  historySeparator: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: theme.colors.border,
+  },
   topBarTitleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   topBarAvatar: { width: 28, height: 28, borderRadius: 14 },
   topBarTitle: {

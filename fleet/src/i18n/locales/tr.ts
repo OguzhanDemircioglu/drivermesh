@@ -1011,6 +1011,10 @@ export const tr = {
     quickReply3: 'Şoför davet etme akışı nedir?',
     inputPlaceholder: 'Mesajını yaz...',
     welcomeBotHint: 'Uygulamayı keşfedelim',
+    historyTitle: 'Geçmiş sohbetler',
+    historyEmpty: 'Henüz sohbet geçmişin yok.',
+    newChat: 'Yeni sohbet',
+    untitledSession: 'Sohbet',
     onboarding: {
       title: 'Hoş geldin! 👋',
       body:

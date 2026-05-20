@@ -1013,6 +1013,10 @@ export const en: TranslationShape = {
     quickReply3: 'How does inviting a driver work?',
     inputPlaceholder: 'Type your message...',
     welcomeBotHint: "Let's explore",
+    historyTitle: 'Chat history',
+    historyEmpty: "You don't have any chat history yet.",
+    newChat: 'New chat',
+    untitledSession: 'Chat',
     onboarding: {
       title: 'Welcome! 👋',
       body:

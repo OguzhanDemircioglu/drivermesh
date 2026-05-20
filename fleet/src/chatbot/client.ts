@@ -123,3 +123,17 @@ export async function newSession(): Promise<void> {
   // No-op on client side; backend creates session when sendMessage is called
   // with sessionId=undefined. UI just resets local state.
 }
+
+/** List recent chat sessions (RLS = own only). Max 30. */
+export async function listSessions(): Promise<ChatSession[]> {
+  const { data, error } = await supabase
+    .from('chat_sessions')
+    .select('*')
+    .order('last_message_at', { ascending: false, nullsFirst: false })
+    .limit(30);
+  if (error) {
+    console.warn('[chatbot] list sessions failed', error);
+    return [];
+  }
+  return (data ?? []) as ChatSession[];
+}
