@@ -28,7 +28,7 @@
 | # | Bulgu | Öneri | Öncelik |
 |---|---|---|---|
 | 1 | **Bottom tab bar tutarsız** (fleet) — `BottomNav` custom component **sadece home'da** render, jobs/vehicles/account sayfalarında yok. Ride app'te Expo Router `Tabs` var. Hibrid pattern → her tab geçişinde back+push gerekiyor. **Düzeltme denemesi 2026-05-20:** Expo Router `(tabs)` route group eklendi ama mevcut `BottomNav` ile çakıştı (iki tab bar). Rollback yapıldı. Doğru yol: ya BottomNav'ı 4 üst sayfaya yay, ya da BottomNav'ı kaldır + Tabs ile değiştir | **A:** BottomNav'ı jobs/vehicles/account'a da ekle (1 saat); **B:** Tabs migration + BottomNav retire (yarım gün) | **HIGH** UX |
-| 2 | **Deep linking test eksik** — `push payload routeForPushPayload` var, ama URL-based (`drivermesh://job/123`) test edilmemiş | E2E deep-link test + cold-start handling | MEDIUM |
+| 2 | **Deep linking test eksik** — `routeForPushPayload(data.screen → /(app)/...)` mevcut, push payload smoke test PASS. URL-based (`drivermesh://job/123`) cold-start handling test edilmedi | Manuel E2E: `adb shell am start -a android.intent.action.VIEW -d "drivermesh://job/<id>" com.drivermesh.android` → app açıldığında doğru route'a düşmeli. Test plan: docs/plans/deep-link-test.md (gelecek) | MEDIUM |
 | 3 | **Scrollview deep nesting** — bazı sayfalarda ScrollView + ScrollView (jobs detay, account) | FlatList virtualization veya tek scroll seviye | LOW |
 | 4 | **Modal vs full-screen tutarsız** — `chatbot.tsx`, `notifications.tsx` full-screen back-stack push, modal `presentation` kullanılmamış | Action modallarına `presentation: 'modal'` (slide up) | LOW |
 
@@ -50,9 +50,9 @@
 |---|---|---|---|
 | 1 | **expo-image kısmen** — VehicleCard, ChatBotBadge, Avatar gibi sık-render component'lerde hâlâ RN core Image. Cache miss, render lag, memory churn | Tüm Image → `expo-image` (cache-first, decode native) | **HIGH** Perf |
 | 2 | **Bundle size analizi yok** — `npx expo customize metro.config.js` + `react-native-bundle-visualizer` yok. APK ne kadar büyük bilmiyoruz | Bundle analyzer setup + threshold (target <30MB AAB) | MEDIUM |
-| 3 | **Lazy loading yok** — `React.lazy/Suspense` 0 yerde. Tüm 33 route eager. İlk JS bundle parse zamanı yüksek | Heavy route'lar (`reports.tsx`, `fleet-map.tsx`, `chatbot.tsx`) için `expo-router` async layouts | MEDIUM |
+| 3 | **Lazy loading native-limited** — Expo Router file-based, native bundle Hermes pre-compiled single chunk. RN'de meaningful lazy split yok (Metro multi-bundle deneysel). Web tarafında Expo Router 4.x async layouts var ama prod target Android-first | Web split opt-in (V0.3+). Native için: heavy route'ları unmount edip remount (background = state'i sakla) — manuel pattern | LOW (native pratik kazanç düşük) |
 | 4 | **Cold start ölçümü tracked değil** — sentry performance / `expo-cli profile` yok | Sentry tracesSampleRate + `app_startup` transaction custom span | MEDIUM |
-| 5 | **`React.memo` yetersiz** — VehicleCard / NotificationItem / JobCard listede her parent re-render'da rebuild | `React.memo(Component, isEqual)` + props comparison | MEDIUM |
+| 5 | ~~**`React.memo` yetersiz**~~ ✅ Audit done (2026-05-20): VehicleCard, JobCard, LabeledMarker zaten `React.memo`. Liste item'larında ek darboğaz yok. FlatList `renderItem` inline JSX'leri için `useCallback` (mikro optimizasyon) ileride yapılabilir | — | — |
 | 6 | **Console.log production'da** — bazı `console.warn`/`error` Hermes optimize etmiyor | `babel-plugin-transform-remove-console` production preset | LOW |
 | 7 | **Anim'lerin tümü Reanimated UI thread mi?** — bazı yerlerde `Animated.View` (RN core) görülebilir, JS-thread animation 60fps kaybı | Audit + `react-native-reanimated` migration | LOW |
 
