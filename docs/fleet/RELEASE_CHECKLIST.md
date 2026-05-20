@@ -19,7 +19,7 @@
 
 ### Cron auto-checkout migration
 
-- [x] **`maintenance_auto_checkout()` RPC retire + maintenance-cron Edge Function migration** — 2026-05-13: Supabase'de `cron.job` `maintenance-auto-checkout` ekli + `vault.secrets.cron_secret` set + `maintenance-cron` Edge Function v2 verify_jwt:false ACTIVE. Test pending: vehicle insert + `maintenance_until = NOW() - 1m` ile end-to-end doğrulama. Hazırlanan artefaktların referansı:
+- [x] **`maintenance_auto_checkout()` RPC retire + maintenance-cron Edge Function migration** — 2026-05-13: Supabase'de `cron.job` `maintenance-auto-checkout` ekli + `vault.secrets.cron_secret` set + `maintenance-cron` Edge Function v3 verify_jwt:false ACTIVE. **End-to-end PASS 2026-05-20**: test vehicle `maintenance` + `maintenance_until = NOW() - 2m` → 60s içinde `status='idle'`, maintenance_* fields cleared. Cron her dakika succeeded (cron.job_run_details). Eski RPC `maintenance_auto_checkout()` DB'de yok (drop edilmiş). Hazırlanan artefaktların referansı:
   - **`maintenance-cron` Edge Function** (v1, `verify_jwt:false`) — query param `?s={cron_secret}` ile auth, `Deno.env.SUPABASE_SERVICE_ROLE_KEY` ile send-push v4'ü tetikler.
   - **`set_vault_secret` SECURITY DEFINER RPC** — vault'a secret yazma helper, service_role only.
   - **Bekleyen SQL migration** (`cron_via_edge_function_with_cron_secret`):
@@ -44,7 +44,7 @@
 
 - [ ] **RLS politika audit** — şu tabloların hepsinde RLS açık + politika test edilmiş:
   - `profiles`, `organizations`, `vehicles`, `jobs`, `notifications`, `vehicle_assignments`, `maintenance_requests`, `permission_grants`, `member_permissions`
-- [ ] **Hierarchy Phase 2** — manager kendi şoförlerinin verisini görür, başka manager'ınkini görmez. Şu an Phase 1 (sadece schema, RLS henüz scope filter yapmıyor).
+- [x] **Hierarchy Phase 2** — 2026-05-20: `current_user_can_see_user(uuid)` helper + 7 RLS policy (jobs SELECT/UPDATE, vehicles SELECT/UPDATE, ride_requests staff SELECT, vehicle_assignments SELECT/UPDATE) manager için scope filter ekledi. Smoke test PASS (owner 3/3, manager 2/3 D2 görmez, UPDATE D1=1 row D2=0). Migration: `supabase/migrations/20260520120000_hierarchy_phase2_manager_scope_rls.sql`.
 - [ ] **`SECURITY DEFINER` audit** — `claim_vehicle`, `release_vehicle`, `get_vault_secret`, maintenance auto-checkout cron fn, vs. her birinde:
   - `set search_path = public, pg_temp`
   - `revoke execute from public`
