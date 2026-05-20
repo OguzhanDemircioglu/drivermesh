@@ -36,5 +36,14 @@ screenshots/
 .fleet-metro.log
 .fleet-web.log
 
+# Cloudflare Workers local state (Wrangler)
+web/.wrangler/
+
+# Orphan artifacts from Windows-path bash bugs (e.g. C:Projelerdrivermesh.tmp_*.png)
+C:Projelerdrivermesh*
+
+# Backup env files
+*.env.bak.*
+
 # Claude Code MCP server config (contains API keys)
 .mcp.json

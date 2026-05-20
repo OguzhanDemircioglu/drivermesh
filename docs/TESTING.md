@@ -32,6 +32,7 @@
 - §13 [Final Test Raporu Şablonu](#13-final-test-raporu-şablonu)
 - §14 [Referans: Reset SQL Detayı + Sistem Tablo Koruma Listesi](#14-referans-reset-sql-detayı--sistem-tablo-koruma-listesi)
 - §15 [Bilinen Limitasyonlar + V2 Bekleyenler](#15-bilinen-limitasyonlar--v2-bekleyenler)
+- §16 [Otomatik Unit Test (Jest)](#16-otomatik-unit-test-jest)
 
 ---
 
@@ -660,4 +661,48 @@ SELECT public.is_fleet_open(gen_random_uuid());  -- false döner (org yok, ama e
 
 ---
 
-*Doküman versiyonu: 2.0 — Tabula Rasa Full Test Rehberi. Önceki sürüm 1.4 (fleet+ride cross-app, perf+güvenlik kapsamı) git history'de.*
+## 16. Otomatik Unit Test (Jest)
+
+E2E manuel senaryoların (§3-§10) yanı sıra **2026-05-20 itibarıyla** lokal Jest test altyapısı kuruldu. Her iki app (`fleet/`, `ride/`) kendi `jest.config.js` + `jest.setup.js`'ine sahip; CI ([.github/workflows/ci.yml](../.github/workflows/ci.yml)) her PR'da çalıştırır.
+
+### Çalıştırma
+
+```bash
+cd fleet && npm test          # interaktif watch yok, --watch ekle
+cd ride && npm test
+```
+
+Coverage: `npm test -- --coverage`.
+
+### Preset
+
+- `jest-expo` 55 (RN transform pattern'i içerir)
+- AsyncStorage, Sentry, Supabase env stub'ları her iki `jest.setup.js`'de hazır
+- `moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' }` — uygulama alias'ı
+
+### Mevcut test kapsamı (başlangıç)
+
+| Modül | Test | Niye |
+|---|---|---|
+| [fleet/src/lib/\_\_tests\_\_/offlineQueue.test.ts](../fleet/src/lib/__tests__/offlineQueue.test.ts) | enqueue idempotent, flush success/fail, 5-attempt drop, last-writer-wins | Offline write queue Sprint C'nin omurgası, regression yakalanmalı |
+| [ride/src/utils/\_\_tests\_\_/forceUpdate.test.ts](../ride/src/utils/__tests__/forceUpdate.test.ts) | semverLt pure logic — eşitlik, eksik segment, leading-zero patch | Versiyon karşılaştırma yanlışı tüm app'i force-update'e zorlar |
+
+### Yeni test eklerken
+
+1. Dosyayı modülün yanına koy: `src/foo/__tests__/foo.test.ts` veya `src/foo/foo.test.ts`.
+2. Eğer modül `supabase`, `@sentry/react-native` veya AsyncStorage import ediyorsa → mock zaten setup'ta hazır, ek bir şey gerekmez.
+3. RPC çağıran kodu test ederken: yardımcı pure fonksiyonu `export` et + ona unit test yaz. Gerçek RPC integration test'i E2E'ye (manuel + smoke script) bırak.
+4. **Snapshot test'lerinden kaçın** — RN render snapshot'ları kırılgan; davranış test'i tercih et.
+
+### Edge function smoke test (Python)
+
+Edge function'lar (chat-bot, kb-ingest, vs.) için Python smoke script'leri `scripts/` altında:
+
+- [scripts/smoke_test_kb_rag.py](../scripts/smoke_test_kb_rag.py) — sandbox driver yarat → JWT al → POST chat-bot → assert kb_hits → cleanup
+- [scripts/test_chatbot.py](../scripts/test_chatbot.py) — chat-bot manuel deneme
+
+Bunlar CI'da çalışmaz (network + Supabase auth + temp user gerekir), lokal release smoke'unda manuel çalıştırılır.
+
+---
+
+*Doküman versiyonu: 2.1 — Jest unit test bölümü §16 eklendi (2026-05-20).*

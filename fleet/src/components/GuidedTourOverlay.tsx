@@ -42,7 +42,10 @@ export function GuidedTourOverlay() {
   }, [pathname]);
 
   // Welcome ekranındayken Demo App highlight göster
-  const isWelcomeRoute = pathname === '/' || pathname === '/welcome' || (segments[0] === '(auth)' && segments[1] === 'welcome');
+  const isWelcomeRoute =
+    pathname === '/' ||
+    pathname === '/welcome' ||
+    (segments[0] === '(auth)' && (segments as readonly string[])[1] === 'welcome');
 
   // Kullanıcı belirli bir route'a gittiğinde waitForRoute step'ini next yap
   useEffect(() => {

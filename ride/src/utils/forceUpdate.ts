@@ -14,7 +14,7 @@ export type ForceUpdateState = {
   latestVersion?: string;
 };
 
-function semverLt(a: string, b: string): boolean {
+export function semverLt(a: string, b: string): boolean {
   const pa = a.split('.').map(Number);
   const pb = b.split('.').map(Number);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {

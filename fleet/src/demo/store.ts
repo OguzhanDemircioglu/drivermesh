@@ -903,7 +903,9 @@ export const demo = {
   ) {
     const i = state.profiles.findIndex((p) => p.id === id);
     if (i < 0) return;
-    state.profiles[i] = { ...state.profiles[i], ...patch };
+    // status field demo'da gevşek string; Profile enum'una cast — demo
+    // veri tip kapsamı dışına çıkmasın diye Profile shape'i korunur.
+    state.profiles[i] = { ...state.profiles[i], ...patch } as Profile;
     emit();
   },
   deleteVehicle(id: string) {

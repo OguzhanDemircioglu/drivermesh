@@ -26,7 +26,7 @@ AAB → EAS Submit → Play Console          AAB → EAS Submit → Play Console
         Closed Beta → Production
 ```
 
-> **Not (2026-05-17):** Master push'da otomatik build YOK. CI workflow'ları (`build-android.yml`, `build-android-ride.yml`, `ride-ci.yml`) repodan kaldırıldı; sadece tag-tetikli release workflow'ları aktif. Hızlı iterasyon için local'den `eas build --profile preview` veya cihazda gradle release build kullan (`fleet/.easignore` + `ride/.easignore` tarball'ı küçük tutar).
+> **Güncelleme (2026-05-20):** Build/typecheck CI **geri geldi** — `.github/workflows/ci.yml` her PR ve master push'da fleet + ride için paralel typecheck, ESLint ve Jest çalıştırır. Kırık kod artık release tag basılana kadar görünmez kalmaz. Otomatik AAB build hâlâ tag-tetikli (`fleet-v*.*.*` / `ride-v*.*.*`); hızlı device test için local `eas build --profile preview` veya gradle release.
 
 ---
 

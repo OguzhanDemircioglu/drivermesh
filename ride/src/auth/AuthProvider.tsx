@@ -17,6 +17,7 @@ import {
   type Customer,
 } from '@/lib/db/customers';
 import { registerPushTokenForCustomer } from '@/lib/push';
+import { isDevBypassEnabled } from '@/lib/devBypass';
 
 type SignInPhoneResult = {
   /** Supabase OTP gönderilince true */
@@ -154,7 +155,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Sadece dev/preview build'lerde sunulur. Release APK __DEV__ false
       // olduğu için devSignIn undefined kalır → string-dump'ta hardcoded
       // credential sızması yok, UI'da da fallback gizlenir.
-      devSignIn: __DEV__
+      // EXPO_PUBLIC_DEV_BYPASS=off ile dev makinede de kapatılabilir
+      // ([devBypass.ts](src/lib/devBypass.ts)).
+      devSignIn: isDevBypassEnabled()
         ? async () => {
             const { error } = await supabase.auth.signInWithPassword({
               email: 'dev-customer@drivermeshride.local',

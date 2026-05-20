@@ -23,7 +23,7 @@ import { listMyRides, type RideHistoryItem } from '@/lib/rideHistory';
 import { theme } from '@/theme';
 
 const STATUS_TONE: Record<RideHistoryItem['status'], { fg: string; bg: string; labelKey: string }> = {
-  created: { fg: theme.colors.textMuted, bg: 'rgba(138,147,166,0.12)', labelKey: 'jobs.status.created' },
+  open: { fg: theme.colors.textMuted, bg: 'rgba(138,147,166,0.12)', labelKey: 'jobs.status.open' },
   assigned: { fg: theme.colors.mesh, bg: theme.colors.meshMuted, labelKey: 'jobs.status.assigned' },
   in_progress: { fg: theme.colors.accent, bg: theme.colors.accentMuted, labelKey: 'jobs.status.in_progress' },
   completed: { fg: theme.colors.success, bg: 'rgba(34,197,94,0.14)', labelKey: 'jobs.status.completed' },

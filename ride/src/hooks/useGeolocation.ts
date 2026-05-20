@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as Location from 'expo-location';
+import { isDevBypassEnabled } from '@/lib/devBypass';
 
 export type GeoPermission = 'granted' | 'denied' | 'undetermined';
 
@@ -88,8 +89,9 @@ export function useGeolocation(autoRequest = true): GeoState & {
     let cancelled = false;
     (async () => {
       // Dev/preview: gerçek izin atla, sahte Galata konumu kullan.
-      // Production build'de bu blok çalışmaz.
-      if (__DEV__) {
+      // Production build'de isDevBypassEnabled() false döner;
+      // dev makinede EXPO_PUBLIC_DEV_BYPASS=off ile de kapatılabilir.
+      if (isDevBypassEnabled()) {
         if (cancelled) return;
         setState({
           permission: 'granted',

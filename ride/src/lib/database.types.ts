@@ -53,6 +53,120 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          role: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "chat_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string
+          organization_id: string | null
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          organization_id?: string | null
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          organization_id?: string | null
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_notifications: {
+        Row: {
+          body: string
+          created_at: string | null
+          customer_id: string
+          id: string
+          payload: Json
+          read_at: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          body: string
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          payload?: Json
+          read_at?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          body?: string
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          payload?: Json
+          read_at?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_notifications_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           auth_user_id: string
@@ -64,6 +178,7 @@ export type Database = {
           default_payment_method:
             | Database["public"]["Enums"]["ride_payment_method"]
             | null
+          deleted_at: string | null
           email: string | null
           full_name: string | null
           id: string
@@ -85,6 +200,7 @@ export type Database = {
           default_payment_method?:
             | Database["public"]["Enums"]["ride_payment_method"]
             | null
+          deleted_at?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
@@ -106,6 +222,7 @@ export type Database = {
           default_payment_method?:
             | Database["public"]["Enums"]["ride_payment_method"]
             | null
+          deleted_at?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
@@ -392,6 +509,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      kb_chunks: {
+        Row: {
+          content: string
+          created_at: string
+          embedding: string | null
+          heading: string
+          id: string
+          source: string
+          token_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          embedding?: string | null
+          heading: string
+          id?: string
+          source: string
+          token_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          heading?: string
+          id?: string
+          source?: string
+          token_count?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       maintenance_requests: {
         Row: {
@@ -749,44 +899,62 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          deleted_at: string | null
           email: string
           full_name: string
           id: string
           manager_id: string | null
           organization_id: string | null
           phone: string | null
+          pre_trip_status:
+            | Database["public"]["Enums"]["user_availability_status"]
+            | null
           push_platform: string | null
           push_token: string | null
           push_token_updated_at: string | null
           role: Database["public"]["Enums"]["user_role"]
+          status: Database["public"]["Enums"]["user_availability_status"]
+          status_updated_at: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          deleted_at?: string | null
           email: string
           full_name: string
           id: string
           manager_id?: string | null
           organization_id?: string | null
           phone?: string | null
+          pre_trip_status?:
+            | Database["public"]["Enums"]["user_availability_status"]
+            | null
           push_platform?: string | null
           push_token?: string | null
           push_token_updated_at?: string | null
           role: Database["public"]["Enums"]["user_role"]
+          status?: Database["public"]["Enums"]["user_availability_status"]
+          status_updated_at?: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
+          deleted_at?: string | null
           email?: string
           full_name?: string
           id?: string
           manager_id?: string | null
           organization_id?: string | null
           phone?: string | null
+          pre_trip_status?:
+            | Database["public"]["Enums"]["user_availability_status"]
+            | null
           push_platform?: string | null
           push_token?: string | null
           push_token_updated_at?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          status?: Database["public"]["Enums"]["user_availability_status"]
+          status_updated_at?: string
         }
         Relationships: [
           {
@@ -933,10 +1101,10 @@ export type Database = {
           customer_id: string
           distance_km: number | null
           driver_id: string | null
-          dropoff_address: string
+          dropoff_address: string | null
           dropoff_point: unknown
           duration_min: number | null
-          fare_estimate: number
+          fare_estimate: number | null
           fare_final: number | null
           id: string
           job_id: string | null
@@ -963,10 +1131,10 @@ export type Database = {
           customer_id: string
           distance_km?: number | null
           driver_id?: string | null
-          dropoff_address: string
-          dropoff_point: unknown
+          dropoff_address?: string | null
+          dropoff_point?: unknown
           duration_min?: number | null
-          fare_estimate: number
+          fare_estimate?: number | null
           fare_final?: number | null
           id?: string
           job_id?: string | null
@@ -993,10 +1161,10 @@ export type Database = {
           customer_id?: string
           distance_km?: number | null
           driver_id?: string | null
-          dropoff_address?: string
+          dropoff_address?: string | null
           dropoff_point?: unknown
           duration_min?: number | null
-          fare_estimate?: number
+          fare_estimate?: number | null
           fare_final?: number | null
           id?: string
           job_id?: string | null
@@ -1443,6 +1611,11 @@ export type Database = {
             }
             Returns: string
           }
+      can_view_profile: { Args: { p_target_id: string }; Returns: boolean }
+      cancel_ride: {
+        Args: { p_reason?: string; p_ride_id: string }
+        Returns: undefined
+      }
       change_member_role: {
         Args: {
           p_member_id: string
@@ -1454,7 +1627,31 @@ export type Database = {
         Args: { p_reason?: string; p_vehicle_id: string }
         Returns: undefined
       }
+      claim_vehicle_for_ride: {
+        Args: { p_vehicle_id: string }
+        Returns: string
+      }
+      cleanup_deleted_accounts: {
+        Args: never
+        Returns: {
+          customer_users_deleted: number
+          profile_users_deleted: number
+        }[]
+      }
       cloudinary_public_id_from_url: { Args: { url: string }; Returns: string }
+      complete_ride: {
+        Args: {
+          p_distance_km?: number
+          p_duration_min?: number
+          p_fare_final?: number
+          p_ride_id: string
+        }
+        Returns: Database["public"]["Enums"]["ride_status"]
+      }
+      current_user_can_see_user: {
+        Args: { p_target_user_id: string }
+        Returns: boolean
+      }
       current_user_org_id: { Args: never; Returns: string }
       current_user_role: {
         Args: never
@@ -1462,6 +1659,10 @@ export type Database = {
       }
       delete_fleet: { Args: never; Returns: undefined }
       disablelongtransactions: { Args: never; Returns: string }
+      driver_arrived: {
+        Args: { p_ride_id: string }
+        Returns: Database["public"]["Enums"]["ride_status"]
+      }
       dropgeometrycolumn:
         | {
             Args: {
@@ -1598,6 +1799,10 @@ export type Database = {
         Args: { p_key: string; p_user_id: string }
         Returns: boolean
       }
+      is_fleet_open: {
+        Args: { p_at?: string; p_org_id: string }
+        Returns: boolean
+      }
       list_member_permissions: {
         Args: { p_member_id: string }
         Returns: {
@@ -1676,6 +1881,69 @@ export type Database = {
       release_vehicle: { Args: { p_vehicle_id: string }; Returns: undefined }
       remove_org_member: { Args: { p_member_id: string }; Returns: undefined }
       request_account_deletion: { Args: never; Returns: Json }
+      request_customer_account_deletion: { Args: never; Returns: Json }
+      request_ride: {
+        Args: {
+          p_pickup_address: string
+          p_pickup_lat: number
+          p_pickup_lng: number
+          p_vehicle_id: string
+        }
+        Returns: string
+      }
+      ride_active_driver_info: {
+        Args: { p_ride_id: string }
+        Returns: {
+          brand: string
+          color: string
+          driver_avatar_url: string
+          driver_id: string
+          driver_name: string
+          driver_phone: string
+          hq_lat: number
+          hq_lng: number
+          model: string
+          photo_url: string
+          plate: string
+          vehicle_id: string
+        }[]
+      }
+      ride_search_vehicles: {
+        Args: { p_lat: number; p_lng: number; p_radius_km?: number }
+        Returns: {
+          brand: string
+          color: string
+          distance_km: number
+          driver_avatar_url: string
+          driver_id: string
+          driver_name: string
+          driver_phone: string
+          hq_address: string
+          hq_lat: number
+          hq_lng: number
+          model: string
+          organization_id: string
+          photo_url: string
+          plate: string
+          vehicle_id: string
+          year: number
+        }[]
+      }
+      search_kb_chunks: {
+        Args: { p_match_count?: number; p_query_embedding: string }
+        Returns: {
+          content: string
+          heading: string
+          similarity: number
+          source: string
+        }[]
+      }
+      set_my_status: {
+        Args: {
+          p_status: Database["public"]["Enums"]["user_availability_status"]
+        }
+        Returns: Database["public"]["Enums"]["user_availability_status"]
+      }
       set_permission_override: {
         Args: { p_allowed: boolean; p_key: string; p_member_id: string }
         Returns: undefined
@@ -2266,6 +2534,18 @@ export type Database = {
         Args: { geom: unknown; move: number; wrap: number }
         Returns: unknown
       }
+      start_ride: {
+        Args: { p_ride_id: string }
+        Returns: Database["public"]["Enums"]["ride_status"]
+      }
+      submit_driver_rating: {
+        Args: { p_comment?: string; p_ride_id: string; p_stars: number }
+        Returns: string
+      }
+      submit_rating: {
+        Args: { p_comment?: string; p_ride_id: string; p_stars: number }
+        Returns: string
+      }
       transfer_ownership: {
         Args: { target_user_id: string }
         Returns: undefined
@@ -2317,6 +2597,12 @@ export type Database = {
         | "cancelled_by_driver"
         | "cancelled_by_system"
       ride_vehicle_type: "standard" | "comfort" | "xl" | "taxi"
+      user_availability_status:
+        | "active"
+        | "break"
+        | "off_duty"
+        | "on_trip"
+        | "unavailable"
       user_role: "owner" | "manager" | "driver"
       vehicle_status: "active" | "maintenance" | "idle"
     }
@@ -2492,6 +2778,13 @@ export const Constants = {
         "cancelled_by_system",
       ],
       ride_vehicle_type: ["standard", "comfort", "xl", "taxi"],
+      user_availability_status: [
+        "active",
+        "break",
+        "off_duty",
+        "on_trip",
+        "unavailable",
+      ],
       user_role: ["owner", "manager", "driver"],
       vehicle_status: ["active", "maintenance", "idle"],
     },

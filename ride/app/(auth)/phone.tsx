@@ -9,6 +9,7 @@ import { TextField } from '@/components/TextField';
 import { useToast } from '@/components/Toast';
 import { useAuth } from '@/auth/AuthProvider';
 import { formatTrPhone, isValidTrMobile, toE164Tr } from '@/auth/phoneAuth';
+import { isDevBypassEnabled } from '@/lib/devBypass';
 import { colors, radii, spacing } from '@/theme';
 
 export default function PhoneScreen() {
@@ -26,10 +27,10 @@ export default function PhoneScreen() {
     setSubmitting(true);
     try {
       // SMS provider (Twilio) yapılandırılana kadar dev build'lerde OTP'yi
-      // atlamak için devSignIn fallback. AuthProvider, release APK'larda
-      // devSignIn'i undefined döndürür → bu blok yalnızca __DEV__ true ise
-      // tetiklenir.
-      if (__DEV__ && devSignIn) {
+      // atlamak için devSignIn fallback. AuthProvider release APK'larda
+      // devSignIn'i undefined döndürür ve isDevBypassEnabled() false döner →
+      // bu blok yalnızca dev build + DEV_BYPASS=on iken tetiklenir.
+      if (isDevBypassEnabled() && devSignIn) {
         await devSignIn();
         return;
       }

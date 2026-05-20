@@ -133,3 +133,44 @@ psql postgresql://postgres:postgres@localhost:54322/postgres
 ## 6. Memory Pointer
 
 `C:\Users\oguzh\.claude\projects\C--Projeler-drivermesh\memory\project_continuation_2026_05_18.md` — bu dosyaya pointer + güncel durum özeti. Yeni session açıldığında oradan başla.
+
+---
+
+## 7. Sağlık Audit + Temizlik (2026-05-20, gece sonrası)
+
+Sağlık taraması bulgularına karşılık şu dalga uygulandı:
+
+**A. Repo hijyeni**
+- Orphan `C:Projelerdrivermesh.tmp_login_check.png` silindi
+- `fleet/.env.bak.20260513` silindi
+- `.gitignore` güncel: `web/.wrangler/`, `*.env.bak.*`, `C:Projelerdrivermesh*`
+
+**B. CI/CD altyapı** ([.github/workflows/ci.yml](../../.github/workflows/ci.yml))
+- PR + master push'da fleet + ride paralel: `npm ci` + `typecheck` + `lint` + `test`
+- ESLint v8 + `eslint-config-expo` kuruldu (her iki app)
+- Jest + `jest-expo` preset kuruldu (her iki app)
+- Örnek testler:
+  - `fleet/src/lib/__tests__/offlineQueue.test.ts` (6 case PASS)
+  - `ride/src/utils/__tests__/forceUpdate.test.ts` (5 case PASS)
+
+**C. Build reproducibility**
+- Fleet `eas-build-pre-install` artık `npm ci` (lock dosyası silinmez)
+- Ride'a aynı script eklendi
+
+**D. Ride production hazırlık**
+- `ride/package.json:13` → `prebuild:android` script'i (fleet'le aynı pattern, splash auto-inject)
+- Dev bypass kill-switch: [ride/src/lib/devBypass.ts](../../ride/src/lib/devBypass.ts) — `__DEV__` + `EXPO_PUBLIC_DEV_BYPASS` çift gate
+- 3 dosya migrate edildi: AuthProvider, phone.tsx, useGeolocation
+
+**E. Stale artifact**
+- `fleet/.env.bak.20260513` silindi (üstte)
+
+**G. Schema operasyon**
+- `scripts/register_migration.py --sync` modu eklendi
+- Sync sonucu: `20260520140000_driver_scope_defense_in_depth` schema_migrations'a register edildi (eksikti)
+
+**Açık kalan (kullanıcı tarafı):**
+- ⏳ Supabase Dashboard → Edge Functions → `kb-ingest` → Delete (MCP delete tool yok; hâlâ deployed, version 5)
+- ⏳ Google Cloud Console → Billing → Maps API'ye fatura hesabı (D-7)
+
+Tüm yeni durum [PROJECT-HEALTH.md](../PROJECT-HEALTH.md)'de izlenir. Onboarding [CONTRIBUTING.md](../CONTRIBUTING.md)'de.

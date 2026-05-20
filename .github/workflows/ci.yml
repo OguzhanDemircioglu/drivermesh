@@ -1,0 +1,63 @@
+name: CI
+
+# Her PR ve master push'unda fleet + ride typecheck/lint/test paralel.
+# Release tag pipeline'larından bağımsız — bu sadece kod sağlığı.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fleet:
+    name: fleet — typecheck + lint + test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: fleet
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: fleet/package-lock.json
+      - name: Install deps
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: TypeScript check
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+        continue-on-error: false
+      - name: Test
+        run: npm test -- --ci --passWithNoTests
+
+  ride:
+    name: ride — typecheck + lint + test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: ride
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: ride/package-lock.json
+      - name: Install deps
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: TypeScript check
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+        continue-on-error: false
+      - name: Test
+        run: npm test -- --ci --passWithNoTests
