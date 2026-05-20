@@ -335,7 +335,7 @@ export default function VehicleDetailScreen() {
                 <CachedImage
                   uri={vehicle.photo_url}
                   style={styles.heroPhoto}
-                  resizeMode="cover"
+                  contentFit="cover"
                 />
               ) : (
                 <View style={styles.heroPhotoEmpty}>
@@ -422,7 +422,7 @@ export default function VehicleDetailScreen() {
                         key={i}
                         uri={url}
                         style={styles.maintenancePhoto}
-                        resizeMode="cover"
+                        contentFit="cover"
                       />
                     ))}
                   </ScrollView>

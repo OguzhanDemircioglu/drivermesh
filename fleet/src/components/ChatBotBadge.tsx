@@ -8,7 +8,8 @@
 // Tap × → bubble gizlenir.
 
 import { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Feather } from '@expo/vector-icons';
@@ -44,7 +45,7 @@ export function ChatBotBadge() {
         onPress={() => router.push('/(app)/chatbot')}
         style={({ pressed }) => [pressed && { opacity: 0.7 }]}
       >
-        <Image source={BOT_ICON} style={styles.icon} resizeMode="contain" />
+        <Image source={BOT_ICON} style={styles.icon} contentFit="contain" />
       </Pressable>
     </View>
   );

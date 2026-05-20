@@ -115,7 +115,7 @@ function VehicleCardImpl({
               <CachedImage
                 uri={photoUrl}
                 style={StyleSheet.absoluteFill}
-                resizeMode="cover"
+                contentFit="cover"
               />
             ) : (
               <Feather name="truck" size={26} color="rgba(255,255,255,0.9)" />

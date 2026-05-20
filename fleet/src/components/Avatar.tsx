@@ -1,6 +1,6 @@
-import { Image, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { CachedImage } from '@/components/CachedImage';
 
 type Props = {
   name: string;
@@ -16,7 +16,6 @@ type Props = {
 export function Avatar({ name, size = 44, uri, style }: Props) {
   const initials = getInitials(name);
   const radius = size / 2;
-  const isRemote = !!uri && /^https?:\/\//i.test(uri);
   return (
     <View style={[{ width: size, height: size, borderRadius: radius }, styles.wrap, style]}>
       <LinearGradient
@@ -26,19 +25,16 @@ export function Avatar({ name, size = 44, uri, style }: Props) {
         style={[StyleSheet.absoluteFill, { borderRadius: radius }]}
       />
       {uri ? (
-        isRemote ? (
-          <CachedImage
-            uri={uri}
-            style={[StyleSheet.absoluteFill, { borderRadius: radius }]}
-            resizeMode="cover"
-          />
-        ) : (
-          <Image
-            source={{ uri }}
-            style={[StyleSheet.absoluteFill, { borderRadius: radius }]}
-            resizeMode="cover"
-          />
-        )
+        // expo-image: filesystem cache + decode native + transition.
+        // http(s), file://, data: URI hepsi destekli — eski isRemote dallanmasına
+        // gerek yok.
+        <Image
+          source={{ uri }}
+          style={[StyleSheet.absoluteFill, { borderRadius: radius }]}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          transition={150}
+        />
       ) : (
         <Text style={[styles.text, { fontSize: size * 0.38 }]}>{initials}</Text>
       )}
