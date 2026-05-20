@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Feather } from '@expo/vector-icons';
 import { theme } from '@/theme';
 
@@ -17,6 +18,7 @@ const BOT_ICON = require('../../assets/chatbot.png');
 
 export function ChatBotBadge() {
   const router = useRouter();
+  const { t } = useTranslation();
   // Her mount'ta default true — demo'ya her girişte bubble açılır.
   // Kullanıcı × ile kapatınca bu session için gizlenir, AsyncStorage'a
   // kaydedilmez (bir sonraki demo girişinde yeniden çıksın).
@@ -26,7 +28,7 @@ export function ChatBotBadge() {
     <View style={styles.row} pointerEvents="box-none">
       {bubbleVisible ? (
         <View style={styles.bubble}>
-          <Text style={styles.bubbleText}>Bana Sor</Text>
+          <Text style={styles.bubbleText}>{t('chatbot.askMe')}</Text>
           <Pressable
             hitSlop={10}
             onPress={() => setBubbleVisible(false)}

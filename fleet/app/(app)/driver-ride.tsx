@@ -333,7 +333,7 @@ function RatingModal({
                     hitSlop={6}
                     onPress={() => onStars(n)}
                     accessibilityRole="button"
-                    accessibilityLabel={`${n} yıldız`}
+                    accessibilityLabel={`${n} ${t('driverRide.ratingStarsLabel')}`}
                   >
                     <Feather
                       name="star"

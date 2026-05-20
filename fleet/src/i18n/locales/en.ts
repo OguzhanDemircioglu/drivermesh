@@ -38,6 +38,7 @@ export const en: TranslationShape = {
     ratingSubmit: 'Submit',
     ratingSkip: 'Skip',
     ratingSent: 'Thanks, your rating is in.',
+    ratingStarsLabel: 'stars',
   },
   rideSettings: {
     title: 'Ride Service',
@@ -994,6 +995,7 @@ export const en: TranslationShape = {
   },
   chatbot: {
     badge: 'AI Assistant',
+    askMe: 'Ask me',
     title: 'AI Assistant',
     greeting: 'Hi there! 👋 I am here to help you manage your fleet.',
     quickReplyHint: 'Pick a starter question:',

@@ -36,6 +36,7 @@ export const tr = {
     ratingSubmit: 'Gönder',
     ratingSkip: 'Atla',
     ratingSent: 'Teşekkürler, değerlendirme alındı.',
+    ratingStarsLabel: 'yıldız',
   },
   rideSettings: {
     title: 'Yolcu Hizmeti',
@@ -992,6 +993,7 @@ export const tr = {
   },
   chatbot: {
     badge: 'AI Asistan',
+    askMe: 'Bana Sor',
     title: 'AI Asistan',
     greeting: 'Merhaba! 👋 Filo yönetiminde sana yardımcı olmak için buradayım.',
     quickReplyHint: 'Sorular için aşağıdaki şablonlardan birini seçebilirsin:',
