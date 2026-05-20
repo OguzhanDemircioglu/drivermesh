@@ -130,22 +130,27 @@ serve(async (req) => {
     // 8. AI call with failover
     const systemPrompt = buildSystemPrompt(profile?.role ?? 'driver', profile?.full_name ?? null, kbChunks);
     const start = Date.now();
-    let aiResult: { text: string; provider: string };
+    let aiResult: { text: string; provider: string; toolCalls: string[] };
 
     try {
-      const text = await raceWithTimeout(callGemini(systemPrompt, history, body.message), 5000);
-      aiResult = { text, provider: 'gemini' };
+      // Function calling: tool use loop may take longer than text-only → 12s budget.
+      const out = await raceWithTimeout(
+        callGemini(systemPrompt, history, body.message, supabase),
+        12000,
+      );
+      aiResult = { text: out.text, provider: 'gemini', toolCalls: out.toolCalls };
     } catch (e1) {
       console.warn('[chat-bot] gemini failed:', (e1 as Error).message);
       try {
         const text = await raceWithTimeout(callCloudflare(systemPrompt, history, body.message), 5000);
-        aiResult = { text, provider: 'cloudflare' };
+        aiResult = { text, provider: 'cloudflare', toolCalls: [] };
       } catch (e2) {
         console.warn('[chat-bot] cloudflare also failed:', (e2 as Error).message);
         aiResult = {
           text:
             'Üzgünüm, şu anda cevap üretemiyorum. Sorunun devam ederse Hesap → Destek menüsünden bize yazabilirsin. Hemen yanıtlamak için tekrar denemek ister misin?',
           provider: 'hardcoded',
+          toolCalls: [],
         };
       }
     }
@@ -156,13 +161,18 @@ serve(async (req) => {
       user_id: user.id,
       role: 'assistant',
       content: aiResult.text,
-      metadata: { provider: aiResult.provider, latency_ms: Date.now() - start },
+      metadata: {
+        provider: aiResult.provider,
+        latency_ms: Date.now() - start,
+        tool_calls: aiResult.toolCalls,
+      },
     });
 
     return jsonResponse({
       sessionId,
       reply: aiResult.text,
       provider: aiResult.provider,
+      toolCalls: aiResult.toolCalls,
     }, 200);
   } catch (e) {
     console.error('[chat-bot] unhandled error:', e);
@@ -194,9 +204,15 @@ Kullanıcı: ${userIntro}
 Tavır:
 - Kısa, net, kibar ol.
 - Adım adım talimat ver (madde işaretleriyle).
-- Sadece aşağıdaki bilgi parçacıklarına dayanan doğru bilgi ver.
+- Sadece aşağıdaki bilgi parçacıklarına veya araç (tool) sonuçlarına dayanan doğru bilgi ver.
 - Eğer cevabı bilmiyorsan veya bilgi parçacıkları yetersizse: "Bu konuda kesin bilgim yok; Hesap → Destek formundan ekibe yazabilirsin" de.
 - Asla uydurma; hayali fonksiyon/menü isimleri kullanma.
+
+Araç (function) kullanımı:
+- Kullanıcı filo durumu, açık iş sayısı, bakımdaki araçlar gibi GÜNCEL veri sorduğunda uygun aracı çağır (get_fleet_stats, list_open_jobs, list_vehicles_in_maintenance).
+- Araç sonucunu kullanıcıya doğal dilde özetle (ham JSON gösterme).
+- Araç çağırmadan tahmin yapma — veri sorusu varsa önce ilgili aracı kullan.
+- Eğer aracın döndürdüğü liste boşsa "Şu an X yok" tarzı net cevap ver.
 
 Kullanıcının rolüne göre yetkilerini hatırla:
 - owner: tüm yetkiler
