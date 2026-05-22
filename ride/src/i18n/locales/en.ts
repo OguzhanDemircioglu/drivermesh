@@ -29,7 +29,7 @@ export const en: TranslationKeys = {
     subtitle: "We'll send you a 6-digit verification code.",
     label: 'Mobile phone',
     placeholder: '5XX XXX XX XX',
-    cta: 'Send code',
+    cta: 'Log in',
     errorInvalid: 'Enter a valid mobile phone number.',
   },
   otp: {

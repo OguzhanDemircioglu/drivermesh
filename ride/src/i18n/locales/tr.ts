@@ -96,7 +96,7 @@ export const tr: LocaleShape = {
     subtitle: 'Sana 6 haneli bir doğrulama kodu göndereceğiz.',
     label: 'Cep telefonu',
     placeholder: '5XX XXX XX XX',
-    cta: 'Kodu gönder',
+    cta: 'Giriş Yap',
     errorInvalid: 'Geçerli bir cep telefonu numarası gir.',
   },
   otp: {
