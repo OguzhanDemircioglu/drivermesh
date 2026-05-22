@@ -112,7 +112,7 @@ export default function AccountScreen() {
                   try {
                     await deleteMyCustomerAccount();
                     toast.show('success', t('account.deleteSuccessTitle'));
-                    // Sign out kapatır → AuthGate welcome'a yönlendirir.
+                    // Sign out kapatır → AuthGate phone ekranına yönlendirir.
                     await signOut().catch(() => {});
                   } catch (e) {
                     const msg = (e as Error).message;

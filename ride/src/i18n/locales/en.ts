@@ -19,11 +19,6 @@ export const en: TranslationKeys = {
     yes: 'Yes',
     no: 'No',
   },
-  welcome: {
-    cta: 'Continue with phone',
-    subtitle: 'PASSENGER APP',
-    devSignIn: 'dev: mock sign-in',
-  },
   phone: {
     title: 'Your phone number',
     subtitle: "We'll send you a 6-digit verification code.",

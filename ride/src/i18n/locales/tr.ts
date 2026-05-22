@@ -4,7 +4,6 @@ type LocaleShape = {
     'continue' | 'cancel' | 'save' | 'send' | 'later' | 'retry' | 'confirm' | 'back' | 'close' | 'edit' | 'logout' | 'yes' | 'no',
     string
   >;
-  welcome: { cta: string; subtitle: string; devSignIn: string };
   phone: { title: string; subtitle: string; label: string; placeholder: string; cta: string; errorInvalid: string };
   otp: { title: string; subtitle: string; placeholder: string; cta: string; resendActive: string; resendCountdown: string; errorInvalid: string };
   profileSetup: { title: string; subtitle: string; label: string; placeholder: string; cta: string };
@@ -85,11 +84,6 @@ export const tr: LocaleShape = {
     logout: 'Çıkış yap',
     yes: 'Evet',
     no: 'Hayır',
-  },
-  welcome: {
-    cta: 'Telefonla başla',
-    subtitle: 'YOLCU UYGULAMASI',
-    devSignIn: 'dev: mock giriş',
   },
   phone: {
     title: 'Telefon numaran',

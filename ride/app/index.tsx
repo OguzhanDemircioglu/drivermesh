@@ -7,7 +7,7 @@ import { useAuth } from '@/auth/AuthProvider';
  * doğru route'a yönlendir.
  *
  * Kurallar:
- * - session yok                  → /(auth)/welcome
+ * - session yok                  → /(auth)/phone  (welcome ekranı kaldırıldı)
  * - session var ama customer yok → /(auth)/profile-setup  (OTP geçti, profil eksik)
  * - session var + customer var   → /(app)/(tabs)/home
  */
@@ -17,7 +17,7 @@ export default function Index() {
   if (loading) return null;
 
   if (!session) {
-    return <Redirect href="/(auth)/welcome" />;
+    return <Redirect href="/(auth)/phone" />;
   }
 
   if (!customer || !customer.full_name) {

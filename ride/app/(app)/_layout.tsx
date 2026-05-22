@@ -7,7 +7,7 @@ export default function AppLayout() {
 
   if (loading) return null;
 
-  if (!session) return <Redirect href="/(auth)/welcome" />;
+  if (!session) return <Redirect href="/(auth)/phone" />;
   if (!customer || !customer.full_name) return <Redirect href="/(auth)/profile-setup" />;
 
   return (

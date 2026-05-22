@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Feather } from '@expo/vector-icons';
 import { AuthBackdrop } from '@/components/AuthBackdrop';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
@@ -52,15 +51,6 @@ export default function PhoneScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.root}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.back()}
-            style={styles.back}
-            hitSlop={12}
-          >
-            <Feather name="chevron-left" size={28} color={colors.text} />
-          </Pressable>
-
           <View style={styles.header}>
             <Text style={styles.title}>{t('phone.title')}</Text>
             <Text style={styles.subtitle}>{t('phone.subtitle')}</Text>
@@ -104,7 +94,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing['2xl'],
     gap: spacing.lg,
   },
-  back: { alignSelf: 'flex-start' },
   header: { gap: spacing.xs, marginTop: spacing.md },
   title: { color: colors.text, fontSize: 31, fontWeight: '700' },
   subtitle: { color: colors.textMuted, fontSize: 17, lineHeight: 24 },
