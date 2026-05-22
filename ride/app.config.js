@@ -39,6 +39,8 @@ module.exports = {
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     permissions: ['ACCESS_COARSE_LOCATION', 'ACCESS_FINE_LOCATION', 'POST_NOTIFICATIONS'],
+    // SYSTEM_ALERT_WINDOW ReactNative DEBUG manifest'inden release'e sızıyor.
+    blockedPermissions: ['android.permission.SYSTEM_ALERT_WINDOW'],
     adaptiveIcon: {
       foregroundImage: './assets/icon.png',
       backgroundColor: '#0A0E1F',
@@ -81,7 +83,7 @@ module.exports = {
   ],
   experiments: { typedRoutes: false },
   extra: {
-    appEnv: process.env.EXPO_PUBLIC_APP_ENV ?? 'development',
+    appEnv: process.env.EXPO_PUBLIC_APP_ENV ?? 'production',
     router: {},
     eas: { projectId: 'fc9fa0cc-cdab-4e23-abe6-521d8c644216' },
   },

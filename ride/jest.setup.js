@@ -10,16 +10,6 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 
-jest.mock('@sentry/react-native', () => ({
-  init: jest.fn(),
-  captureException: jest.fn(),
-  captureMessage: jest.fn(),
-  setUser: jest.fn(),
-  setTag: jest.fn(),
-  addBreadcrumb: jest.fn(),
-  withScope: jest.fn(),
-}));
-
 // Supabase realtime-js Node < 22'de native WebSocket olmadığı için
 // SupabaseClient yaratırken patlar. Pure-logic test'ler client'ı zaten
 // kullanmaz — `createClient`'ı stub döndüren bir mock'a indir.

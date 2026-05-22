@@ -16,7 +16,7 @@ const googleMapsIos =
 module.exports = {
   name: 'DriverMesh Fleet',
   slug: 'drivermesh',
-  version: '1.0.6',
+  version: '1.0.7',
   orientation: 'portrait',
   icon: './assets/logo.png',
   scheme: 'drivermesh',
@@ -38,6 +38,13 @@ module.exports = {
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
+    // SYSTEM_ALERT_WINDOW ReactNative DEBUG manifest'inden release'e sızıyor;
+    // RECORD_AUDIO eski Expo defaults artığı, kullanılmıyor. blockedPermissions
+    // her iki prebuild sonrası manifest'ten otomatik çıkarır.
+    blockedPermissions: [
+      'android.permission.RECORD_AUDIO',
+      'android.permission.SYSTEM_ALERT_WINDOW',
+    ],
     config: {
       googleMaps: { apiKey: googleMapsAndroid },
     },
