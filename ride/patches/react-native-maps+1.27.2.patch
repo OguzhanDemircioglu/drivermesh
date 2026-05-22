@@ -1,0 +1,15 @@
+diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/fabric/MarkerManager.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/fabric/MarkerManager.java
+index 1111111..2222222 100644
+--- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/fabric/MarkerManager.java
++++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/fabric/MarkerManager.java
+@@ -220,6 +220,10 @@ public class MarkerManager extends SimpleViewManager<MapMarker> implements RNMap
+
+     @Override
+     public void setPinColor(MapMarker view, @Nullable Integer value) {
++        // Fabric init'inde value=null geliyor (JS prop'u verilmemiş veya
++        // diff null'a düşmüşse). Upstream null check unutmuş ->
++        // Color.colorToHSV(null, hsv) auto-unbox NPE -> uygulama kapanıyor.
++        if (value == null) return;
+         float[] hsv = new float[3];
+         Color.colorToHSV(value, hsv);
+         // NOTE: android only supports a hue

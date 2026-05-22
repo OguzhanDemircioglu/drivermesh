@@ -41,14 +41,22 @@ function LabeledMarkerImpl({
   imageUri,
   ...rest
 }: Props) {
+  // Fabric (new arch) react-native-maps 1.27 bug'ı: undefined geçilen
+  // pinColor/image prop'ları native MarkerManager'a null olarak geliyor
+  // ve `setPinColor` Integer.intValue() üzerinde NullPointerException
+  // atıp UI manager'ı çökertiyor (filo haritasında 8+ marker mount
+  // olduğunda app crash → onHostDestroy). prop'u undefined-olarak
+  // gönderip "atlanmasını" beklemek yerine koşullu spread ile prop
+  // setini iki ayrı moda böl: image-var ise yalnız `image`, yoksa
+  // yalnız `pinColor + title/description`.
+  const variantProps = imageUri
+    ? ({ image: { uri: imageUri } } as const)
+    : ({ pinColor: FALLBACK_PIN[variant], title: label, description: hint } as const);
   return (
     <Marker
       {...rest}
       anchor={{ x: 0.5, y: 1 }}
-      image={imageUri ? ({ uri: imageUri } as never) : undefined}
-      pinColor={imageUri ? undefined : FALLBACK_PIN[variant]}
-      title={imageUri ? undefined : label}
-      description={imageUri ? undefined : hint}
+      {...(variantProps as never)}
       tracksViewChanges={!imageUri}
     />
   );

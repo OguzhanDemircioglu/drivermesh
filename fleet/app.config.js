@@ -16,7 +16,7 @@ const googleMapsIos =
 module.exports = {
   name: 'DriverMesh Fleet',
   slug: 'drivermesh',
-  version: '1.0.0',
+  version: '1.0.5',
   orientation: 'portrait',
   icon: './assets/logo.png',
   scheme: 'drivermesh',
