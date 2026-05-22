@@ -27,6 +27,11 @@ export const en: TranslationKeys = {
     cta: 'Log in',
     errorInvalid: 'Enter a valid mobile phone number.',
   },
+  countryPicker: {
+    title: 'Select country',
+    searchPlaceholder: 'Search country (e.g. Turkey, +90, TR)',
+    empty: 'No matching country.',
+  },
   otp: {
     title: 'Verification code',
     subtitle: 'Enter the 6-digit code sent to {{phone}}.',

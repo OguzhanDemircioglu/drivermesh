@@ -5,6 +5,7 @@ type LocaleShape = {
     string
   >;
   phone: { title: string; subtitle: string; label: string; placeholder: string; cta: string; errorInvalid: string };
+  countryPicker: { title: string; searchPlaceholder: string; empty: string };
   otp: { title: string; subtitle: string; placeholder: string; cta: string; resendActive: string; resendCountdown: string; errorInvalid: string };
   profileSetup: { title: string; subtitle: string; label: string; placeholder: string; cta: string };
   tabs: { home: string; vehicles: string; account: string };
@@ -92,6 +93,11 @@ export const tr: LocaleShape = {
     placeholder: '5XX XXX XX XX',
     cta: 'Giriş Yap',
     errorInvalid: 'Geçerli bir cep telefonu numarası gir.',
+  },
+  countryPicker: {
+    title: 'Ülke seç',
+    searchPlaceholder: 'Ülke ara (örn. Türkiye, +90, TR)',
+    empty: 'Eşleşen ülke bulunamadı.',
   },
   otp: {
     title: 'Doğrulama kodu',

@@ -1,30 +1,53 @@
 /**
- * Türkiye GSM telefon yardımcıları. Tüm storage E.164 formatında (+905XXXXXXXXX).
+ * Telefon yardımcıları (multi-country). Tüm storage E.164 (+<dial><digits>).
+ * libphonenumber-js ile parse + format + validate.
  */
+
+import {
+  AsYouType,
+  isValidPhoneNumber,
+  parsePhoneNumberFromString,
+  type CountryCode,
+} from 'libphonenumber-js';
 
 export function digitsOnly(input: string): string {
   return input.replace(/\D+/g, '');
 }
 
-/** Görüntü formatı: "5XX XXX XX XX" */
-export function formatTrPhone(input: string): string {
-  const d = digitsOnly(input).slice(0, 10);
-  const parts = [d.slice(0, 3), d.slice(3, 6), d.slice(6, 8), d.slice(8, 10)].filter(
-    Boolean,
-  );
-  return parts.join(' ');
+/** AsYouType formatter — kullanıcı yazarken country-specific format (örn. TR "5XX XXX XX XX", US "(XXX) XXX-XXXX"). */
+export function formatNationalPhone(raw: string, country: CountryCode): string {
+  const f = new AsYouType(country);
+  return f.input(digitsOnly(raw));
 }
 
-/** Kullanıcının yazdığı 10 haneli TR cep numarasından E.164'e çevir. */
-export function toE164Tr(raw: string): string {
-  const d = digitsOnly(raw).slice(-10);
-  return `+90${d}`;
+/** E.164 (+ + dial code + national digits). Geçersiz inputlarda boş döner. */
+export function toE164(raw: string, country: CountryCode): string {
+  const parsed = parsePhoneNumberFromString(digitsOnly(raw), country);
+  return parsed?.format('E.164') ?? '';
 }
 
-/** 10 haneli + 5 ile başlıyor mu? */
-export function isValidTrMobile(raw: string): boolean {
+/** Mobile + ülkeye uygun mu (libphonenumber-js bildiriyor). */
+export function isValidMobile(raw: string, country: CountryCode): boolean {
   const d = digitsOnly(raw);
-  return d.length === 10 && d.startsWith('5');
+  if (d.length < 4) return false;
+  return isValidPhoneNumber(d, country);
+}
+
+// --- Backward compat (eski TR helper'lar — kaldırılana kadar tutuluyor) ---
+
+/** @deprecated `formatNationalPhone(raw, 'TR')` kullan. */
+export function formatTrPhone(raw: string): string {
+  return formatNationalPhone(raw, 'TR');
+}
+
+/** @deprecated `toE164(raw, 'TR')` kullan. */
+export function toE164Tr(raw: string): string {
+  return toE164(raw, 'TR');
+}
+
+/** @deprecated `isValidMobile(raw, 'TR')` kullan. */
+export function isValidTrMobile(raw: string): boolean {
+  return isValidMobile(raw, 'TR');
 }
 
 /** OTP — 6 hane, sadece rakam */
