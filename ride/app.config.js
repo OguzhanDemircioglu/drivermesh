@@ -13,7 +13,7 @@ const googleMapsIos = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 module.exports = {
   name: 'DriverMesh Ride',
   slug: 'drivermeshride',
-  version: '0.1.7',
+  version: '0.1.8',
   orientation: 'portrait',
   scheme: 'drivermeshride',
   userInterfaceStyle: 'dark',
@@ -35,6 +35,7 @@ module.exports = {
   },
   android: {
     package: 'com.drivermesh.ride',
+    versionCode: 9,
     googleServicesFile: './google-services.json',
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,

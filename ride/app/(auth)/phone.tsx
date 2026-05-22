@@ -19,6 +19,7 @@ import { useToast } from '@/components/Toast';
 import { useAuth } from '@/auth/AuthProvider';
 import {
   formatNationalPhone,
+  getExamplePlaceholder,
   isValidMobile,
   toE164,
 } from '@/auth/phoneAuth';
@@ -51,6 +52,7 @@ export default function PhoneScreen() {
 
   const locale = i18n.language?.startsWith('tr') ? 'tr' : 'en';
   const country = useMemo(() => getCountryByIso(iso, locale), [iso, locale]);
+  const placeholder = useMemo(() => getExamplePlaceholder(iso), [iso]);
 
   // Ülke değişince input'u temizle — eski format yeni ülkede valid olmayabilir.
   useEffect(() => {
@@ -111,7 +113,7 @@ export default function PhoneScreen() {
             </Pressable>
             <TextField
               label={t('phone.label')}
-              placeholder={t('phone.placeholder')}
+              placeholder={placeholder}
               value={formatNationalPhone(raw, iso)}
               onChangeText={setRaw}
               keyboardType="number-pad"

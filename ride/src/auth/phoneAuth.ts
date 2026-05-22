@@ -5,10 +5,12 @@
 
 import {
   AsYouType,
+  getExampleNumber,
   isValidPhoneNumber,
   parsePhoneNumberFromString,
   type CountryCode,
 } from 'libphonenumber-js';
+import examples from 'libphonenumber-js/examples.mobile.json';
 
 export function digitsOnly(input: string): string {
   return input.replace(/\D+/g, '');
@@ -48,6 +50,27 @@ export function toE164Tr(raw: string): string {
 /** @deprecated `isValidMobile(raw, 'TR')` kullan. */
 export function isValidTrMobile(raw: string): boolean {
   return isValidMobile(raw, 'TR');
+}
+
+/**
+ * Ülke için ulusal format örnek mask'i — "XXX XXX XX XX" gibi.
+ * Placeholder olarak kullanılır; ülke değişince input ipucu da değişir.
+ * Örnekler: TR → "5XX XXX XX XX", US → "(XXX) XXX-XXXX", DE → "XXX XXXXXXXX".
+ */
+export function getExamplePlaceholder(country: CountryCode): string {
+  try {
+    const ex = getExampleNumber(country, examples as Parameters<typeof getExampleNumber>[1]);
+    if (!ex) return '';
+    // formatNational() bazı ülkelerde 0 prefix'i ekler (TR: "0512 345 67 89")
+    // ama AsYouType input'unda kullanıcı 0 yazmaz. nationalNumber (raw rakamlar)
+    // üzerinden AsYouType ile formatlayıp kullanıcı yazımıyla aynı format'ı üret.
+    const asYouType = new AsYouType(country);
+    const formatted = asYouType.input(ex.nationalNumber);
+    const firstDigit = ex.nationalNumber.charAt(0);
+    return formatted.replace(/\d/g, 'X').replace('X', firstDigit);
+  } catch {
+    return '';
+  }
 }
 
 /** OTP — 6 hane, sadece rakam */

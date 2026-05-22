@@ -4,7 +4,7 @@ type LocaleShape = {
     'continue' | 'cancel' | 'save' | 'send' | 'later' | 'retry' | 'confirm' | 'back' | 'close' | 'edit' | 'logout' | 'yes' | 'no',
     string
   >;
-  phone: { title: string; subtitle: string; label: string; placeholder: string; cta: string; errorInvalid: string };
+  phone: { title: string; subtitle: string; label: string; cta: string; errorInvalid: string };
   countryPicker: { title: string; searchPlaceholder: string; empty: string };
   otp: { title: string; subtitle: string; placeholder: string; cta: string; resendActive: string; resendCountdown: string; errorInvalid: string };
   profileSetup: { title: string; subtitle: string; label: string; placeholder: string; cta: string };
@@ -90,7 +90,6 @@ export const tr: LocaleShape = {
     title: 'Telefon numaran',
     subtitle: 'Sana 6 haneli bir doğrulama kodu göndereceğiz.',
     label: 'Cep telefonu',
-    placeholder: '5XX XXX XX XX',
     cta: 'Giriş Yap',
     errorInvalid: 'Geçerli bir cep telefonu numarası gir.',
   },
