@@ -45,7 +45,11 @@ import type { MemberPermission } from '@/lib/permissions';
 // v7 (2026-05-18): profile.status enum demo'da seed edildi — Ahmet/Burak
 // on_trip, Mehmet break, Ayşe active, owner+manager active. StatusPill
 // pill ve ride_search_vehicles filter'ları için artık zengin data var.
-const DEMO_STATE_KEY = 'drivermesh.demo.state.v7';
+// v8 (2026-05-22): "boşta" kategorisi UI'dan kaldırıldı — demo seed'de
+// idle araç bırakılmıyor. demo-v5 (Renault Master) + demo-v7 (Peugeot
+// Boxer) status='active' oldu (üste park, sahibinde, aktif). Fleet-map
+// legend'ında 'Boşta' satırı yok artık.
+const DEMO_STATE_KEY = 'drivermesh.demo.state.v8';
 
 // ---------- IDs ----------
 
@@ -305,11 +309,11 @@ function reseed() {
       maintenanceUntil: hoursAgo(-2), // 2 saat sonra biter
       maintenancePhotoUrls: [maintenancePhoto1],
     }),
-    // v6: idle araç ama patron üzerinde — vehicles_set_default_owner trigger'a
-    // göre hiçbir araç sahipsiz kalmaz. Driver "Üzerine Al" ile alabilir.
+    // v8: artık idle değil — "boşta araba" mantığı UI'dan kaldırıldı. Patron
+    // üzerinde, üste park (is_at_hq=true), active. Driver "Üzerine Al" ile alabilir.
     mkVehicle({
       id: 'demo-v5', plate: '35 MNO 567', brand: 'Renault', model: 'Master',
-      year: 2024, status: 'idle', color: '#F59E0B', isAtHq: true,
+      year: 2024, status: 'active', color: '#F59E0B', isAtHq: true,
       photoUrl: null, currentUserId: DEMO_OWNER_ID,
     }),
     // v5: elektrik araç + 4. driver (Burak) üzerinde — yeni feature örneği
@@ -318,10 +322,10 @@ function reseed() {
       year: 2025, status: 'active', color: '#10B981', isAtHq: false,
       photoUrl: photo2, currentUserId: DEMO_DRIVER_IDS[3], // Burak üzerinde
     }),
-    // v6: idle araç ama patron üzerinde
+    // v8: artık idle değil — patron üzerinde, üste park, active.
     mkVehicle({
       id: 'demo-v7', plate: '06 STU 123', brand: 'Peugeot', model: 'Boxer',
-      year: 2023, status: 'idle', color: '#3B82F6', isAtHq: true,
+      year: 2023, status: 'active', color: '#3B82F6', isAtHq: true,
       photoUrl: photo3, currentUserId: DEMO_OWNER_ID,
     }),
   ];

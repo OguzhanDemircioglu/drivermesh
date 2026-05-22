@@ -111,7 +111,6 @@ export const tr = {
     pickupLabel: 'Alış',
     dropoffLabel: 'Teslim',
     legendActive: 'Aktif İş',
-    legendIdle: 'Boşta',
     legendMaintenance: 'Bakımda',
     legendHq: 'Üs',
     noHqTitle: 'Önce Lojistik Üssünü Ayarla',

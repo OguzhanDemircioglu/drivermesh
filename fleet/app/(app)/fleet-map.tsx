@@ -243,11 +243,14 @@ export default function FleetMapScreen() {
   }, [snap]);
 
   const counters = useMemo(() => {
-    if (!snap) return { hq: 0, active: 0, idle: 0, maintenance: 0 };
+    if (!snap) return { hq: 0, active: 0, maintenance: 0 };
     return {
       hq: snap.hq ? 1 : 0,
-      active: snap.vehicles.filter((v) => v.status === 'active' || v.activeJob).length,
-      idle: snap.vehicles.filter((v) => v.status === 'idle' && !v.activeJob).length,
+      // "boşta" kategorisi UI'dan kaldırıldı — idle araçlar artık ya HQ
+      // marker'ı altında (is_at_hq=true) ya da aktif sayımı içinde.
+      active: snap.vehicles.filter(
+        (v) => v.status === 'active' || v.status === 'idle' || v.activeJob,
+      ).length,
       maintenance: snap.vehicles.filter((v) => v.status === 'maintenance').length,
     };
   }, [snap]);
@@ -361,11 +364,10 @@ export default function FleetMapScreen() {
         {/* Off-screen label rasterisation pool (must live OUTSIDE the MapView) */}
         <LabelRenderPool items={labelSpecs} onCaptured={setUri} />
 
-        {/* Legend */}
+        {/* Legend — "Boşta" satırı v8'de kaldırıldı, idle aktif sayımına gider */}
         <View style={styles.legend}>
           <LegendItem color={theme.colors.lavender} label={`${t('fleetMap.legendHq')} ${counters.hq}`} />
           <LegendItem color={theme.colors.success} label={`${t('fleetMap.legendActive')} ${counters.active}`} />
-          <LegendItem color={theme.colors.textMuted} label={`${t('fleetMap.legendIdle')} ${counters.idle}`} />
           <LegendItem color={theme.colors.warning} label={`${t('fleetMap.legendMaintenance')} ${counters.maintenance}`} />
         </View>
       </SafeAreaView>

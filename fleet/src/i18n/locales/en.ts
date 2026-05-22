@@ -113,7 +113,6 @@ export const en: TranslationShape = {
     pickupLabel: 'Pickup',
     dropoffLabel: 'Dropoff',
     legendActive: 'On Active Job',
-    legendIdle: 'Idle',
     legendMaintenance: 'Maintenance',
     legendHq: 'HQ',
     noHqTitle: 'Set The Logistics HQ First',

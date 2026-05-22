@@ -49,14 +49,14 @@ function LabeledMarkerImpl({
   // gönderip "atlanmasını" beklemek yerine koşullu spread ile prop
   // setini iki ayrı moda böl: image-var ise yalnız `image`, yoksa
   // yalnız `pinColor + title/description`.
-  const variantProps = imageUri
-    ? ({ image: { uri: imageUri } } as const)
-    : ({ pinColor: FALLBACK_PIN[variant], title: label, description: hint } as const);
+  const variantProps: Partial<MapMarkerProps> = imageUri
+    ? { image: { uri: imageUri } as MapMarkerProps['image'] }
+    : { pinColor: FALLBACK_PIN[variant], title: label, description: hint };
   return (
     <Marker
       {...rest}
       anchor={{ x: 0.5, y: 1 }}
-      {...(variantProps as never)}
+      {...variantProps}
       tracksViewChanges={!imageUri}
     />
   );
