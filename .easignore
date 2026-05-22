@@ -1,0 +1,81 @@
+# Repo-level .easignore — EAS Build tarball'ı .git'i bulup repo root'tan başlar.
+# Bu nedenle fleet/.easignore ve ride/.easignore yetersiz; root seviyesinde de
+# dev artefaktlarını ve diğer app'in heavy klasörlerini exclude etmek gerek.
+
+# --- Git internals ---
+.git
+.git/**
+
+# --- Top-level dev junk (test/cache klasörleri) ---
+.tmp
+.tmp/**
+.scratch
+.scratch/**
+.adb-shots
+.adb-shots/**
+screenshots
+screenshots/**
+.idea
+.vscode
+.claude
+.wrangler
+.github
+.expo
+.expo/**
+
+# --- Sibling app heavy folders (build any single app at a time) ---
+fleet/node_modules
+fleet/node_modules/**
+fleet/android
+fleet/android/**
+fleet/ios
+fleet/ios/**
+fleet/.expo
+fleet/.expo/**
+fleet/dist
+fleet/dist/**
+fleet/web-build
+fleet/web-build/**
+
+ride/node_modules
+ride/node_modules/**
+ride/android
+ride/android/**
+ride/ios
+ride/ios/**
+ride/.expo
+ride/.expo/**
+ride/dist
+ride/dist/**
+ride/web-build
+ride/web-build/**
+
+# --- Other repo-level dirs not needed for any app build ---
+docs
+docs/**
+supabase
+supabase/**
+web
+web/**
+scripts
+scripts/**
+
+# --- Build artifacts anywhere in tree ---
+**/*.aab
+**/*.apk
+**/*.ipa
+**/*.tar.gz
+**/*.zip
+**/.gradle
+**/.kotlin
+
+# --- Sentry source-map auth (regenerate per build) ---
+**/sentry.properties
+
+# --- TypeScript build info ---
+**/*.tsbuildinfo
+
+# --- OS/editor noise ---
+.DS_Store
+Thumbs.db
+*.log

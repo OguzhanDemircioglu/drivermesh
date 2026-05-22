@@ -13,7 +13,7 @@ const googleMapsIos = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 module.exports = {
   name: 'DriverMesh Ride',
   slug: 'drivermeshride',
-  version: '0.1.0',
+  version: '0.1.4',
   orientation: 'portrait',
   scheme: 'drivermeshride',
   userInterfaceStyle: 'dark',
@@ -77,14 +77,7 @@ module.exports = {
         defaultChannel: 'default',
       },
     ],
-    [
-      '@sentry/react-native/expo',
-      {
-        organization: 'drivermesh',
-        project: 'drivermesh-ride',
-        url: 'https://de.sentry.io/',
-      },
-    ],
+    // Sentry — kasten devre dışı. Fleet'te kalır, ride'da yok.
   ],
   experiments: { typedRoutes: false },
   extra: {

@@ -1,12 +1,12 @@
 // Metro config — Expo defaults + package.json `exports` resolver enabled
 // (i18next / react-i18next gibi modern paketlerin ESM dağıtımları için).
 //
-// `getSentryExpoConfig` Expo defaults'unu sarar; release build'lerde Hermes
-// source map'leri ayrı dosyalar olarak üretir, Sentry CLI assembleRelease
-// sırasında upload eder. Dev'de davranış getDefaultConfig ile aynıdır.
-const { getSentryExpoConfig } = require('@sentry/react-native/metro');
+// Sentry devre dışı — fleet'te kalıyor, ride'da hiç olmayacak. Eskiden
+// getSentryExpoConfig sarıcısı vardı; release build'de Sentry CLI source map
+// upload denemesi başarısız oluyordu (token yok). Düz Expo defaults yeterli.
+const { getDefaultConfig } = require('expo/metro-config');
 
-const config = getSentryExpoConfig(__dirname);
+const config = getDefaultConfig(__dirname);
 
 config.resolver.unstable_enablePackageExports = true;
 

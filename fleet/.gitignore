@@ -22,5 +22,8 @@ ios/sentry.properties
 # Firebase / FCM client config — committed for EAS prebuild
 !google-services.json
 
+# Google Play submission service account — secret, never commit
+google-play-service-account.json
+
 # Typescript
 *.tsbuildinfo
