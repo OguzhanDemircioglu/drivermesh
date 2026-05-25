@@ -109,10 +109,11 @@
     <h2>2. Topladığımız Kişisel Veriler</h2>
     <h3>2.1 Hesap bilgileri</h3>
     <ul>
-      <li>Ad-soyad, e-posta, telefon (opsiyonel)</li>
+      <li>Ad-soyad, e-posta (opsiyonel)</li>
+      <li><strong>Telefon numarası</strong> — E.164 formatında (yolcu uygulamasında kimlik doğrulama zorunlu, filo uygulamasında opsiyonel)</li>
       <li>Şirket adı / organizasyon (filo sahipleri için)</li>
       <li>Profil fotoğrafı (kullanıcı isteğe bağlı yükler)</li>
-      <li>Rol bilgisi (Patron / Yönetici / Şoför)</li>
+      <li>Rol bilgisi (Patron / Yönetici / Şoför / Yolcu)</li>
     </ul>
 
     <h3>2.2 İş ve filo verileri</h3>
@@ -150,11 +151,14 @@
     <h2>4. Üçüncü Taraf Paylaşımları</h2>
     <p>Verileriniz aşağıdaki hizmet sağlayıcılarla işlenir:</p>
     <ul>
-      <li><strong>Supabase (Almanya / EU)</strong> — kullanıcı kimlik doğrulama, veritabanı, dosya depolama, push relay. <a href="https://supabase.com/privacy" target="_blank">Privacy</a></li>
-      <li><strong>Google Cloud (Maps + FCM)</strong> — harita karoları, push notification gönderimi. <a href="https://policies.google.com/privacy" target="_blank">Privacy</a></li>
+      <li><strong>Supabase (Frankfurt / EU)</strong> — kullanıcı kimlik doğrulama, veritabanı, dosya depolama, push relay. <a href="https://supabase.com/privacy" target="_blank">Privacy</a></li>
+      <li><strong>Vonage (eski Nexmo)</strong> — yolcu uygulamasında telefon OTP doğrulaması için SMS iletimi. Yalnızca telefon numarası ve doğrulama kodu paylaşılır. <a href="https://www.vonage.com/legal/privacy-policy/" target="_blank">Privacy</a></li>
+      <li><strong>Google Cloud (Maps + Firebase Cloud Messaging)</strong> — harita karoları + push notification gönderimi. <a href="https://policies.google.com/privacy" target="_blank">Privacy</a></li>
+      <li><strong>Sentry (Frankfurt / EU)</strong> — filo (Fleet) uygulamasında çökme raporlama ve hata teşhisi. Kişisel veri içermeyen stack trace, cihaz modeli, app sürümü gönderilir. Yolcu uygulamasında devre dışı. <a href="https://sentry.io/privacy/" target="_blank">Privacy</a></li>
       <li><strong>Cloudinary</strong> — araç ve bakım fotoğrafları. <a href="https://cloudinary.com/privacy" target="_blank">Privacy</a></li>
       <li><strong>Telegram</strong> (opsiyonel) — filo sahibinin kendi Telegram bot'una müşteri geri bildirim mesajları. Sadece filo sahibinin etkinleştirmesi durumunda. <a href="https://telegram.org/privacy" target="_blank">Privacy</a></li>
     </ul>
+    <p>Tüm aktarımlar TLS 1.2+ üzerinden şifrelidir. AB dışına aktarılan veriler için Standart Sözleşme Hükümleri (SCC) uygulanır.</p>
     <p>Verilerinizi pazarlama amacıyla 3. taraflarla paylaşmıyoruz, satmıyoruz.</p>
 
     <h2>5. Veri Saklama Süresi</h2>
@@ -199,10 +203,11 @@
     <h2>2. Personal Data We Collect</h2>
     <h3>2.1 Account info</h3>
     <ul>
-      <li>Full name, email, phone (optional)</li>
+      <li>Full name, email (optional)</li>
+      <li><strong>Phone number</strong> — E.164 format (required for passenger app authentication, optional in fleet app)</li>
       <li>Company / organization name (for fleet owners)</li>
       <li>Profile photo (user uploads optionally)</li>
-      <li>Role (Owner / Manager / Driver)</li>
+      <li>Role (Owner / Manager / Driver / Passenger)</li>
     </ul>
 
     <h3>2.2 Job and fleet data</h3>
@@ -240,11 +245,14 @@
     <h2>4. Third-Party Sharing</h2>
     <p>Your data is processed by the following providers:</p>
     <ul>
-      <li><strong>Supabase (Germany / EU)</strong> — authentication, database, file storage, push relay. <a href="https://supabase.com/privacy" target="_blank">Privacy</a></li>
-      <li><strong>Google Cloud (Maps + FCM)</strong> — map tiles, push delivery. <a href="https://policies.google.com/privacy" target="_blank">Privacy</a></li>
+      <li><strong>Supabase (Frankfurt / EU)</strong> — authentication, database, file storage, push relay. <a href="https://supabase.com/privacy" target="_blank">Privacy</a></li>
+      <li><strong>Vonage (formerly Nexmo)</strong> — SMS delivery for phone OTP verification in the passenger app. Only the phone number and the verification code are shared. <a href="https://www.vonage.com/legal/privacy-policy/" target="_blank">Privacy</a></li>
+      <li><strong>Google Cloud (Maps + Firebase Cloud Messaging)</strong> — map tiles + push delivery. <a href="https://policies.google.com/privacy" target="_blank">Privacy</a></li>
+      <li><strong>Sentry (Frankfurt / EU)</strong> — crash reporting and diagnostics in the fleet (Fleet) app. Stack traces, device model, and app version sent — no personal data. Disabled in the passenger app. <a href="https://sentry.io/privacy/" target="_blank">Privacy</a></li>
       <li><strong>Cloudinary</strong> — vehicle and maintenance photos. <a href="https://cloudinary.com/privacy" target="_blank">Privacy</a></li>
       <li><strong>Telegram</strong> (optional) — customer feedback messages to fleet owner's own Telegram bot, only when the owner enables this. <a href="https://telegram.org/privacy" target="_blank">Privacy</a></li>
     </ul>
+    <p>All transfers are encrypted via TLS 1.2+. For transfers outside the EU, Standard Contractual Clauses (SCCs) apply.</p>
     <p>We do not share or sell your data for marketing to third parties.</p>
 
     <h2>5. Data Retention</h2>
