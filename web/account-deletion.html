@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0A0E1F" />
+<title>Hesap Silme — DriverMesh</title>
+<meta name="description" content="DriverMesh hesap silme talebi — KVKK ve Google Play gereklilikleri uyumlu." />
+<link rel="icon" type="image/png" href="/assets/logo.png" />
+
+<style>
+  :root { --bg:#0A0E1F; --bg-elev:#131732; --text:#F4F5FA; --text-muted:#A6A9C2; --text-dim:#6B6F8E; --accent:#FF7A1A; --danger:#EF4444; --border:rgba(255,255,255,0.08); }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Noto Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% -10%, rgba(124,58,237,0.18), transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .container { max-width: 760px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  header {
+    padding: 18px 0;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,14,31,0.7);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .nav { max-width: 1180px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; text-decoration: none; color: var(--text); }
+  .brand img { width: 32px; height: 32px; border-radius: 7px; }
+  .brand-name b { background: linear-gradient(135deg, #FF7A1A, #C084FC); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .nav-right { display: flex; align-items: center; gap: 16px; }
+  .back-link { color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color .2s; }
+  .back-link:hover { color: var(--text); }
+  .lang-pill { display: flex; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 999px; padding: 3px; gap: 2px; }
+  .lang-pill button { background: transparent; border: none; color: var(--text-muted); padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .lang-pill button.active { background: var(--accent); color: #fff; }
+
+  main { padding: 56px 0 96px; }
+  h1 { font-size: clamp(32px, 4vw, 44px); font-weight: 800; letter-spacing: -0.5px; margin-bottom: 10px; line-height: 1.15; }
+  .meta { color: var(--text-dim); font-size: 14px; margin-bottom: 40px; }
+  .lead { color: var(--text-muted); font-size: 17px; margin-bottom: 36px; padding: 18px 20px; background: var(--bg-elev); border-left: 3px solid var(--accent); border-radius: 8px; }
+
+  h2 { font-size: 22px; font-weight: 700; margin: 40px 0 16px; color: var(--text); letter-spacing: -0.2px; }
+  h3 { font-size: 17px; font-weight: 600; margin: 24px 0 10px; color: var(--text); }
+  p { color: var(--text-muted); margin-bottom: 14px; font-size: 15.5px; }
+  ul, ol { margin: 8px 0 18px 22px; }
+  li { color: var(--text-muted); margin-bottom: 8px; font-size: 15.5px; }
+  strong { color: var(--text); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .card { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 12px; padding: 22px 24px; margin: 18px 0; }
+  .card.recommended { border-left: 3px solid var(--accent); }
+  .card.danger { border-left: 3px solid var(--danger); }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: 0.3px; margin-bottom: 12px; }
+  .badge.recommended { background: rgba(255,122,26,0.12); color: var(--accent); border: 1px solid rgba(255,122,26,0.3); }
+  .badge.danger { background: rgba(239,68,68,0.12); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
+
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; background: var(--bg-elev); border-radius: 10px; overflow: hidden; font-size: 14.5px; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { background: rgba(255,255,255,0.04); color: var(--text); font-weight: 600; font-size: 13px; }
+  td { color: var(--text-muted); }
+
+  .email-btn {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff !important;
+    padding: 12px 22px;
+    border-radius: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    margin: 8px 0;
+    transition: opacity .2s;
+  }
+  .email-btn:hover { text-decoration: none; opacity: 0.9; }
+
+  code { background: rgba(255,255,255,0.06); padding: 2px 8px; border-radius: 5px; color: var(--accent); font-size: 14px; font-family: 'SF Mono', Consolas, Monaco, monospace; }
+
+  footer { border-top: 1px solid var(--border); padding: 28px 0; color: var(--text-dim); font-size: 14px; margin-top: 40px; }
+  footer .container { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+  footer a { color: var(--text-muted); text-decoration: none; margin-right: 24px; }
+  footer a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <a href="/" class="brand">
+      <img src="/assets/logo.png" alt="DriverMesh" />
+      <span class="brand-name">Driver<b>Mesh</b></span>
+    </a>
+    <div class="nav-right">
+      <a href="/" class="back-link" data-tr="← Ana sayfa" data-en="← Home">← Ana sayfa</a>
+      <div class="lang-pill" role="group">
+        <button data-lang="tr" class="active">TR</button>
+        <button data-lang="en">EN</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <h1 data-tr="Hesap Silme" data-en="Account Deletion">Hesap Silme</h1>
+  <p class="meta">
+    <span data-tr="Son güncelleme:" data-en="Last updated:">Son güncelleme:</span>
+    22.05.2026
+  </p>
+  <div class="lead" data-tr="DriverMesh hesabınızı ve ilgili kişisel verilerinizi nasıl silebileceğinizi açıklar. KVKK madde 11 ve GDPR madde 17 (silme hakkı / right to erasure) kapsamında geçerlidir." data-en="Explains how to delete your DriverMesh account and associated personal data. Applies under KVKK Article 11 and GDPR Article 17 (right to erasure).">
+    DriverMesh hesabınızı ve ilgili kişisel verilerinizi nasıl silebileceğinizi açıklar. KVKK madde 11 ve GDPR madde 17 (silme hakkı / right to erasure) kapsamında geçerlidir.
+  </div>
+
+  <!-- TR İçerik -->
+  <section data-lang-content="tr">
+
+    <h2>Hangi uygulamalar için geçerli?</h2>
+    <p>Bu sayfa şu DriverMesh uygulamaları için geçerlidir:</p>
+    <ul>
+      <li><strong>DriverMesh Fleet</strong> — paket adı <code>com.drivermesh.android</code> — filo sahibi, yönetici ve şoför uygulaması</li>
+      <li><strong>DriverMesh Ride</strong> — paket adı <code>com.drivermesh.ride</code> — yolcu uygulaması</li>
+    </ul>
+
+    <h2>1. Yol — Uygulama içinden sil (önerilen)</h2>
+    <div class="card recommended">
+      <span class="badge recommended">EN HIZLI YOL</span>
+      <p>Her iki uygulama da uygulama içi hesap silme akışı sağlar:</p>
+      <ol>
+        <li>Uygulamayı aç ve giriş yap</li>
+        <li>Alt menüden <strong>Hesap</strong> sekmesine git</li>
+        <li>Sayfanın altına kaydır → <strong>Hesabımı sil</strong></li>
+        <li>Onay diyalogunu okuyup onayla</li>
+        <li>Otomatik çıkış yapılırsın ve 30 günlük geri-alma penceresi başlar</li>
+      </ol>
+      <p>Bu süreçte hesabını yeniden aktive etmek istersen aynı telefon numarasıyla tekrar giriş yapabilirsin (30 gün içinde).</p>
+    </div>
+
+    <h2>2. Yol — E-posta ile talep</h2>
+    <div class="card">
+      <p>Uygulamaya erişimini kaybettiysen (telefon değişimi, hesabı silmiş ama tekrar girememe vb.) e-posta ile silme talep edebilirsin:</p>
+      <p>
+        <a class="email-btn" href="mailto:oguzhanturgut611@gmail.com?subject=DriverMesh%20Hesap%20Silme%20Talebi&amp;body=Merhaba%2C%0A%0AAşağıdaki%20bilgilerle%20DriverMesh%20hesabımın%20silinmesini%20talep%20ediyorum%3A%0A%0ATelefon%20numarası%20(E.164)%3A%20%2B90...%0AKullanılan%20uygulama%3A%20Fleet%20%2F%20Ride%20(işaretle)%0AAd%20Soyad%3A%20...%0AHesap%20oluşturma%20tarihi%20(yaklaşık)%3A%20...%0A%0ATeşekkürler.">📧 Silme talebi e-postası gönder</a>
+      </p>
+      <p>E-posta'da <strong>mutlaka belirtmen gerekenler</strong>:</p>
+      <ul>
+        <li>Telefon numarası (E.164 formatında, örn. +905XX XXX XX XX)</li>
+        <li>Hangi uygulamayı kullandığın (Fleet / Ride / her ikisi)</li>
+        <li>Ad-soyad (hesabında kayıtlı olan)</li>
+        <li>Yaklaşık hesap oluşturma tarihi</li>
+      </ul>
+      <p>Kimlik doğrulama için aynı telefon numarasından SMS veya arama ile geri dönüş yapılır. Doğrulamadan sonra hesap silinir (en geç 5 iş günü).</p>
+    </div>
+
+    <h2>3. Silinecek veriler</h2>
+    <table>
+      <thead><tr><th>Veri türü</th><th>Silme durumu</th></tr></thead>
+      <tbody>
+        <tr><td>Profil bilgileri (ad-soyad, e-posta, profil fotoğrafı)</td><td>Hemen anonimleştirilir</td></tr>
+        <tr><td>Telefon numarası</td><td>30 gün sonra kalıcı silinir</td></tr>
+        <tr><td>Yüklediğin araç ve bakım fotoğrafları (Fleet)</td><td>Hemen Cloudinary'den silinir</td></tr>
+        <tr><td>Push notification token (FCM)</td><td>Hemen silinir, bildirim almazsın</td></tr>
+        <tr><td>Oturum (cihazdaki AsyncStorage)</td><td>Çıkış anında silinir</td></tr>
+        <tr><td>Crash logları (Sentry, sadece Fleet)</td><td>90 gün sonra otomatik silinir (Sentry varsayılan TTL)</td></tr>
+        <tr><td>Konum geçmişi</td><td>Hiç saklanmaz — konum sadece anlık eşleştirme için kullanılır, kaydedilmez</td></tr>
+      </tbody>
+    </table>
+
+    <h2>4. Yasal nedenlerle saklanacak veriler</h2>
+    <div class="card danger">
+      <span class="badge danger">YASAL SAKLAMA</span>
+      <p>Aşağıdaki kayıtlar Türkiye yasaları gereği <strong>silinemez</strong>, anonimleştirilerek arşivlenir:</p>
+      <ul>
+        <li><strong>Tamamlanan iş kayıtları</strong> (yolculuk geçmişi) — Vergi Usul Kanunu (VUK) gereği <strong>5 yıl</strong> saklanır (faturalama ile bağlantılı)</li>
+        <li><strong>Bakım talepleri</strong> (Fleet) — uyumluluk için <strong>5 yıl</strong></li>
+        <li><strong>Ödeme bilgileri</strong> — DriverMesh kart bilgisi tutmaz, sadece işlem referansı (ödeme sağlayıcı tutar). Ödeme yapan kullanıcılar için 10 yıl saklanır.</li>
+      </ul>
+      <p>Bu kayıtlar kişisel kimlik bilgilerinden ayrılmış halde tutulur — yani senin adın, telefon numaran kayıtlarda görünmez, sadece anonim bir kimlik numarası olur.</p>
+    </div>
+
+    <h2>5. Süreç ve süreler</h2>
+    <ul>
+      <li><strong>0. saat:</strong> silme talebi alındı (in-app veya e-posta)</li>
+      <li><strong>5 iş günü içinde:</strong> kimlik doğrulama tamamlanır</li>
+      <li><strong>Doğrulama anında:</strong> profil bilgileri anonimleştirilir, fotoğraflar silinir, push token iptal edilir</li>
+      <li><strong>30 gün:</strong> geri-alma penceresi (aynı telefon numarasıyla giriş yaparsan hesap geri açılır)</li>
+      <li><strong>30 gün sonra:</strong> telefon numarası ve hesabı tanımlayan tüm veriler kalıcı silinir</li>
+      <li><strong>90 gün sonra:</strong> Sentry crash logları otomatik silinir (Fleet)</li>
+      <li><strong>5 yıl sonra:</strong> anonim iş kayıtları yasal saklama süresi dolar, kalıcı silinir</li>
+    </ul>
+
+    <h2>6. Sorularınız varsa</h2>
+    <p>Silme süreciyle ilgili her türlü soru için: <a href="mailto:oguzhanturgut611@gmail.com">oguzhanturgut611@gmail.com</a></p>
+    <p>İlgili dokümanlar:</p>
+    <ul>
+      <li><a href="/privacy.html">Gizlilik Politikası</a></li>
+      <li><a href="/terms.html">Kullanım Koşulları</a></li>
+    </ul>
+  </section>
+
+  <!-- EN İçerik -->
+  <section data-lang-content="en" style="display:none">
+
+    <h2>Which apps does this apply to?</h2>
+    <p>This page applies to the following DriverMesh apps:</p>
+    <ul>
+      <li><strong>DriverMesh Fleet</strong> — package name <code>com.drivermesh.android</code> — fleet owner, manager and driver app</li>
+      <li><strong>DriverMesh Ride</strong> — package name <code>com.drivermesh.ride</code> — passenger app</li>
+    </ul>
+
+    <h2>Method 1 — Delete from within the app (recommended)</h2>
+    <div class="card recommended">
+      <span class="badge recommended">FASTEST WAY</span>
+      <p>Both apps provide an in-app account deletion flow:</p>
+      <ol>
+        <li>Open the app and sign in</li>
+        <li>Go to the <strong>Account</strong> tab from the bottom menu</li>
+        <li>Scroll to the bottom → <strong>Delete my account</strong></li>
+        <li>Read and confirm the confirmation dialog</li>
+        <li>You're signed out automatically and a 30-day recovery window begins</li>
+      </ol>
+      <p>You can reactivate within 30 days by signing in again with the same phone number.</p>
+    </div>
+
+    <h2>Method 2 — Request via email</h2>
+    <div class="card">
+      <p>If you've lost access to the app (phone change, deleted but can't re-enter, etc.), you can request deletion by email:</p>
+      <p>
+        <a class="email-btn" href="mailto:oguzhanturgut611@gmail.com?subject=DriverMesh%20Account%20Deletion%20Request&amp;body=Hello%2C%0A%0AI%20request%20the%20deletion%20of%20my%20DriverMesh%20account%20with%20the%20following%20details%3A%0A%0APhone%20number%20(E.164)%3A%20%2B...%0AApp%20used%3A%20Fleet%20%2F%20Ride%20(mark)%0AFull%20name%3A%20...%0AApproximate%20account%20creation%20date%3A%20...%0A%0AThank%20you.">📧 Send deletion request email</a>
+      </p>
+      <p>You <strong>must include</strong> in the email:</p>
+      <ul>
+        <li>Phone number (E.164 format, e.g. +90 5XX XXX XX XX)</li>
+        <li>Which app you used (Fleet / Ride / both)</li>
+        <li>Full name (as registered)</li>
+        <li>Approximate account creation date</li>
+      </ul>
+      <p>For identity verification, we'll reach out via SMS or call to the same phone number. After verification, the account is deleted (within 5 business days).</p>
+    </div>
+
+    <h2>3. Data that will be deleted</h2>
+    <table>
+      <thead><tr><th>Data type</th><th>Deletion status</th></tr></thead>
+      <tbody>
+        <tr><td>Profile info (name, email, photo)</td><td>Anonymized immediately</td></tr>
+        <tr><td>Phone number</td><td>Permanently deleted after 30 days</td></tr>
+        <tr><td>Uploaded vehicle &amp; maintenance photos (Fleet)</td><td>Deleted immediately from Cloudinary</td></tr>
+        <tr><td>Push notification token (FCM)</td><td>Deleted immediately, no more notifications</td></tr>
+        <tr><td>Session (device AsyncStorage)</td><td>Deleted on logout</td></tr>
+        <tr><td>Crash logs (Sentry, Fleet only)</td><td>Auto-deleted after 90 days (Sentry default TTL)</td></tr>
+        <tr><td>Location history</td><td>Not stored at all — location only used for real-time matching, never persisted</td></tr>
+      </tbody>
+    </table>
+
+    <h2>4. Data retained for legal reasons</h2>
+    <div class="card danger">
+      <span class="badge danger">LEGAL RETENTION</span>
+      <p>The following records <strong>cannot be deleted</strong> by Turkish law and are archived in anonymized form:</p>
+      <ul>
+        <li><strong>Completed job records</strong> (trip history) — kept for <strong>5 years</strong> under Turkey's Tax Procedure Law (VUK), tied to invoicing</li>
+        <li><strong>Maintenance requests</strong> (Fleet) — <strong>5 years</strong> for compliance</li>
+        <li><strong>Payment information</strong> — DriverMesh does not store card details, only transaction reference (the payment provider holds them). For users who made payments, retention is 10 years.</li>
+      </ul>
+      <p>These records are stored separated from personal identifiers — your name and phone number do not appear; only an anonymous ID.</p>
+    </div>
+
+    <h2>5. Process and timeline</h2>
+    <ul>
+      <li><strong>Hour 0:</strong> deletion request received (in-app or email)</li>
+      <li><strong>Within 5 business days:</strong> identity verification completed</li>
+      <li><strong>At verification:</strong> profile info anonymized, photos deleted, push token revoked</li>
+      <li><strong>30 days:</strong> recovery window (sign in with the same phone number to restore)</li>
+      <li><strong>After 30 days:</strong> phone number and all account-identifying data permanently deleted</li>
+      <li><strong>After 90 days:</strong> Sentry crash logs auto-deleted (Fleet)</li>
+      <li><strong>After 5 years:</strong> anonymous job records reach legal retention end, permanently deleted</li>
+    </ul>
+
+    <h2>6. Questions</h2>
+    <p>For any questions about the deletion process: <a href="mailto:oguzhanturgut611@gmail.com">oguzhanturgut611@gmail.com</a></p>
+    <p>Related documents:</p>
+    <ul>
+      <li><a href="/privacy.html">Privacy Policy</a></li>
+      <li><a href="/terms.html">Terms of Service</a></li>
+    </ul>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <span>© 2026 DriverMesh — <span data-tr="Tüm hakları saklıdır." data-en="All rights reserved.">Tüm hakları saklıdır.</span></span>
+    <div>
+      <a href="/privacy.html" data-tr="Gizlilik" data-en="Privacy">Gizlilik</a>
+      <a href="/terms.html" data-tr="Kullanım" data-en="Terms">Kullanım</a>
+      <a href="/account-deletion.html" data-tr="Hesap silme" data-en="Account deletion">Hesap silme</a>
+      <a href="/#contact" data-tr="İletişim" data-en="Contact">İletişim</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    const STORAGE_KEY = 'drivermesh.web.lang';
+    const buttons = document.querySelectorAll('.lang-pill button');
+    const html = document.documentElement;
+    function applyLang(lang) {
+      const isEN = lang === 'en';
+      html.lang = isEN ? 'en' : 'tr';
+      document.querySelectorAll('[data-tr]').forEach((el) => {
+        const text = isEN ? el.getAttribute('data-en') : el.getAttribute('data-tr');
+        if (text != null) el.textContent = text;
+      });
+      document.querySelectorAll('[data-lang-content]').forEach((el) => {
+        el.style.display = el.getAttribute('data-lang-content') === lang ? '' : 'none';
+      });
+      buttons.forEach((b) => b.classList.toggle('active', b.dataset.lang === lang));
+      try { localStorage.setItem(STORAGE_KEY, lang); } catch {}
+    }
+    const stored = (() => { try { return localStorage.getItem(STORAGE_KEY); } catch { return null; } })();
+    const initial = stored || (navigator.language && navigator.language.startsWith('en') ? 'en' : 'tr');
+    applyLang(initial);
+    buttons.forEach((b) => b.addEventListener('click', () => applyLang(b.dataset.lang)));
+  })();
+</script>
+
+</body>
+</html>
