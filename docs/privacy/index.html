@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="index,follow">
+  <title>DriverMesh — Gizlilik Politikası / Privacy Policy</title>
+  <style>
+    :root {
+      --bg: #0A0E1F;
+      --fg: #E2E8F0;
+      --muted: #94A3B8;
+      --accent: #FF7A1A;
+      --card: #131830;
+      --border: #1E2543;
+      --code: #0F1428;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+      line-height: 1.65;
+      font-size: 16px;
+    }
+    .wrap {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 32px 24px 80px;
+    }
+    h1 {
+      font-size: 28px;
+      margin: 0 0 4px;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+    h2 {
+      font-size: 20px;
+      margin: 32px 0 8px;
+      color: var(--accent);
+      letter-spacing: -0.01em;
+    }
+    h3 {
+      font-size: 16px;
+      margin: 18px 0 6px;
+      color: #fff;
+    }
+    p, li { color: var(--fg); }
+    p { margin: 8px 0 12px; }
+    ul, ol { padding-left: 22px; }
+    li { margin-bottom: 4px; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .updated {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    .lang-switch {
+      display: inline-flex;
+      gap: 8px;
+      background: var(--card);
+      padding: 4px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      margin: 16px 0 32px;
+    }
+    .lang-switch a {
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .lang-switch a.active {
+      background: var(--accent);
+      color: #fff;
+    }
+    code, .mono {
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 14px;
+      background: var(--code);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #FFB07A;
+    }
+    .section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 22px;
+      margin-bottom: 16px;
+    }
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0;
+      font-size: 14px;
+    }
+    .table th, .table td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .table th {
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .footer {
+      margin-top: 48px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+    [data-lang="en"] { display: none; }
+    body.en [data-lang="tr"] { display: none; }
+    body.en [data-lang="en"] { display: block; }
+    body.en .lang-switch .tr { background: transparent; color: var(--muted); }
+    body.en .lang-switch .en { background: var(--accent); color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>DriverMesh</h1>
+    <p class="updated">Son güncelleme / Last updated: 22 Mayıs 2026</p>
+
+    <nav class="lang-switch">
+      <a href="#" class="tr active" onclick="document.body.classList.remove('en'); return false;">Türkçe</a>
+      <a href="#" class="en" onclick="document.body.classList.add('en'); return false;">English</a>
+    </nav>
+
+    <!-- ====================================================== -->
+    <!-- TÜRKÇE -->
+    <!-- ====================================================== -->
+    <div data-lang="tr">
+      <h2>Gizlilik Politikası</h2>
+      <p>Bu politika, <strong>DriverMesh Fleet</strong> (operatör/sürücü uygulaması, paket adı <code>com.drivermesh.android</code>) ve <strong>DriverMesh Ride</strong> (yolcu uygulaması, paket adı <code>com.drivermesh.ride</code>) hizmetleri için geçerlidir. Hizmetleri kullanarak bu politikayı kabul etmiş olursunuz.</p>
+
+      <div class="section">
+        <h3>1. Veri Sorumlusu</h3>
+        <p>
+          <strong>İletişim:</strong> oguzhanturgut611@gmail.com<br>
+          <strong>Konum:</strong> Türkiye<br>
+          <strong>Web:</strong> <a href="https://github.com/OguzhanDemircioglu/drivermesh">github.com/OguzhanDemircioglu/drivermesh</a>
+        </p>
+      </div>
+
+      <div class="section">
+        <h3>2. İşlenen Kişisel Veriler</h3>
+        <ul>
+          <li><strong>Kimlik:</strong> ad-soyad, telefon numarası (doğrulama), e-posta (opsiyonel)</li>
+          <li><strong>Konum:</strong> GPS — sadece uygulama açıkken, sürücü-yolcu eşleştirme + ETA hesaplama için</li>
+          <li><strong>Cihaz:</strong> push notification token (FCM), cihaz dili, app sürümü, işletim sistemi sürümü</li>
+          <li><strong>Kullanım:</strong> yolculuk geçmişi, iş durumu (Fleet)</li>
+          <li><strong>Fleet operatör tarafı (özel):</strong> araç plakası, fotoğrafı, bakım notları, sürücü ataması</li>
+          <li><strong>Çökme verileri:</strong> stack trace, app sürümü, cihaz modeli — kişisel veri içermez</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>3. İşleme Amaçları ve Hukuki Sebep</h3>
+        <ul>
+          <li><strong>Yolculuk eşleştirme + tamamlama</strong> (sözleşmenin ifası, KVKK m.5/2-c)</li>
+          <li><strong>Sürücü-yolcu iletişimi</strong> (sözleşmenin ifası)</li>
+          <li><strong>Telefon OTP doğrulaması</strong> (sözleşme öncesi gereklilik)</li>
+          <li><strong>Çökme raporlama + performans</strong> (meşru menfaat, KVKK m.5/2-f)</li>
+          <li><strong>Push bildirimleri</strong> (açık rıza, sistem izninde kullanıcı onayı)</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>4. Üçüncü Taraf İşleyiciler</h3>
+        <table class="table">
+          <thead><tr><th>Servis</th><th>Amaç</th><th>Bölge</th></tr></thead>
+          <tbody>
+            <tr><td>Supabase</td><td>Veritabanı, auth, depolama</td><td>Frankfurt (AB)</td></tr>
+            <tr><td>Google Maps SDK</td><td>Harita gösterimi</td><td>Küresel CDN</td></tr>
+            <tr><td>Vonage</td><td>SMS OTP gönderimi</td><td>Küresel</td></tr>
+            <tr><td>Firebase Cloud Messaging</td><td>Push bildirim</td><td>Küresel</td></tr>
+            <tr><td>Sentry</td><td>Çökme raporlama (Fleet)</td><td>Frankfurt (AB)</td></tr>
+            <tr><td>Cloudinary</td><td>Araç fotoğraf CDN (Fleet)</td><td>Küresel CDN</td></tr>
+          </tbody>
+        </table>
+        <p>Tüm aktarımlar TLS 1.2+ üzerinden şifrelidir. AB dışına aktarılan veriler için <em>Standart Sözleşme Hükümleri (SCC)</em> uygulanır.</p>
+      </div>
+
+      <div class="section">
+        <h3>5. Veri Saklama Süreleri</h3>
+        <ul>
+          <li><strong>Aktif hesap verisi:</strong> hesap silinene kadar</li>
+          <li><strong>Hesap silme isteği:</strong> 30 günlük geri-alma penceresi sonrası kalıcı silme</li>
+          <li><strong>Yolculuk geçmişi:</strong> 5 yıl (vergi/uyum yasal zorunluluğu — VUK)</li>
+          <li><strong>Çökme logları:</strong> 90 gün (Sentry varsayılan)</li>
+          <li><strong>Push token:</strong> hesap aktif olduğu sürece</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>6. Kullanıcı Hakları (KVKK m.11 + GDPR)</h3>
+        <p>Kullanıcı her zaman şu haklara sahiptir:</p>
+        <ul>
+          <li>Verilerin işlenip işlenmediğini öğrenme</li>
+          <li>İşlenmişse erişim talep etme</li>
+          <li>Yanlış/eksik verilerin düzeltilmesini isteme</li>
+          <li>Silme talep etme — <strong>uygulama içi: Hesap → Hesabımı sil</strong></li>
+          <li>Verinin başka servise taşınmasını isteme (taşınabilirlik)</li>
+          <li>İşlemeye itiraz etme</li>
+          <li>Otomatik karara karşı insan müdahalesi talep etme</li>
+        </ul>
+        <p>Talepler için: <a href="mailto:oguzhanturgut611@gmail.com">oguzhanturgut611@gmail.com</a></p>
+      </div>
+
+      <div class="section">
+        <h3>7. Güvenlik Önlemleri</h3>
+        <ul>
+          <li>Tüm trafik TLS 1.2+ üzerinden şifreli</li>
+          <li>Veritabanında at-rest şifreleme (Supabase managed AES-256)</li>
+          <li>Row Level Security (RLS) — kullanıcı sadece kendi verisini görebilir</li>
+          <li>Telefon OTP tabanlı kimlik doğrulama (parola değil)</li>
+          <li>API anahtarları paket adı + SHA-1 ile kısıtlı</li>
+          <li>Kişisel veriler log dosyalarında maskelenir</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>8. Çocuklara Yönelik</h3>
+        <p>DriverMesh hizmetleri 13 yaşından küçük kullanıcıları hedeflemez. 18 yaşından küçük kullanıcıların hesap açması yasal vasi onayı gerektirir. Bir çocuğun verisinin işlendiğini fark edersek 30 gün içinde silinir.</p>
+      </div>
+
+      <div class="section">
+        <h3>9. Çerez ve Benzer Teknolojiler</h3>
+        <p>Mobil uygulama tarayıcı çerezi kullanmaz. Yerel cihazda AsyncStorage üzerinde oturum bilgisi tutulur (Supabase JWT refresh token), kullanıcı çıkış yaptığında silinir.</p>
+      </div>
+
+      <div class="section">
+        <h3>10. Şikâyet Hakkı</h3>
+        <ul>
+          <li><strong>Türkiye:</strong> Kişisel Verileri Koruma Kurumu (KVKK) — <a href="https://www.kvkk.gov.tr">kvkk.gov.tr</a></li>
+          <li><strong>AB:</strong> Yerel veri koruma denetim otoritesi (GDPR m.77)</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>11. Değişiklikler</h3>
+        <p>Politika güncellendiğinde bu sayfada yayınlanır ve "Son güncelleme" tarihi değiştirilir. Önemli değişikliklerde uygulama içi bildirim gösterilir.</p>
+      </div>
+    </div>
+
+    <!-- ====================================================== -->
+    <!-- ENGLISH -->
+    <!-- ====================================================== -->
+    <div data-lang="en">
+      <h2>Privacy Policy</h2>
+      <p>This policy applies to the <strong>DriverMesh Fleet</strong> (operator/driver app, package <code>com.drivermesh.android</code>) and <strong>DriverMesh Ride</strong> (passenger app, package <code>com.drivermesh.ride</code>) services. By using the services you accept this policy.</p>
+
+      <div class="section">
+        <h3>1. Data Controller</h3>
+        <p>
+          <strong>Contact:</strong> oguzhanturgut611@gmail.com<br>
+          <strong>Location:</strong> Türkiye<br>
+          <strong>Web:</strong> <a href="https://github.com/OguzhanDemircioglu/drivermesh">github.com/OguzhanDemircioglu/drivermesh</a>
+        </p>
+      </div>
+
+      <div class="section">
+        <h3>2. Personal Data Processed</h3>
+        <ul>
+          <li><strong>Identity:</strong> full name, phone number (verification), email (optional)</li>
+          <li><strong>Location:</strong> GPS — only while the app is open, for driver-passenger matching + ETA</li>
+          <li><strong>Device:</strong> push notification token (FCM), device language, app version, OS version</li>
+          <li><strong>Usage:</strong> trip history, job state (Fleet)</li>
+          <li><strong>Fleet operator side (private):</strong> vehicle plate, photo, maintenance notes, driver assignment</li>
+          <li><strong>Crash data:</strong> stack trace, app version, device model — no personal data</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>3. Purposes &amp; Legal Basis</h3>
+        <ul>
+          <li><strong>Trip matching + completion</strong> (performance of contract, GDPR Art.6(1)(b))</li>
+          <li><strong>Driver-passenger communication</strong> (performance of contract)</li>
+          <li><strong>Phone OTP verification</strong> (pre-contractual necessity)</li>
+          <li><strong>Crash reporting + performance</strong> (legitimate interest, GDPR Art.6(1)(f))</li>
+          <li><strong>Push notifications</strong> (explicit consent via system permission)</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>4. Third-party Sub-processors</h3>
+        <table class="table">
+          <thead><tr><th>Service</th><th>Purpose</th><th>Region</th></tr></thead>
+          <tbody>
+            <tr><td>Supabase</td><td>Database, auth, storage</td><td>Frankfurt (EU)</td></tr>
+            <tr><td>Google Maps SDK</td><td>Map rendering</td><td>Global CDN</td></tr>
+            <tr><td>Vonage</td><td>SMS OTP delivery</td><td>Global</td></tr>
+            <tr><td>Firebase Cloud Messaging</td><td>Push notifications</td><td>Global</td></tr>
+            <tr><td>Sentry</td><td>Crash reporting (Fleet)</td><td>Frankfurt (EU)</td></tr>
+            <tr><td>Cloudinary</td><td>Vehicle photo CDN (Fleet)</td><td>Global CDN</td></tr>
+          </tbody>
+        </table>
+        <p>All transfers are encrypted via TLS 1.2+. For transfers outside the EU, <em>Standard Contractual Clauses (SCCs)</em> apply.</p>
+      </div>
+
+      <div class="section">
+        <h3>5. Retention Periods</h3>
+        <ul>
+          <li><strong>Active account data:</strong> until account deletion</li>
+          <li><strong>Deletion request:</strong> 30-day recovery window, then permanent erasure</li>
+          <li><strong>Trip history:</strong> 5 years (tax/compliance legal requirement)</li>
+          <li><strong>Crash logs:</strong> 90 days (Sentry default)</li>
+          <li><strong>Push token:</strong> while account is active</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>6. User Rights (KVKK Art.11 + GDPR)</h3>
+        <p>The user has the right to:</p>
+        <ul>
+          <li>Know whether data is being processed</li>
+          <li>Request access if processed</li>
+          <li>Request correction of inaccurate/incomplete data</li>
+          <li>Request deletion — <strong>in-app: Account → Delete my account</strong></li>
+          <li>Request portability to another service</li>
+          <li>Object to processing</li>
+          <li>Request human intervention against automated decisions</li>
+        </ul>
+        <p>Requests: <a href="mailto:oguzhanturgut611@gmail.com">oguzhanturgut611@gmail.com</a></p>
+      </div>
+
+      <div class="section">
+        <h3>7. Security Measures</h3>
+        <ul>
+          <li>All traffic encrypted via TLS 1.2+</li>
+          <li>Database at-rest encryption (Supabase managed AES-256)</li>
+          <li>Row Level Security (RLS) — users see only their own data</li>
+          <li>Phone OTP-based authentication (no passwords)</li>
+          <li>API keys restricted by package + SHA-1</li>
+          <li>Personal data masked in log files</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>8. Children</h3>
+        <p>DriverMesh services do not target users under 13. Users under 18 require legal guardian consent. If we discover a child's data is being processed, it is deleted within 30 days.</p>
+      </div>
+
+      <div class="section">
+        <h3>9. Cookies and Similar Technologies</h3>
+        <p>The mobile app does not use browser cookies. Session data (Supabase JWT refresh token) is stored locally on the device via AsyncStorage and deleted on logout.</p>
+      </div>
+
+      <div class="section">
+        <h3>10. Complaint Rights</h3>
+        <ul>
+          <li><strong>Türkiye:</strong> Personal Data Protection Authority (KVKK) — <a href="https://www.kvkk.gov.tr">kvkk.gov.tr</a></li>
+          <li><strong>EU:</strong> local data protection supervisory authority (GDPR Art.77)</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>11. Changes</h3>
+        <p>When the policy is updated, it is published on this page and the "Last updated" date is changed. Significant changes are notified in-app.</p>
+      </div>
+    </div>
+
+    <p class="footer">© 2026 DriverMesh · <a href="https://github.com/OguzhanDemircioglu/drivermesh">GitHub</a></p>
+  </div>
+</body>
+</html>

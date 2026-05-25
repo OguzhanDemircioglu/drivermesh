@@ -47,3 +47,8 @@ C:Projelerdrivermesh*
 
 # Claude Code MCP server config (contains API keys)
 .mcp.json
+
+# Google Play submission service account JSON (private key)
+google-play-service-account.json
+exreact-*.json
+*service-account*.json
