@@ -6,3 +6,7 @@
 .env.keys
 .env.local
 .env.*.local
+
+# Edge function ödeme/fatura secret'ları (gerçek key'ler) — asla commit etme
+functions/.env
+functions/*/.env
