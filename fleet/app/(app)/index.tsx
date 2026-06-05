@@ -152,6 +152,10 @@ export default function HomeScreen() {
     }
   };
 
+  // Çıkış sırasında session null'a düşünce fallback header ("Kullanıcı" + jenerik
+  // avatar) bir frame flash etmesin — auth gate welcome'a yönlendirene dek boş render.
+  if (!session?.user) return null;
+
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
@@ -176,9 +180,14 @@ export default function HomeScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Avatar name={fullName} size={72} uri={profile?.avatar_url} />
+              <Avatar name={fullName} size={64} uri={profile?.avatar_url} />
               <View style={styles.headerText}>
-                <Text style={styles.greet} numberOfLines={1}>
+                <Text
+                  style={styles.greet}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.85}
+                >
                   {t(greetingKey)}
                 </Text>
                 <Text style={styles.name} numberOfLines={1}>
@@ -212,7 +221,7 @@ export default function HomeScreen() {
                 onPress={() => router.push('/(app)/notifications')}
                 style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.7 }]}
               >
-                <Feather name="bell" size={28} color={theme.colors.text} />
+                <Feather name="bell" size={24} color={theme.colors.text} />
               </Pressable>
               <Pressable
                 hitSlop={10}
@@ -238,7 +247,7 @@ export default function HomeScreen() {
                 }
                 style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.7 }]}
               >
-                <Feather name="log-out" size={26} color={theme.colors.text} />
+                <Feather name="log-out" size={24} color={theme.colors.text} />
               </Pressable>
             </View>
           </View>
@@ -771,8 +780,8 @@ const styles = StyleSheet.create({
   driverBannerTitle: { color: theme.colors.text, fontSize: 15, fontWeight: '700' },
   driverBannerHint: { color: theme.colors.textMuted, fontSize: 13, marginTop: 2 },
   iconBtn: {
-    width: 60,
-    height: 60,
+    width: 46,
+    height: 46,
     borderRadius: theme.radius.md,
     backgroundColor: theme.colors.bgElevated,
     borderWidth: 1,
