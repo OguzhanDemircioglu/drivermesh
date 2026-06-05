@@ -27,6 +27,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { useDriverActiveRide } from '@/hooks/useDriverActiveRide';
 import { useAuth } from '@/auth/AuthProvider';
 import { fetchHomeStats, type HomeStats } from '@/lib/queries';
+import { getPlanStatus, planLabel, type PlanStatus } from '@/lib/billing';
 import { theme } from '@/theme';
 
 const EMPTY_STATS: HomeStats = {
@@ -79,14 +80,22 @@ export default function HomeScreen() {
 
   const [tab, setTab] = useState<'home' | 'jobs' | 'fleet' | 'account'>('home');
   const [stats, setStats] = useState<HomeStats>(EMPTY_STATS);
+  const [plan, setPlan] = useState<PlanStatus | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const isDriver = profile?.role === 'driver';
   const driverActive = useDriverActiveRide(isDriver ? session?.user.id : undefined);
 
   const loadStats = useCallback(async () => {
     try {
-      const next = await fetchHomeStats();
+      const [next, ps] = await Promise.all([
+        fetchHomeStats(),
+        getPlanStatus().catch((e) => {
+          console.warn('[home] plan status failed', e);
+          return null;
+        }),
+      ]);
       setStats(next);
+      if (ps) setPlan(ps);
     } catch (e) {
       console.warn('[home] fetchHomeStats failed', e);
     }
@@ -175,6 +184,26 @@ export default function HomeScreen() {
                 <Text style={styles.name} numberOfLines={1}>
                   {firstName}
                 </Text>
+                {plan && canAdd ? (
+                  <Pressable
+                    onPress={() => router.push('/(app)/vehicles')}
+                    hitSlop={8}
+                    style={({ pressed }) => [styles.planChip, pressed && { opacity: 0.7 }]}
+                  >
+                    <Feather
+                      name="zap"
+                      size={11}
+                      color={
+                        plan.plan === 'pro_plus'
+                          ? theme.colors.mesh
+                          : plan.plan === 'pro'
+                            ? theme.colors.accent
+                            : theme.colors.textMuted
+                      }
+                    />
+                    <Text style={styles.planChipText}>{planLabel(plan.plan)}</Text>
+                  </Pressable>
+                ) : null}
               </View>
             </View>
             <View style={styles.headerRight}>
@@ -697,6 +726,25 @@ const styles = StyleSheet.create({
     fontWeight: theme.font.weight.bold,
     letterSpacing: -0.6,
     marginTop: 2,
+  },
+  planChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    marginTop: 7,
+    paddingVertical: 3,
+    paddingHorizontal: 9,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.bgElevated,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  planChipText: {
+    color: theme.colors.text,
+    fontSize: 12,
+    fontWeight: theme.font.weight.bold,
+    letterSpacing: 0.3,
   },
   headerRight: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   statusRow: { marginTop: 8 },

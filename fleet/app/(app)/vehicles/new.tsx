@@ -291,6 +291,7 @@ export default function NewVehicleScreen() {
 }
 
 function humanize(msg: string, t: (k: string, opts?: Record<string, unknown>) => string) {
+  if (/vehicle_limit_reached/i.test(msg)) return t('vehicles.new.errors.limitReached');
   if (/duplicate|unique|already exists|vehicles_organization_id_plate_key/i.test(msg))
     return t('vehicles.new.errors.duplicate');
   if (/permission|policy|row.level/i.test(msg)) return t('common.permissionDeniedShort');
