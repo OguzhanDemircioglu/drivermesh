@@ -190,7 +190,12 @@ export default function HomeScreen() {
                 >
                   {t(greetingKey)}
                 </Text>
-                <Text style={styles.name} numberOfLines={1}>
+                <Text
+                  style={styles.name}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
+                >
                   {firstName}
                 </Text>
                 {plan && canAdd ? (
@@ -755,7 +760,7 @@ const styles = StyleSheet.create({
     fontWeight: theme.font.weight.bold,
     letterSpacing: 0.3,
   },
-  headerRight: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  headerRight: { flexDirection: 'row', gap: 6, alignItems: 'center', marginRight: -12 },
   statusRow: { marginTop: 8 },
   driverBanner: {
     flexDirection: 'row',
