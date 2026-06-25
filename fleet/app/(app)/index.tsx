@@ -22,7 +22,6 @@ import { Avatar } from '@/components/Avatar';
 import { JobCard } from '@/components/JobCard';
 import { BottomNav } from '@/components/BottomNav';
 import { Card } from '@/components/Card';
-import { ChatBotBadge } from '@/components/ChatBotBadge';
 import { StatusPill } from '@/components/StatusPill';
 import { useDriverActiveRide } from '@/hooks/useDriverActiveRide';
 import { useAuth } from '@/auth/AuthProvider';
@@ -313,8 +312,10 @@ export default function HomeScreen() {
 
           {/* Quick actions */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('home.quickActions')}</Text>
-            <ChatBotBadge />
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{t('home.quickActions')}</Text>
+              <AskAiButton onPress={() => router.push('/(app)/chatbot')} />
+            </View>
             <View style={styles.quickRow}>
               <QuickAction
                 label={canAdd ? t('home.quickNew') : t('home.quickMyJobs')}
@@ -629,6 +630,33 @@ function SetupStep({
         <Text style={styles.setupSubtitle}>{subtitle}</Text>
       </View>
       <Feather name="chevron-right" size={18} color={theme.colors.textDim} />
+    </Pressable>
+  );
+}
+
+// ============================================================
+// "AI'ya Sor" — Hızlı Aksiyon başlığının sağında canlı gradient buton
+// ============================================================
+
+function AskAiButton({ onPress }: { onPress: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={t('home.askAi')}
+      style={({ pressed }) => [pressed && { opacity: 0.85 }]}
+    >
+      <LinearGradient
+        colors={['#A855F7', '#FF7A1A']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.askAi}
+      >
+        <Feather name="message-circle" size={15} color="#fff" />
+        <Text style={styles.askAiText}>{t('home.askAi')}</Text>
+      </LinearGradient>
     </Pressable>
   );
 }
@@ -974,6 +1002,25 @@ const styles = StyleSheet.create({
     color: theme.colors.mesh,
     fontSize: theme.font.size.sm,
     fontWeight: theme.font.weight.medium,
+  },
+  askAi: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 13,
+    borderRadius: theme.radius.full,
+    shadowColor: '#A855F7',
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  askAiText: {
+    color: '#fff',
+    fontSize: theme.font.size.sm,
+    fontWeight: theme.font.weight.bold,
+    letterSpacing: 0.2,
   },
 
   // 5 item → 2 sütun grid (2 satır 2 + son satır 1 sola yaslı). Tek

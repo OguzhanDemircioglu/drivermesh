@@ -454,6 +454,7 @@ export const tr = {
       maintenance: 'bakımda',
     },
     quickActions: 'Hızlı Aksiyon',
+    askAi: "AI'ya Sor",
     quickNew: 'Yeni İş',
     quickMyJobs: 'İşlerim',
     quickAddTeam: 'Kişi Ekle',

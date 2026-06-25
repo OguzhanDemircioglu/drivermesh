@@ -456,6 +456,7 @@ export const en: TranslationShape = {
       maintenance: 'maintenance',
     },
     quickActions: 'Quick Actions',
+    askAi: 'Ask AI',
     quickNew: 'New Job',
     quickMyJobs: 'My Jobs',
     quickAddTeam: 'Add Person',
