@@ -38,6 +38,9 @@ screenshots/
 .fleet-run.log
 .dm-check.log
 
+# Play Store görsel üretim çalışma klasörü (scratch screenshots + script'ler)
+store-assets/
+
 # Cloudflare Workers local state (Wrangler)
 web/.wrangler/
 
