@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   FlatList,
   InteractionManager,
+  Linking,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -26,6 +27,8 @@ import { claimVehicle } from '@/lib/vehicleClaim';
 import { useToast } from '@/components/Toast';
 import { theme } from '@/theme';
 import { useTranslation } from 'react-i18next';
+import { useConfirm } from '@/components/ConfirmDialog';
+import { buildUpgradeUrl, getPlanStatus, nextPlan, planLabel, upgradePlan, type PlanStatus } from '@/lib/billing';
 
 export default function VehiclesScreen() {
   const nav = useBottomNavRouter('fleet');
@@ -33,7 +36,9 @@ export default function VehiclesScreen() {
   const { t } = useTranslation();
   const { profile, session } = useAuth();
   const toast = useToast();
+  const { confirm } = useConfirm();
   const [vehicles, setVehicles] = useState<VehicleWithAdder[]>([]);
+  const [plan, setPlan] = useState<PlanStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [claiming, setClaiming] = useState<string | null>(null);
@@ -64,8 +69,15 @@ export default function VehiclesScreen() {
       return;
     }
     try {
-      const data = await listVehicles(profile.organization_id);
+      const [data, ps] = await Promise.all([
+        listVehicles(profile.organization_id),
+        getPlanStatus().catch((e) => {
+          console.warn('[vehicles] plan status failed', e);
+          return null;
+        }),
+      ]);
       setVehicles(data);
+      if (ps) setPlan(ps);
     } catch (e) {
       console.warn('[vehicles] load failed', e);
     } finally {
@@ -85,6 +97,87 @@ export default function VehiclesScreen() {
     await load();
     setRefreshing(false);
   }, [load]);
+
+  // Plan yükseltme akışı — yalnızca owner aksiyon alır (Play: app içi ödeme YOK):
+  //   • limit DOLMADAN  → bilgi ver, yükseltme yok, web yok
+  //   • limit DOLU + promo kotası → uygulama içi ÜCRETSİZ yükselt (sandbox/ilk-20)
+  //   • promo bitti / keys live   → web checkout'a yönlendir
+  //   • owner değil → "patron yükseltmeli"
+  const handleUpgrade = useCallback(async () => {
+    if (!plan) return;
+    const isOwner = profile?.role === 'owner';
+    const target = nextPlan(plan.plan);
+    if (!target) {
+      toast.success(t('vehicles.plan.alreadyTopTitle'), t('vehicles.plan.alreadyTop'));
+      return;
+    }
+    if (!isOwner) {
+      toast.error(t('vehicles.plan.ownerOnlyTitle'), t('vehicles.plan.ownerOnly'));
+      return;
+    }
+    if (plan.canAdd) {
+      toast.success(
+        t('vehicles.plan.roomLeftTitle'),
+        target === 'pro_plus'
+          ? t('vehicles.plan.roomLeftPro', { limit: plan.limit, n: plan.vehicleCount })
+          : t('vehicles.plan.roomLeftFree', { limit: plan.limit, n: plan.vehicleCount }),
+      );
+      return;
+    }
+    const goWeb = async () => {
+      const ok = await confirm({
+        title: t('vehicles.plan.limitTitle'),
+        message: t('vehicles.plan.promoFull', { plan: planLabel(target) }),
+        confirmText: t('vehicles.plan.upgradeCta'),
+        cancelText: t('vehicles.plan.close'),
+        kind: 'warning',
+        icon: 'zap',
+      });
+      if (ok) {
+        const url = await buildUpgradeUrl(target);
+        Linking.openURL(url).catch(() => undefined);
+      }
+    };
+    if (plan.promoRemaining <= 0 && !plan.orgIsPromo) {
+      await goWeb();
+      return;
+    }
+    const ok = await confirm({
+      title: t('vehicles.plan.promoTitle'),
+      message: t('vehicles.plan.promoMessage', { plan: planLabel(target) }),
+      confirmText: t('vehicles.plan.promoCta'),
+      cancelText: t('vehicles.plan.close'),
+      kind: 'default',
+      icon: 'gift',
+    });
+    if (!ok) return;
+    try {
+      const res = await upgradePlan(target);
+      if (res.status === 'activated') {
+        toast.success(
+          t('vehicles.plan.upgradedTitle'),
+          t('vehicles.plan.upgradedText', { plan: planLabel(target) }),
+        );
+        await load();
+      } else if (res.status === 'redirect') {
+        Linking.openURL(res.url).catch(() => undefined);
+      } else if (res.status === 'promo_full') {
+        await goWeb();
+      } else {
+        toast.error(t('vehicles.plan.upgradeErrorTitle'), res.message);
+      }
+    } catch (e) {
+      toast.error(t('vehicles.plan.upgradeErrorTitle'), (e as Error).message);
+    }
+  }, [plan, profile?.role, confirm, t, toast, load]);
+
+  const onAddPress = useCallback(() => {
+    if (plan && !plan.canAdd) {
+      handleUpgrade();
+      return;
+    }
+    router.push('/(app)/vehicles/new');
+  }, [plan, handleUpgrade, router]);
 
   const canAdd = profile?.role === 'owner' || profile?.role === 'manager';
   const activeCount = vehicles.filter((v) => v.status === 'active').length;
@@ -179,12 +272,40 @@ export default function VehiclesScreen() {
                 </View>
               </Card>
 
+              {plan ? (
+                <Pressable
+                  disabled={profile?.role !== 'owner' && plan.canAdd}
+                  onPress={handleUpgrade}
+                  style={({ pressed }) => [
+                    styles.planPill,
+                    !plan.canAdd && styles.planPillWarn,
+                    pressed && { opacity: 0.7 },
+                  ]}
+                >
+                  <Feather
+                    name="zap"
+                    size={13}
+                    color={plan.canAdd ? theme.colors.accent : theme.colors.warning}
+                  />
+                  <Text style={styles.planName}>{planLabel(plan.plan)}</Text>
+                  <View style={{ flex: 1 }} />
+                  <Text style={[styles.planUsage, !plan.canAdd && styles.planUsageWarn]}>
+                    {plan.limit === null
+                      ? t('vehicles.plan.usageUnlimited', { n: plan.vehicleCount })
+                      : t('vehicles.plan.usage', { n: plan.vehicleCount, limit: plan.limit })}
+                  </Text>
+                  {!plan.canAdd ? (
+                    <Feather name="chevron-right" size={14} color={theme.colors.warning} />
+                  ) : null}
+                </Pressable>
+              ) : null}
+
               <View style={styles.ctaRow}>
                 {canAdd ? (
                   <Button
                     title={t('vehicles.addCta')}
                     leftIcon={<Feather name="plus" size={18} color="#0A0E1F" />}
-                    onPress={() => router.push('/(app)/vehicles/new')}
+                    onPress={onAddPress}
                     style={{ flex: 1 }}
                   />
                 ) : null}
@@ -258,6 +379,25 @@ const styles = StyleSheet.create({
   summaryLabel: { color: theme.colors.textMuted, fontSize: theme.font.size.xs },
 
   headerStack: { gap: theme.spacing.lg, marginBottom: theme.spacing.lg },
+  planPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.bgElevated,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  planPillWarn: { borderColor: 'rgba(245,158,11,0.4)' },
+  planName: {
+    color: theme.colors.text,
+    fontSize: theme.font.size.sm,
+    fontWeight: theme.font.weight.semibold,
+  },
+  planUsage: { color: theme.colors.textMuted, fontSize: theme.font.size.sm },
+  planUsageWarn: { color: theme.colors.warning, fontWeight: theme.font.weight.semibold },
   ctaRow: { flexDirection: 'row', gap: 10 },
   listGap: { height: 10 },
   emptyCard: { alignItems: 'center', gap: 10, paddingVertical: theme.spacing.xl },

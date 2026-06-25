@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0A0E1F" />
+<title>Abonelik Başarılı — DriverMesh</title>
+<meta name="robots" content="noindex" />
+<link rel="icon" type="image/png" href="/assets/logo.png" />
+<style>
+  :root { --bg:#0A0E1F; --bg-elev:#131732; --text:#F4F5FA; --text-muted:#A6A9C2; --text-dim:#6B6F8E; --accent:#FF7A1A; --success:#22C55E; --border:rgba(255,255,255,0.08); }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; line-height: 1.6; }
+  body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(ellipse at 50% -10%, rgba(34,197,94,0.16), transparent 55%); pointer-events: none; }
+  .box { position: relative; text-align: center; max-width: 440px; }
+  .icon { width: 84px; height: 84px; border-radius: 50%; background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.35); display: flex; align-items: center; justify-content: center; margin: 0 auto 26px; }
+  h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.4px; margin-bottom: 12px; }
+  p { color: var(--text-muted); font-size: 16px; margin-bottom: 10px; }
+  .plan-chip { display: inline-block; margin: 8px 0 26px; padding: 6px 16px; border-radius: 999px; background: rgba(255,122,26,0.12); border: 1px solid rgba(255,122,26,0.3); color: var(--accent); font-weight: 700; font-size: 14px; }
+  .btn { display: inline-block; background: var(--accent); color: #fff; padding: 13px 26px; border-radius: 11px; font-weight: 700; text-decoration: none; font-size: 15px; transition: opacity .2s; }
+  .btn:hover { opacity: 0.9; }
+  .home { display: block; margin-top: 18px; color: var(--text-dim); font-size: 14px; text-decoration: none; }
+  .home:hover { color: var(--text-muted); }
+  .brand { display: flex; align-items: center; justify-content: center; gap: 9px; font-weight: 700; margin-bottom: 34px; }
+  .brand img { width: 28px; height: 28px; border-radius: 6px; }
+  .brand b { background: linear-gradient(135deg, #FF7A1A, #C084FC); -webkit-background-clip: text; background-clip: text; color: transparent; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="brand"><img src="/assets/logo.png" alt="" />Driver<b>Mesh</b></div>
+    <div class="icon">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#22C55E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <h1 data-tr="Aboneliğin etkin!" data-en="Your subscription is active!">Aboneliğin etkin!</h1>
+    <div class="plan-chip" id="planChip" style="display:none"></div>
+    <p data-tr="Planın başarıyla yükseltildi. Artık daha fazla araç ekleyebilirsin." data-en="Your plan has been upgraded. You can now add more vehicles.">Planın başarıyla yükseltildi. Artık daha fazla araç ekleyebilirsin.</p>
+    <p data-tr="Uygulamaya dönüp filonu büyütmeye devam edebilirsin." data-en="Return to the app and keep growing your fleet." style="margin-bottom:28px;">Uygulamaya dönüp filonu büyütmeye devam edebilirsin.</p>
+    <a class="btn" href="drivermesh://" data-tr="Uygulamaya dön" data-en="Open the app">Uygulamaya dön</a>
+    <a class="home" href="/" data-tr="Ana sayfaya git" data-en="Go to home">Ana sayfaya git</a>
+  </div>
+  <script>
+    (function () {
+      const isEN = (navigator.language || '').startsWith('en');
+      if (isEN) {
+        document.documentElement.lang = 'en';
+        document.querySelectorAll('[data-en]').forEach((el) => { el.textContent = el.getAttribute('data-en'); });
+      }
+      const params = new URLSearchParams(location.search);
+      const plan = params.get('plan');
+      const label = plan === 'pro_plus' ? 'Pro+' : plan === 'pro' ? 'Pro' : null;
+      if (label) {
+        const chip = document.getElementById('planChip');
+        chip.textContent = label;
+        chip.style.display = 'inline-block';
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0A0E1F" />
+<title>Abonelik — DriverMesh</title>
+<meta name="description" content="DriverMesh Fleet abonelik planları — Pro ve Pro+ ile filo araç limitini yükselt." />
+<meta name="robots" content="noindex" />
+<link rel="icon" type="image/png" href="/assets/logo.png" />
+<style>
+  :root { --bg:#0A0E1F; --bg-elev:#131732; --text:#F4F5FA; --text-muted:#A6A9C2; --text-dim:#6B6F8E; --accent:#FF7A1A; --accent2:#C084FC; --success:#22C55E; --danger:#EF4444; --border:rgba(255,255,255,0.08); }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Noto Sans', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(ellipse at 20% -10%, rgba(124,58,237,0.18), transparent 50%); pointer-events: none; z-index: 0; }
+  .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  header { padding: 18px 0; border-bottom: 1px solid var(--border); background: rgba(10,14,31,0.7); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 10; }
+  .nav { max-width: 1180px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; text-decoration: none; color: var(--text); }
+  .brand img { width: 32px; height: 32px; border-radius: 7px; }
+  .brand-name b { background: linear-gradient(135deg, #FF7A1A, #C084FC); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .nav-right { display: flex; align-items: center; gap: 16px; }
+  .back-link { color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color .2s; }
+  .back-link:hover { color: var(--text); }
+  .lang-pill { display: flex; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 999px; padding: 3px; gap: 2px; }
+  .lang-pill button { background: transparent; border: none; color: var(--text-muted); padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .lang-pill button.active { background: var(--accent); color: #fff; }
+  a { color: var(--accent); text-decoration: none; }
+
+  main { padding: 56px 0 80px; }
+  .hero { text-align: center; margin-bottom: 46px; }
+  .hero h1 { font-size: clamp(30px, 4vw, 46px); font-weight: 800; letter-spacing: -0.5px; line-height: 1.15; margin-bottom: 14px; }
+  .hero p { color: var(--text-muted); font-size: 17px; max-width: 560px; margin: 0 auto; }
+
+  .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: stretch; }
+  @media (max-width: 860px) { .plans { grid-template-columns: 1fr; max-width: 430px; margin: 0 auto; } }
+  .plan { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 16px; padding: 30px 24px 26px; display: flex; flex-direction: column; gap: 16px; position: relative; }
+  .plan.popular { border-color: rgba(255,122,26,0.5); box-shadow: 0 0 0 1px rgba(255,122,26,0.2), 0 18px 44px -16px rgba(255,122,26,0.3); }
+  .plan-tag { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; padding: 5px 14px; border-radius: 999px; text-transform: uppercase; white-space: nowrap; }
+  .plan-name { font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
+  .plan-name.pro { color: var(--accent); }
+  .plan-name.proplus { background: linear-gradient(135deg, #FF7A1A, #C084FC); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .plan-price { font-size: 40px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+  .plan-price small { font-size: 15px; font-weight: 500; color: var(--text-dim); letter-spacing: 0; }
+  .plan-limit { font-size: 15px; color: var(--text); font-weight: 600; }
+  .plan-feats { list-style: none; display: flex; flex-direction: column; gap: 11px; margin: 2px 0; flex: 1; }
+  .plan-feats li { display: flex; gap: 10px; align-items: flex-start; color: var(--text-muted); font-size: 14.5px; line-height: 1.45; }
+  .check { flex-shrink: 0; margin-top: 2px; width: 17px; height: 17px; }
+  .plan-cta { display: block; width: 100%; text-align: center; padding: 13px; border-radius: 11px; font-weight: 700; font-size: 15px; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--text); transition: all .2s; font-family: inherit; }
+  .plan-cta.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .plan-cta.primary:hover { opacity: 0.9; }
+  .plan-cta.ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .plan-current { text-align: center; font-size: 13px; color: var(--text-dim); padding: 13px; border: 1px dashed var(--border); border-radius: 11px; }
+
+  .note { text-align: center; color: var(--text-dim); font-size: 13.5px; margin-top: 30px; max-width: 640px; margin-left: auto; margin-right: auto; line-height: 1.6; }
+
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(5,7,18,0.78); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+  .modal-backdrop.open { display: flex; }
+  .modal { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 18px; padding: 30px 28px; width: 100%; max-width: 420px; position: relative; }
+  .modal h2 { font-size: 21px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.2px; }
+  .modal p.sub { color: var(--text-muted); font-size: 14px; margin-bottom: 22px; line-height: 1.5; }
+  .modal .close { position: absolute; top: 14px; right: 16px; background: none; border: none; color: var(--text-dim); font-size: 26px; cursor: pointer; line-height: 1; }
+  .modal .close:hover { color: var(--text); }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.3px; }
+  .field input { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 15px; font-family: inherit; }
+  .field input:focus { outline: none; border-color: var(--accent); }
+  .btn { width: 100%; padding: 13px; border-radius: 11px; border: none; background: var(--accent); color: #fff; font-weight: 700; font-size: 15px; cursor: pointer; transition: opacity .2s; font-family: inherit; }
+  .btn:hover { opacity: 0.9; }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .msg { margin-top: 14px; padding: 12px 14px; border-radius: 10px; font-size: 14px; display: none; line-height: 1.45; }
+  .msg.show { display: block; }
+  .msg.error { background: rgba(239,68,68,0.12); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+  .msg.success { background: rgba(34,197,94,0.12); color: #86efac; border: 1px solid rgba(34,197,94,0.3); }
+  .msg.info { background: rgba(96,165,250,0.12); color: #93c5fd; border: 1px solid rgba(96,165,250,0.3); }
+  .who { font-size: 13px; color: var(--text-muted); margin-bottom: 18px; padding: 11px 13px; background: rgba(255,255,255,0.03); border-radius: 9px; border: 1px solid var(--border); }
+  .who b { color: var(--text); }
+  .signout { background: none; border: none; color: var(--accent); font-size: 12px; cursor: pointer; padding: 0; margin-left: 8px; font-family: inherit; }
+  .signout:hover { text-decoration: underline; }
+
+  footer { border-top: 1px solid var(--border); padding: 28px 0; color: var(--text-dim); font-size: 14px; margin-top: 40px; position: relative; z-index: 1; }
+  footer .container { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+  footer a { color: var(--text-muted); text-decoration: none; margin-right: 24px; }
+  footer a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <a href="/" class="brand">
+      <img src="/assets/logo.png" alt="DriverMesh" />
+      <span class="brand-name">Driver<b>Mesh</b></span>
+    </a>
+    <div class="nav-right">
+      <a href="/" class="back-link" data-tr="← Ana sayfa" data-en="← Home">← Ana sayfa</a>
+      <div class="lang-pill" role="group">
+        <button data-lang="tr" class="active">TR</button>
+        <button data-lang="en">EN</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="hero">
+    <h1 data-tr="Planını Yükselt" data-en="Upgrade Your Plan">Planını Yükselt</h1>
+    <p data-tr="Daha fazla araç, aynı tek ekran. Filonu büyüt — istediğin an yükselt veya iptal et." data-en="More vehicles, the same single screen. Grow your fleet — upgrade or cancel anytime.">Daha fazla araç, aynı tek ekran. Filonu büyüt — istediğin an yükselt veya iptal et.</p>
+  </div>
+
+  <div class="plans">
+    <!-- Free -->
+    <div class="plan">
+      <div class="plan-name" data-tr="Ücretsiz" data-en="Free">Ücretsiz</div>
+      <div class="plan-price">0<small> ₺</small></div>
+      <div class="plan-limit" data-tr="3 araca kadar" data-en="Up to 3 vehicles">3 araca kadar</div>
+      <ul class="plan-feats">
+        <li><svg class="check" viewBox="0 0 20 20" fill="none"><path d="M16.5 5.5L8 14L3.5 9.5" stroke="#6B6F8E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-tr="Canlı filo haritası" data-en="Live fleet map">Canlı filo haritası</span></li>
+        <li><svg class="check" viewBox="0 0 20 20" fill="none"><path d="M16.5 5.5L8 14L3.5 9.5" stroke="#6B6F8E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-tr="Sınırsız iş & şoför" data-en="Unlimited jobs & drivers">Sınırsız iş & şoför</span></li>
+        <li><svg class="check" viewBox="0 0 20 20" fill="none"><path d="M16.5 5.5L8 14L3.5 9.5" stroke="#6B6F8E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-tr="Temel raporlar" data-en="Basic reports">Temel raporlar</span></li>
+      </ul>
+      <div class="plan-current" data-tr="Başlangıç planı" data-en="Starter plan">Başlangıç planı</div>
+    </div>
+
+    <!-- Pro -->
+    <div class="plan popular">
+      <div class="plan-tag" data-tr="EN POPÜLER" data-en="MOST POPULAR">EN POPÜLER</div>
+      <div class="plan-name pro">Pro</div>
+      <div class="plan-price">1.000<small> ₺/<span data-tr="ay" data-en="mo">ay</span></small></div>
+      <div class="plan-limit" data-tr="10 araca kadar" data-en="Up to 10 vehicles">10 araca kadar</div>
+      <ul class="plan-feats">
+        <li><svg class="check" viewBox="0 0 20 20" fill="none"><path d="M16.5 5.5L8 14L3.5 9.5" stroke="#FF7A1A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-tr="Ücretsiz plandaki her şey" data-en="Everything in Free">Ücretsiz plandaki her şey</span></li>
+        <li><svg class="check" viewBox="0 0 20 20" fill="none"><path d="M16.5 5.5L8 14L3.5 9.5" stroke="#FF7A1A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-tr="10 araca kadar filo" data-en="Up to 10 vehicles">10 araca kadar filo</span></li>
+        <li><svg class="check" viewBox="0 0 20 20" fill="none"><path d="M16.5 5.5L8 14L3.5 9.5" stroke="#FF7A1A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-tr="Detaylı raporlar & dışa aktarma" data-en="Detailed reports & export">Detaylı raporlar & dışa aktarma</span></li>
+        <li><svg class="check" viewBox="0 0 20 20" fill="none"><path d="M16.5 5.5L8 14L3.5 9.5" stroke="#FF7A1A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-tr="Öncelikli destek" data-en="Priority support">Öncelikli destek</span></li>
+      </ul>
+      <button class="plan-cta primary" data-plan="pro" data-tr="Pro'ya Geç" data-en="Go Pro">Pro'ya Geç</button>
+    </div>
+
+    <!-- Pro+ -->
+    <div class="plan">
+      <div class="plan-name proplus">Pro+</div>
+      <div class="plan-price">2.000<small> ₺/<span data-tr="ay" data-en="mo">ay</span></small></div>
+      <div class="plan-limit" data-tr="Sınırsız araç" data-en="Unlimited vehicles">Sınırsız araç</div>
+      <ul class="plan-feats">
+        <li><svg class="check" viewBox="0 0 20 20" fill="none"><path d="M16.5 5.5L8 14L3.5 9.5" stroke="#C084FC" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-tr="Pro plandaki her şey" data-en="Everything in Pro">Pro plandaki her şey</span></li>
+        <li><svg class="check" viewBox="0 0 20 20" fill="none"><path d="M16.5 5.5L8 14L3.5 9.5" stroke="#C084FC" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-tr="Sınırsız araç" data-en="Unlimited vehicles">Sınırsız araç</span></li>
+        <li><svg class="check" viewBox="0 0 20 20" fill="none"><path d="M16.5 5.5L8 14L3.5 9.5" stroke="#C084FC" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-tr="Gelişmiş analiz" data-en="Advanced analytics">Gelişmiş analiz</span></li>
+        <li><svg class="check" viewBox="0 0 20 20" fill="none"><path d="M16.5 5.5L8 14L3.5 9.5" stroke="#C084FC" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-tr="Özel hesap yöneticisi" data-en="Dedicated account manager">Özel hesap yöneticisi</span></li>
+      </ul>
+      <button class="plan-cta ghost" data-plan="pro_plus" data-tr="Pro+'a Geç" data-en="Go Pro+">Pro+'a Geç</button>
+    </div>
+  </div>
+
+  <p class="note" data-tr="Ödemeler aylık, TL cinsinden. Abonelik filonun owner (patron) hesabına tanımlanır ve istediğin an iptal edilebilir. Yükseltme uygulama içinden değil, güvenli ödeme için web üzerinden yapılır." data-en="Billing is monthly, in TRY. The subscription is tied to your fleet's owner account and can be cancelled anytime. Upgrades are handled here on the web for secure payment, not inside the app.">Ödemeler aylık, TL cinsinden. Abonelik filonun owner (patron) hesabına tanımlanır ve istediğin an iptal edilebilir. Yükseltme uygulama içinden değil, güvenli ödeme için web üzerinden yapılır.</p>
+</main>
+
+<!-- Subscribe modal -->
+<div class="modal-backdrop" id="modal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <button class="close" id="mClose" aria-label="Kapat">&times;</button>
+    <h2 id="mTitle">—</h2>
+    <p class="sub" id="mSub">—</p>
+
+    <div id="loginView">
+      <div class="field">
+        <label for="email" data-tr="E-posta" data-en="Email">E-posta</label>
+        <input type="email" id="email" autocomplete="email" inputmode="email" placeholder="ornek@drivermesh.com" />
+      </div>
+      <div class="field">
+        <label for="password" data-tr="Şifre" data-en="Password">Şifre</label>
+        <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" />
+      </div>
+      <button class="btn" id="loginBtn" data-tr="Giriş yap ve devam et" data-en="Sign in & continue">Giriş yap ve devam et</button>
+    </div>
+
+    <div id="confirmView" style="display:none">
+      <div class="who" id="whoBox"></div>
+      <button class="btn" id="subscribeBtn">—</button>
+    </div>
+
+    <div class="msg" id="msg"></div>
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    <span>© 2026 DriverMesh — <span data-tr="Tüm hakları saklıdır." data-en="All rights reserved.">Tüm hakları saklıdır.</span></span>
+    <div>
+      <a href="/privacy.html" data-tr="Gizlilik" data-en="Privacy">Gizlilik</a>
+      <a href="/terms.html" data-tr="Kullanım" data-en="Terms">Kullanım</a>
+      <a href="/account-deletion.html" data-tr="Hesap silme" data-en="Account deletion">Hesap silme</a>
+      <a href="/#contact" data-tr="İletişim" data-en="Contact">İletişim</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Supabase public config — anon key deploy sırasında inject edilir (index.html GMAPS pattern'i).
+  window.__SB_URL__ = 'https://ucitxvsndlwvvnqwabgo.supabase.co';
+  window.__SB_ANON__ = '__SUPABASE_ANON_KEY__';
+</script>
+<script>
+  (function () {
+    // ---- i18n / dil toggle (account-deletion.html ile aynı) ----
+    const STORAGE_KEY = 'drivermesh.web.lang';
+    const langButtons = document.querySelectorAll('.lang-pill button');
+    const htmlEl = document.documentElement;
+    let LANG = 'tr';
+    const T = {
+      tr: {
+        loginTitle: "Pro'ya geç", loginSub: 'Devam etmek için filo sahibi (owner) hesabınla giriş yap.',
+        confirmSub: 'Aboneliğini onayla — tek dokunuşla yükselt.',
+        confirmTitlePro: "Pro'ya geç", confirmTitleProPlus: "Pro+'a geç",
+        who: (email, plan) => `<b>${email}</b> olarak giriş yapıldı.<br>Mevcut plan: <b>${plan}</b>`,
+        subPro: "Pro'ya yükselt (1.000 ₺/ay)", subProPlus: "Pro+'a yükselt (2.000 ₺/ay)",
+        loading: 'İşleniyor…', signIn: 'Giriş yap ve devam et',
+        errInvalid: 'E-posta veya şifre hatalı.', errOwner: 'Yalnızca filo sahibi (owner) abonelik başlatabilir.',
+        errNoOrg: 'Bu hesaba bağlı bir filo bulunamadı.', errNetwork: 'Bağlantı hatası. Tekrar dene.',
+        errGeneric: 'Bir şeyler ters gitti. Tekrar dene.',
+        activated: (plan) => `Planın <b>${plan}</b> olarak etkinleştirildi! Uygulamaya dönebilirsin.`,
+        promoFull: 'Ücretsiz tanıtım kotası doldu. Ödeme altyapımız çok yakında — biraz sonra tekrar dene.',
+        redirecting: 'Güvenli ödeme sayfasına yönlendiriliyorsun…',
+        signOut: 'çıkış', already: 'Bu plana zaten sahipsin veya daha üst plandasın.',
+      },
+      en: {
+        loginTitle: 'Go Pro', loginSub: 'Sign in with your fleet owner account to continue.',
+        confirmSub: 'Confirm your subscription — upgrade in one tap.',
+        confirmTitlePro: 'Go Pro', confirmTitleProPlus: 'Go Pro+',
+        who: (email, plan) => `Signed in as <b>${email}</b>.<br>Current plan: <b>${plan}</b>`,
+        subPro: 'Upgrade to Pro (1,000 ₺/mo)', subProPlus: 'Upgrade to Pro+ (2,000 ₺/mo)',
+        loading: 'Processing…', signIn: 'Sign in & continue',
+        errInvalid: 'Invalid email or password.', errOwner: 'Only the fleet owner can start a subscription.',
+        errNoOrg: 'No fleet is linked to this account.', errNetwork: 'Connection error. Try again.',
+        errGeneric: 'Something went wrong. Try again.',
+        activated: (plan) => `Your plan is now <b>${plan}</b>! You can return to the app.`,
+        promoFull: 'The free promo quota is full. Our payment system is coming very soon — please try again later.',
+        redirecting: 'Redirecting you to secure checkout…',
+        signOut: 'sign out', already: 'You are already on this plan or a higher one.',
+      },
+    };
+    function applyLang(lang) {
+      LANG = lang === 'en' ? 'en' : 'tr';
+      htmlEl.lang = LANG;
+      document.querySelectorAll('[data-tr]').forEach((el) => {
+        const txt = LANG === 'en' ? el.getAttribute('data-en') : el.getAttribute('data-tr');
+        if (txt != null) el.textContent = txt;
+      });
+      langButtons.forEach((b) => b.classList.toggle('active', b.dataset.lang === LANG));
+      try { localStorage.setItem(STORAGE_KEY, LANG); } catch (e) {}
+    }
+    const stored = (() => { try { return localStorage.getItem(STORAGE_KEY); } catch (e) { return null; } })();
+    applyLang(stored || (navigator.language && navigator.language.startsWith('en') ? 'en' : 'tr'));
+    langButtons.forEach((b) => b.addEventListener('click', () => applyLang(b.dataset.lang)));
+
+    // ---- Supabase (plain fetch, kütüphane yok) ----
+    const SB_URL = window.__SB_URL__;
+    const SB_ANON = window.__SB_ANON__;
+    const PLAN_LABEL = { free: 'Free', pro: 'Pro', pro_plus: 'Pro+' };
+    let session = null; // { access_token, email }
+    let targetPlan = null;
+
+    const $ = (id) => document.getElementById(id);
+    const modal = $('modal');
+    const msg = $('msg');
+
+    function showMsg(kind, html) {
+      msg.className = 'msg show ' + kind;
+      msg.innerHTML = html;
+    }
+    function clearMsg() { msg.className = 'msg'; msg.innerHTML = ''; }
+
+    async function openModal(plan) {
+      targetPlan = plan;
+      clearMsg();
+      const t = T[LANG];
+      $('mTitle').textContent = plan === 'pro_plus' ? t.confirmTitleProPlus : t.confirmTitlePro;
+      modal.classList.add('open');
+      if (session) {
+        // Zaten authed (app deep-link token'ı ya da tab oturumu) → login'i atla.
+        $('mSub').textContent = t.confirmSub;
+        $('loginView').style.display = 'none';
+        $('confirmView').style.display = '';
+        $('whoBox').innerHTML = '<span style="color:var(--text-dim)">' + t.loading + '</span>';
+        $('subscribeBtn').disabled = true;
+        $('subscribeBtn').textContent = targetPlan === 'pro_plus' ? t.subProPlus : t.subPro;
+        const cur = await fetchPlan();
+        showConfirm(cur);
+      } else {
+        $('mSub').textContent = t.loginSub;
+        showLogin();
+      }
+    }
+    function closeModal() { modal.classList.remove('open'); }
+
+    function showLogin() {
+      $('loginView').style.display = '';
+      $('confirmView').style.display = 'none';
+      $('loginBtn').textContent = T[LANG].signIn;
+    }
+    function showConfirm(currentPlan) {
+      $('loginView').style.display = 'none';
+      $('confirmView').style.display = '';
+      const t = T[LANG];
+      const planName = PLAN_LABEL[currentPlan] || PLAN_LABEL.free;
+      $('whoBox').innerHTML = t.who(session.email, planName) +
+        ` <button class="signout" id="signoutBtn">${t.signOut}</button>`;
+      $('subscribeBtn').textContent = targetPlan === 'pro_plus' ? t.subProPlus : t.subPro;
+      $('subscribeBtn').disabled = false;
+      const so = $('signoutBtn');
+      if (so) so.addEventListener('click', () => { session = null; try { sessionStorage.removeItem('dm.sb'); } catch (e) {} clearMsg(); showLogin(); });
+    }
+
+    async function fetchPlan() {
+      try {
+        const r = await fetch(SB_URL + '/rest/v1/rpc/fleet_plan_status', {
+          method: 'POST',
+          headers: { apikey: SB_ANON, Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+          body: '{}',
+        });
+        if (!r.ok) return 'free';
+        const d = await r.json();
+        return (d && d.plan) || 'free';
+      } catch (e) { return 'free'; }
+    }
+
+    // Login
+    $('loginBtn').addEventListener('click', async () => {
+      const t = T[LANG];
+      const email = $('email').value.trim().toLowerCase();
+      const password = $('password').value;
+      if (!email || !password) return;
+      clearMsg();
+      const btn = $('loginBtn');
+      btn.disabled = true; btn.textContent = t.loading;
+      try {
+        const r = await fetch(SB_URL + '/auth/v1/token?grant_type=password', {
+          method: 'POST',
+          headers: { apikey: SB_ANON, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || !d.access_token) { showMsg('error', t.errInvalid); return; }
+        session = { access_token: d.access_token, email };
+        try { sessionStorage.setItem('dm.sb', JSON.stringify(session)); } catch (e) {}
+        const cur = await fetchPlan();
+        clearMsg();
+        $('mSub').textContent = t.confirmSub;
+        showConfirm(cur);
+      } catch (e) {
+        showMsg('error', t.errNetwork);
+      } finally {
+        btn.disabled = false; btn.textContent = t.signIn;
+      }
+    });
+
+    // Subscribe
+    $('subscribeBtn').addEventListener('click', async () => {
+      const t = T[LANG];
+      if (!session) { showLogin(); return; }
+      clearMsg();
+      const btn = $('subscribeBtn');
+      btn.disabled = true; btn.textContent = t.loading;
+      try {
+        const r = await fetch(SB_URL + '/functions/v1/fleet-subscribe', {
+          method: 'POST',
+          headers: { apikey: SB_ANON, Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plan: targetPlan }),
+        });
+        const d = await r.json().catch(() => ({}));
+        if (r.status === 403) { showMsg('error', t.errOwner); return; }
+        if (d.error === 'no_org') { showMsg('error', t.errNoOrg); return; }
+        if (d.status === 'activated') {
+          showMsg('success', t.activated(PLAN_LABEL[d.plan] || PLAN_LABEL[targetPlan]));
+          setTimeout(() => { window.location.href = '/abonelik/basarili?plan=' + encodeURIComponent(targetPlan); }, 1400);
+          return;
+        }
+        if (d.status === 'redirect' && d.url) {
+          showMsg('info', t.redirecting);
+          setTimeout(() => { window.location.href = d.url; }, 800);
+          return;
+        }
+        if (d.status === 'promo_full') { showMsg('info', t.promoFull); return; }
+        showMsg('error', t.errGeneric);
+      } catch (e) {
+        showMsg('error', t.errNetwork);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = targetPlan === 'pro_plus' ? t.subProPlus : t.subPro;
+      }
+    });
+
+    // Restore session within tab
+    try {
+      const s = sessionStorage.getItem('dm.sb');
+      if (s) session = JSON.parse(s);
+    } catch (e) {}
+
+    // App deep-link auto-auth: uygulama "Web'de Yükselt"e basınca URL
+    // fragment'inde token + plan geçer (#access_token=...&plan=...). Fragment
+    // sunucuya gitmez; okuyup ANINDA temizliyoruz (history.replaceState).
+    // Boylece login olmus kullanici web'de tekrar login olmaz.
+    (function () {
+      if (!location.hash || location.hash.length < 2) return;
+      const hp = new URLSearchParams(location.hash.slice(1));
+      const at = hp.get('access_token');
+      const planParam = hp.get('plan');
+      if (at) {
+        let email = '';
+        try {
+          email = JSON.parse(atob(at.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).email || '';
+        } catch (e) {}
+        session = { access_token: at, email: email };
+        try { sessionStorage.setItem('dm.sb', JSON.stringify(session)); } catch (e) {}
+      }
+      // Token'i adres cubugundan / gecmisten temizle.
+      history.replaceState(null, '', location.pathname + location.search);
+      if (session && (planParam === 'pro' || planParam === 'pro_plus')) {
+        setTimeout(function () { openModal(planParam); }, 60);
+      }
+    })();
+
+    // Wire plan buttons + modal close
+    document.querySelectorAll('[data-plan]').forEach((b) => {
+      b.addEventListener('click', () => openModal(b.dataset.plan));
+    });
+    $('mClose').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+  })();
+</script>
+
+</body>
+</html>

@@ -22,11 +22,11 @@ import { Avatar } from '@/components/Avatar';
 import { JobCard } from '@/components/JobCard';
 import { BottomNav } from '@/components/BottomNav';
 import { Card } from '@/components/Card';
-import { ChatBotBadge } from '@/components/ChatBotBadge';
 import { StatusPill } from '@/components/StatusPill';
 import { useDriverActiveRide } from '@/hooks/useDriverActiveRide';
 import { useAuth } from '@/auth/AuthProvider';
 import { fetchHomeStats, type HomeStats } from '@/lib/queries';
+import { getPlanStatus, planLabel, type PlanStatus } from '@/lib/billing';
 import { theme } from '@/theme';
 
 const EMPTY_STATS: HomeStats = {
@@ -79,14 +79,22 @@ export default function HomeScreen() {
 
   const [tab, setTab] = useState<'home' | 'jobs' | 'fleet' | 'account'>('home');
   const [stats, setStats] = useState<HomeStats>(EMPTY_STATS);
+  const [plan, setPlan] = useState<PlanStatus | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const isDriver = profile?.role === 'driver';
   const driverActive = useDriverActiveRide(isDriver ? session?.user.id : undefined);
 
   const loadStats = useCallback(async () => {
     try {
-      const next = await fetchHomeStats();
+      const [next, ps] = await Promise.all([
+        fetchHomeStats(),
+        getPlanStatus().catch((e) => {
+          console.warn('[home] plan status failed', e);
+          return null;
+        }),
+      ]);
       setStats(next);
+      if (ps) setPlan(ps);
     } catch (e) {
       console.warn('[home] fetchHomeStats failed', e);
     }
@@ -143,6 +151,10 @@ export default function HomeScreen() {
     }
   };
 
+  // Çıkış sırasında session null'a düşünce fallback header ("Kullanıcı" + jenerik
+  // avatar) bir frame flash etmesin — auth gate welcome'a yönlendirene dek boş render.
+  if (!session?.user) return null;
+
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
@@ -167,14 +179,44 @@ export default function HomeScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Avatar name={fullName} size={72} uri={profile?.avatar_url} />
+              <Avatar name={fullName} size={64} uri={profile?.avatar_url} />
               <View style={styles.headerText}>
-                <Text style={styles.greet} numberOfLines={1}>
+                <Text
+                  style={styles.greet}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.85}
+                >
                   {t(greetingKey)}
                 </Text>
-                <Text style={styles.name} numberOfLines={1}>
+                <Text
+                  style={styles.name}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
+                >
                   {firstName}
                 </Text>
+                {plan && canAdd ? (
+                  <Pressable
+                    onPress={() => router.push('/(app)/vehicles')}
+                    hitSlop={8}
+                    style={({ pressed }) => [styles.planChip, pressed && { opacity: 0.7 }]}
+                  >
+                    <Feather
+                      name="zap"
+                      size={11}
+                      color={
+                        plan.plan === 'pro_plus'
+                          ? theme.colors.mesh
+                          : plan.plan === 'pro'
+                            ? theme.colors.accent
+                            : theme.colors.textMuted
+                      }
+                    />
+                    <Text style={styles.planChipText}>{planLabel(plan.plan)}</Text>
+                  </Pressable>
+                ) : null}
               </View>
             </View>
             <View style={styles.headerRight}>
@@ -183,7 +225,7 @@ export default function HomeScreen() {
                 onPress={() => router.push('/(app)/notifications')}
                 style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.7 }]}
               >
-                <Feather name="bell" size={28} color={theme.colors.text} />
+                <Feather name="bell" size={24} color={theme.colors.text} />
               </Pressable>
               <Pressable
                 hitSlop={10}
@@ -209,7 +251,7 @@ export default function HomeScreen() {
                 }
                 style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.7 }]}
               >
-                <Feather name="log-out" size={26} color={theme.colors.text} />
+                <Feather name="log-out" size={24} color={theme.colors.text} />
               </Pressable>
             </View>
           </View>
@@ -270,8 +312,10 @@ export default function HomeScreen() {
 
           {/* Quick actions */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('home.quickActions')}</Text>
-            <ChatBotBadge />
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{t('home.quickActions')}</Text>
+              <AskAiButton onPress={() => router.push('/(app)/chatbot')} />
+            </View>
             <View style={styles.quickRow}>
               <QuickAction
                 label={canAdd ? t('home.quickNew') : t('home.quickMyJobs')}
@@ -591,6 +635,33 @@ function SetupStep({
 }
 
 // ============================================================
+// "AI'ya Sor" — Hızlı Aksiyon başlığının sağında canlı gradient buton
+// ============================================================
+
+function AskAiButton({ onPress }: { onPress: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={t('home.askAi')}
+      style={({ pressed }) => [pressed && { opacity: 0.85 }]}
+    >
+      <LinearGradient
+        colors={['#A855F7', '#FF7A1A']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.askAi}
+      >
+        <Feather name="message-circle" size={15} color="#fff" />
+        <Text style={styles.askAiText}>{t('home.askAi')}</Text>
+      </LinearGradient>
+    </Pressable>
+  );
+}
+
+// ============================================================
 // Quick action button
 // ============================================================
 
@@ -698,7 +769,26 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
     marginTop: 2,
   },
-  headerRight: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  planChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    marginTop: 7,
+    paddingVertical: 3,
+    paddingHorizontal: 9,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.bgElevated,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  planChipText: {
+    color: theme.colors.text,
+    fontSize: 12,
+    fontWeight: theme.font.weight.bold,
+    letterSpacing: 0.3,
+  },
+  headerRight: { flexDirection: 'row', gap: 6, alignItems: 'center', marginRight: -12 },
   statusRow: { marginTop: 8 },
   driverBanner: {
     flexDirection: 'row',
@@ -723,8 +813,8 @@ const styles = StyleSheet.create({
   driverBannerTitle: { color: theme.colors.text, fontSize: 15, fontWeight: '700' },
   driverBannerHint: { color: theme.colors.textMuted, fontSize: 13, marginTop: 2 },
   iconBtn: {
-    width: 60,
-    height: 60,
+    width: 46,
+    height: 46,
     borderRadius: theme.radius.md,
     backgroundColor: theme.colors.bgElevated,
     borderWidth: 1,
@@ -912,6 +1002,25 @@ const styles = StyleSheet.create({
     color: theme.colors.mesh,
     fontSize: theme.font.size.sm,
     fontWeight: theme.font.weight.medium,
+  },
+  askAi: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 13,
+    borderRadius: theme.radius.full,
+    shadowColor: '#A855F7',
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  askAiText: {
+    color: '#fff',
+    fontSize: theme.font.size.sm,
+    fontWeight: theme.font.weight.bold,
+    letterSpacing: 0.2,
   },
 
   // 5 item → 2 sütun grid (2 satır 2 + son satır 1 sola yaslı). Tek

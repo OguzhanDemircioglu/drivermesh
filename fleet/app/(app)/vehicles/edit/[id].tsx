@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Feather } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { Screen } from '@/components/Screen';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
+import { BrandModelPicker } from '@/components/BrandModelPicker';
 import { useToast } from '@/components/Toast';
 import { PhotoPicker } from '@/components/PhotoPicker';
 import { useAuth } from '@/auth/AuthProvider';
@@ -94,12 +95,16 @@ export default function EditVehicleScreen() {
     control,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { plate: '', brand: '', model: '', year: String(currentYear) },
     mode: 'onTouched',
   });
+
+  const brand = useWatch({ control, name: 'brand' });
+  const model = useWatch({ control, name: 'model' });
 
   useEffect(() => {
     if (!id) return;
@@ -252,40 +257,13 @@ export default function EditVehicleScreen() {
             )}
           />
 
-          <Controller
-            control={control}
-            name="brand"
-            render={({ field: { value, onChange, onBlur } }) => (
-              <TextField
-                label={t('vehicles.new.brand')}
-                icon="award"
-                placeholder={t('vehicles.new.brandPlaceholder')}
-                autoCapitalize="words"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={errors.brand?.message}
-                returnKeyType="next"
-              />
-            )}
-          />
-
-          <Controller
-            control={control}
-            name="model"
-            render={({ field: { value, onChange, onBlur } }) => (
-              <TextField
-                label={t('vehicles.new.model')}
-                icon="layers"
-                placeholder={t('vehicles.new.modelPlaceholder')}
-                autoCapitalize="words"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={errors.model?.message}
-                returnKeyType="next"
-              />
-            )}
+          <BrandModelPicker
+            brand={brand}
+            model={model}
+            onBrandChange={(v) => setValue('brand', v, { shouldValidate: !!v, shouldTouch: !!v })}
+            onModelChange={(v) => setValue('model', v, { shouldValidate: !!v, shouldTouch: !!v })}
+            brandError={errors.brand?.message}
+            modelError={errors.model?.message}
           />
 
           <Controller
