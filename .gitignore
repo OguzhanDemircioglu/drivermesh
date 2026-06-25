@@ -35,6 +35,8 @@ screenshots/
 .fleet-build.log
 .fleet-metro.log
 .fleet-web.log
+.fleet-run.log
+.dm-check.log
 
 # Cloudflare Workers local state (Wrangler)
 web/.wrangler/
